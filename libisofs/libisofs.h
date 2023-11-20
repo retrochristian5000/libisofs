@@ -14,6 +14,8 @@
 
 /* Important: If you add a public API function then add its name to file
                  libisofs/libisofs.ver 
+              in the node LIBISOFS6_Major.Minor.Micro with the numbers of
+              the next release version.
 */
 
 #ifdef __cplusplus
@@ -249,7 +251,7 @@ enum IsoNodeType {
 #define ISO_NODE(n) ((IsoNode*)n)
 
 /**
- * File section in an old image.
+ * File section in an imported or emerging image.
  *
  * @since 0.6.8
  */
@@ -374,7 +376,7 @@ enum iso_replace_mode {
 };
 
 /**
- * Options for image written.
+ * Options for image writing.
  * @see iso_write_opts_new()
  * @since 0.6.2
  */
@@ -3821,9 +3823,13 @@ int iso_image_get_pvd_times(IsoImage *image,
  *      The absolute path of a IsoFile to be used as default boot image or
  *      --interval:appended_partition_$number[_start_$start_size_$size]:...
  *      if type is ELTORITO_NO_EMUL. $number gives the partition number.
- *      If _start_$start_size_$size is present, then it overrides the 2 KiB
- *      start block of the partition and the partition size counted in
- *      blocks of 512 bytes.
+ *      If no partitition with the given $number was set by functions like
+ *      iso_write_opts_set_partition_img() and if the optional image_path part
+ *      "_start_$start_size_$size" is present, then $start gets read as 2 KiB
+ *      start block of the interval and $size as number of blocks of 512 bytes.
+ *      If this range of block addresses is below the address set by
+ *      iso_write_opts_set_ms_block(), then that range gets marked as boot
+ *      image. I.e. an old appended partition can be marked as boot image.
  * @param type
  *      The boot media type. This can be one of 3 types:
  *             - ELTORITO_FLOPPY_EMUL.
