@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2009 - 2022 Thomas Schmitt
+ * Copyright (c) 2009 - 2023 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -549,6 +549,10 @@ struct image_fs_data
     unsigned char *aa_string;
 
 };
+
+
+static int iso_impsysa_reduce_next_above(IsoImage *image, uint32_t block,
+                                         uint32_t *next_above, int flag);
 
 struct child_list
 {
@@ -3598,6 +3602,8 @@ int create_boot_img_filesrc(IsoImageFilesystem *fs, IsoImage *image, int idx,
     _ImageFsData *fsdata;
     IsoFileSource *ifsrc = NULL;
     ImageFileSourceData *ifsdata = NULL;
+    IsoNode *node;
+    uint32_t size, next_above = 0, start_block;
 
     if (fs == NULL || fs->data == NULL || src == NULL) {
         return ISO_NULL_POINTER;
@@ -3611,12 +3617,32 @@ int create_boot_img_filesrc(IsoImageFilesystem *fs, IsoImage *image, int idx,
     atts.st_nlink = 1;
 
     /*
+     * Old comment from Vreixo Formoso:
      * this is the greater problem. We don't know the size. For now, we
      * just use a single block of data. In a future, maybe we could figure out
      * a better idea. Another alternative is to use several blocks, that way
      * is less probable that we throw out valid data.
      */
-    atts.st_size = (off_t)BLOCK_SIZE;
+    /* ts C31112 : Make use of size estimation "El Torito img blks :" */
+    /* (Code from iso_impsysa_report_blockpath() ) */
+    size = 1;
+    start_block = fsdata->bootblocks[idx];
+    iso_tree_get_node_of_block(image, NULL, start_block, &node, &next_above,
+                               0);
+    ret = iso_impsysa_reduce_next_above(image, start_block, &next_above, 0);
+    if (ret >= 0) {
+        if (next_above != 0) {
+            /* It has to fit in a single extent */
+            if ((off_t) (next_above - start_block) * BLOCK_SIZE <
+                (off_t) 0xffffffff) {
+                size = next_above - start_block;
+            } else { 
+                size = 0xffffffff / BLOCK_SIZE;
+            }
+        }
+    }
+
+    atts.st_size = (off_t) size * BLOCK_SIZE;
 
     /* Fill last entries */
     atts.st_dev = fsdata->id;
@@ -3648,7 +3674,7 @@ int create_boot_img_filesrc(IsoImageFilesystem *fs, IsoImage *image, int idx,
     ifsdata->info = atts;
     ifsdata->name = NULL;
     ifsdata->sections[0].block = fsdata->bootblocks[idx];
-    ifsdata->sections[0].size = BLOCK_SIZE;
+    ifsdata->sections[0].size = size * BLOCK_SIZE;
     ifsdata->nsections = 1;
 
     ifsrc->class = &ifs_class;
@@ -3665,7 +3691,7 @@ boot_fs_cleanup: ;
 }
 
 /** ??? >>> ts B00428 : should the max size become public ? */
-#define Libisofs_boot_image_max_sizE (4096*1024)
+#define Libisofs_boot_info_image_max_sizE (4096*1024)
 
 /** Guess which of the loaded boot images contain boot information tables.
     Set boot->seems_boot_info_table accordingly.
@@ -3693,7 +3719,7 @@ int iso_image_eval_boot_info_table(IsoImage *image, struct iso_read_opts *opts,
         boot->seems_grub2_boot_info = 0;
         boot->seems_isohybrid_capable = 0;
         img_size = iso_file_get_size(boot_file);
-        if (img_size > Libisofs_boot_image_max_sizE || img_size < 64)
+        if (img_size > Libisofs_boot_info_image_max_sizE || img_size < 64)
     continue;
         img_lba = 0;
         sections = NULL;
@@ -4112,6 +4138,8 @@ ex:;
     return ret;
 }
 
+/* @param flag bit0= Pre-run: Only assess partition table. 
+*/
 static
 int iso_analyze_mbr(IsoImage *image, IsoDataSource *src, int flag)
 {
@@ -4133,6 +4161,11 @@ int iso_analyze_mbr(IsoImage *image, IsoDataSource *src, int flag)
     ret = iso_analyze_mbr_ptable(image, src, 0);
     if (ret <= 0)
         goto ex;
+
+    if((flag & 1)) {
+        ret= 1;
+        goto ex;
+    }
 
     ret = iso_analyze_isohybrid(image, 0);
     if (ret < 0)
@@ -4443,6 +4476,9 @@ ex:
     return ret;
 }
 
+/* @param flag bit0= Pre-run: Only assess partition table.
+                             (Yet without effect, because nothing else is done)
+*/
 static
 int iso_analyze_gpt(IsoImage *image, IsoDataSource *src, int flag)
 {
@@ -4555,6 +4591,9 @@ int iso_analyze_apm_head(IsoImage *image, IsoDataSource *src, int flag)
     return 1;
 }
 
+/* @param flag bit0= Pre-run: Only assess partition table.
+                             (Yet without effect, because nothing else is done)
+*/
 static
 int iso_analyze_apm(IsoImage *image, IsoDataSource *src, int flag)
 {
@@ -4609,6 +4648,8 @@ int iso_analyze_apm(IsoImage *image, IsoDataSource *src, int flag)
     return 1;
 }
 
+/* @param flag bit0= Pre-run: Only assess partition table. 
+*/
 static
 int iso_analyze_mips(IsoImage *image, IsoDataSource *src, int flag)
 {
@@ -4677,12 +4718,14 @@ int iso_analyze_mips(IsoImage *image, IsoDataSource *src, int flag)
         sai->mips_vd_entries[idx]->name[8] = 0;
         sai->mips_vd_entries[idx]->boot_block = iso_read_msb(upart + 8, 4);
         sai->mips_vd_entries[idx]->boot_bytes = iso_read_msb(upart + 12, 4);
-        ret = iso_tree_get_node_of_block(image, NULL,
+        if (!(flag & 1)) {
+            ret = iso_tree_get_node_of_block(image, NULL,
                                      sai->mips_vd_entries[idx]->boot_block / 4,
                                      &node, NULL, 0);
-        if (ret > 0)
-            sai->mips_boot_file_paths[idx] = iso_tree_get_node_path(node);
-        sai->num_mips_boot_files++;
+            if (ret > 0)
+                sai->mips_boot_file_paths[idx] = iso_tree_get_node_path(node);
+            sai->num_mips_boot_files++;
+        }
     }
     if (sai->num_mips_boot_files > 0)
         sai->system_area_options = (1 << 2);/* MIPS Big Endian Volume Header */
@@ -4690,6 +4733,8 @@ int iso_analyze_mips(IsoImage *image, IsoDataSource *src, int flag)
     return ret;
 }
 
+/* @param flag bit0= Pre-run: Only assess partition table. 
+*/
 static
 int iso_analyze_mipsel(IsoImage *image, IsoDataSource *src, int flag)
 {
@@ -4717,19 +4762,22 @@ int iso_analyze_mipsel(IsoImage *image, IsoDataSource *src, int flag)
     sai->mipsel_e_entry = iso_read_lsb(usad + 20, 4);
     sai->mipsel_p_filesz = iso_read_lsb(usad + 24, 4) * 512;
     sai->mipsel_seg_start = iso_read_lsb(usad + 28, 4);
-    ret = iso_tree_get_node_of_block(image, NULL, sai->mipsel_seg_start / 4,
-                                     &node, NULL, 0);
-    if (ret > 0) {
-        sai->mipsel_boot_file_path = iso_tree_get_node_path(node);
-        file = (IsoFile *) node;
-        ret = iso_file_get_old_image_sections(file, &section_count,
-                                              &sections, 0);
-        if (ret > 0 && section_count > 0) {
-            if (sections[0].block < (1 << 30) &&
-                sections[0].block * 4 < sai->mipsel_seg_start)
-                sai->mipsel_p_offset = sai->mipsel_seg_start -
-                                       sections[0].block * 4;
-            free(sections);
+    if(!(flag & 1)) {
+        ret = iso_tree_get_node_of_block(image, NULL,
+                                         sai->mipsel_seg_start / 4, &node,
+                                         NULL, 0);
+        if (ret > 0) {
+            sai->mipsel_boot_file_path = iso_tree_get_node_path(node);
+            file = (IsoFile *) node;
+            ret = iso_file_get_old_image_sections(file, &section_count,
+                                                  &sections, 0);
+            if (ret > 0 && section_count > 0) {
+                if (sections[0].block < (1 << 30) &&
+                    sections[0].block * 4 < sai->mipsel_seg_start)
+                    sai->mipsel_p_offset = sai->mipsel_seg_start -
+                                           sections[0].block * 4;
+                free(sections);
+            }
         }
     }
     /* DEC Boot Block for MIPS Little Endian */
@@ -4738,6 +4786,8 @@ int iso_analyze_mipsel(IsoImage *image, IsoDataSource *src, int flag)
     return 1;
 }
 
+/* @param flag bit0= Pre-run: Only assess partition table. 
+*/
 static
 int iso_analyze_sun(IsoImage *image, IsoDataSource *src, int flag)
 {
@@ -4810,7 +4860,8 @@ int iso_analyze_sun(IsoImage *image, IsoDataSource *src, int flag)
                        sai->sparc_grub2_core_size + 2047) / 2048;
     if (last_core_block > 0)
         last_core_block--;
-    if (last_core_block > 17 && last_core_block < sai->image_size) {
+    if (last_core_block > 17 && last_core_block < sai->image_size &&
+        !(flag & 1)) {
         ret = iso_tree_get_node_of_block(image, NULL,
                                          (uint32_t) last_core_block, &node,
                                          NULL, 0);
@@ -4829,6 +4880,8 @@ int iso_analyze_sun(IsoImage *image, IsoDataSource *src, int flag)
     return 1;
 }
 
+/* @param flag bit0= Pre-run: Only assess partition table. 
+*/
 static
 int iso_analyze_hppa(IsoImage *image, IsoDataSource *src, int flag)
 {
@@ -4870,17 +4923,19 @@ int iso_analyze_hppa(IsoImage *image, IsoDataSource *src, int flag)
     sai->hppa_ramdisk_len = iso_read_msb(usad + 20, 4);
     adrs[3] = sai->hppa_bootloader_adr = iso_read_msb(usad + 240, 4);
     sai->hppa_bootloader_len = iso_read_msb(usad + 244, 4);
-    for (i = 0; i < 4; i++) {
-        paths[i] = NULL;
-        ret = iso_tree_get_node_of_block(image, NULL, adrs[i] / 2048,
-                                         &node, NULL, 0);
-        if (ret > 0)
-            paths[i] = iso_tree_get_node_path(node);
+    if(!(flag & 1)) {
+        for (i = 0; i < 4; i++) {
+            paths[i] = NULL;
+            ret = iso_tree_get_node_of_block(image, NULL, adrs[i] / 2048,
+                                             &node, NULL, 0);
+            if (ret > 0)
+                paths[i] = iso_tree_get_node_path(node);
+        }
+        sai->hppa_kernel_32 = paths[0];
+        sai->hppa_kernel_64 = paths[1];
+        sai->hppa_ramdisk = paths[2];
+        sai->hppa_bootloader = paths[3];
     }
-    sai->hppa_kernel_32 = paths[0];
-    sai->hppa_kernel_64 = paths[1];
-    sai->hppa_ramdisk = paths[2];
-    sai->hppa_bootloader = paths[3];
 
     if (sai->hppa_hdrversion == 5)
         sai->hppa_ipl_entry = iso_read_msb(usad + 248, 4);
@@ -4891,6 +4946,8 @@ int iso_analyze_hppa(IsoImage *image, IsoDataSource *src, int flag)
     return 1;
 }
 
+/* @param flag bit0= Pre-run: Only assess partition table. 
+*/
 static
 int iso_analyze_alpha_boot(IsoImage *image, IsoDataSource *src, int flag)
 {
@@ -4915,25 +4972,27 @@ int iso_analyze_alpha_boot(IsoImage *image, IsoDataSource *src, int flag)
     sai->alpha_boot_image = NULL;
     sai->alpha_boot_image_size = (uint64_t) iso_read_lsb64(usad + 480);
     sai->alpha_boot_image_adr = (uint64_t) iso_read_lsb64(usad + 488);
-    ret = iso_tree_get_node_of_block(image, NULL,
+    if (!(flag & 1)) {
+        ret = iso_tree_get_node_of_block(image, NULL,
                                   (uint32_t) (sai->alpha_boot_image_adr / 4),
                                   &node, NULL, 0);
-    if (ret > 0) {
-       if (iso_node_get_type(node) != LIBISO_FILE)
-           return 0;
-       file = (IsoFile *) node;
-       ret = iso_file_get_old_image_sections(file, &section_count,
-                                             &sections, 0);
-       if (ret > 0 && section_count > 0) {
-           size = sections[0].size / 512 + !!(sections[0].size % 512);
-           free(sections);
-           if (size != sai->alpha_boot_image_size)
-               return 0;
-       }
-       sai->alpha_boot_image = iso_tree_get_node_path(node);
-    } else if (strncmp(sad, "Linux/Alpha aboot for ISO filesystem.", 37) != 0
-               || sad[37] != 0) {
-        return 0; /* Want to see either boot file or genisoimage string */
+        if (ret > 0) {
+            if (iso_node_get_type(node) != LIBISO_FILE)
+                return 0;
+            file = (IsoFile *) node;
+            ret = iso_file_get_old_image_sections(file, &section_count,
+                                                  &sections, 0);
+            if (ret > 0 && section_count > 0) {
+                size = sections[0].size / 512 + !!(sections[0].size % 512);
+                free(sections);
+                if (size != sai->alpha_boot_image_size)
+                    return 0;
+            }
+            sai->alpha_boot_image = iso_tree_get_node_path(node);
+        } else if (strncmp(sad, "Linux/Alpha aboot for ISO filesystem.", 37)
+                   != 0 || sad[37] != 0) {
+           return 0; /* Want to see either boot file or genisoimage string */
+        }
     }
     sai->system_area_options = (6 << 2);
     return 1;
@@ -5016,6 +5075,8 @@ int iso_impsysa_reduce_next_above(IsoImage *image, uint32_t block,
     struct iso_file_section *sections = NULL;
 
     sai = image->imported_sa_info;
+    if (sai == NULL)
+        return 0;
 
     /* PVD, path table, root directory of active and of first session */
     for (i = 0; i < sai->num_meta_struct_blocks; i++)
@@ -5066,7 +5127,7 @@ int iso_impsysa_reduce_next_above(IsoImage *image, uint32_t block,
 
     iso_impsysa_reduce_na(block, next_above, sai->image_size);
 
-    return ISO_SUCCESS;
+    return 1;
 }
 
 /* @param flag bit0= try to estimate the size if no path is found
@@ -5804,6 +5865,9 @@ ex:
     return ret;
 }
 
+/* @param flag bit0= Pre-run: Only assess partition tables. Do not refer to
+                              loaded tree or El Torito boot equipment.
+*/
 static
 int iso_analyze_system_area(IsoImage *image, IsoDataSource *src,
                             struct iso_read_opts *opts, uint32_t image_size, 
@@ -5825,48 +5889,50 @@ int iso_analyze_system_area(IsoImage *image, IsoDataSource *src,
     image->imported_sa_info->image_size = image_size;
     image->imported_sa_info->pvd_block = opts->block + 16;
 
-    ret = iso_analyze_mbr(image, src, 0);
+    ret = iso_analyze_mbr(image, src, flag & 1);
     if (ret < 0)
         goto ex;
-    ret = iso_analyze_gpt(image, src, 0);
+    ret = iso_analyze_gpt(image, src, flag & 1);
     if (ret < 0)
         goto ex;
-    ret = iso_analyze_apm(image, src, 0);
+    ret = iso_analyze_apm(image, src, flag & 1);
     if (ret < 0)
         goto ex;
     sao = image->imported_sa_info->system_area_options;
     sa_type = (sao >> 2) & 0x3f;
     sa_sub = (sao >> 10) & 0xf;
     if (sa_type == 0 && !((sao & 3) || sa_sub == 1 || sa_sub == 2)) {
-        ret = iso_analyze_mips(image, src, 0);
+        ret = iso_analyze_mips(image, src, flag & 1);
         if (ret < 0)
            goto ex;
         if (ret == 0) {
-            ret = iso_analyze_mipsel(image, src, 0);
+            ret = iso_analyze_mipsel(image, src, flag & 1);
             if (ret < 0)
                 goto ex;
         }
         if (ret == 0) {
-            ret = iso_analyze_sun(image, src, 0);
+            ret = iso_analyze_sun(image, src, flag & 1);
             if (ret < 0)
                 goto ex;
         }
     }
     if (sa_type == 0 && !((sao & 3) || sa_sub == 1)) {
         /* HP-PA PALO v5 can look like generic MBR */
-        ret = iso_analyze_hppa(image, src, 0);
+        ret = iso_analyze_hppa(image, src, flag & 1);
         if (ret < 0)
             goto ex;
         /* DEC Alpha has checksum bytes where MBR has its magic number */
         if (ret == 0) {
-            ret = iso_analyze_alpha_boot(image, src, 0);
+            ret = iso_analyze_alpha_boot(image, src, flag & 1);
             if (ret < 0)
                 goto ex;
         }
     }
-    ret = iso_record_meta_struct_blocks(image, src, 0);
-    if (ret < 0)
-        goto ex;
+    if (!(flag & 1)) {
+        ret = iso_record_meta_struct_blocks(image, src, 0);
+        if (ret < 0)
+            goto ex;
+    }
 
     ret = ISO_SUCCESS;
 ex:;
@@ -6392,6 +6458,7 @@ int iso_image_import(IsoImage *image, IsoDataSource *src,
     int features_allocated = 0;
     static char *tree_loaded_names[3]= {"ISO9660", "Joliet", "ISO9660:1999"};
     int root_has_aaip = 0, rrip_version_1_10;
+    unsigned long img_size;
 
     if (image == NULL || src == NULL || opts == NULL) {
         return ISO_NULL_POINTER;
@@ -6546,6 +6613,27 @@ int iso_image_import(IsoImage *image, IsoDataSource *src,
         }
     }
 
+    /* Pre-assessment of System Area because image->imported_sa_info with
+       assessed partitions is needed in create_boot_img_filesrc().
+       Nevertheless, some properties can only be determined later, when
+       other image properties have been assessed. So there will be another
+       run of iso_analyze_system_area() without flag bit0 when more of the
+       imported image is known.
+    */
+    if (opts->load_system_area && image->system_area_data != NULL &&
+        !(opts->read_features & 4)) {
+        /* Preliminary assessment. Not complete because some aspects of the
+           filesystem have not been loaded yet.
+        */
+        ret = iso_analyze_system_area(image, src, opts, data->nblocks, 1);
+        if (ret < 0) {
+            iso_msg_submit(-1, ISO_SYSAREA_PROBLEMS, 0,
+                      "Problem encountered during inspection of System Area:");
+            iso_msg_submit(-1, ISO_SYSAREA_PROBLEMS, 0,
+                           iso_error_to_msg(ret));
+        }
+    }
+
     /* if old image has el-torito, add a new catalog */
     if (data->eltorito) {
 
@@ -6668,20 +6756,28 @@ int iso_image_import(IsoImage *image, IsoDataSource *src,
             /* warn about hidden images */
 
             if (!(opts->read_features & 4)) {
+                img_size = iso_file_get_size((IsoFile *) node);
                 if (image->bootcat->bootimages[idx]->platform_id == 0xef) {
                     iso_msg_submit(image->id, ISO_ELTO_EFI_HIDDEN, 0,
                                    "Found hidden El-Torito image for EFI.");
                     iso_msg_submit(image->id, ISO_GENERAL_NOTE, 0,
-                            "EFI image start and size: %lu * 2048 , %lu * 512",
+                       "EFI image start and load size: %lu * 2048 , %lu * 512",
                                    (unsigned long int)
                                image->bootcat->bootimages[idx]->appended_start,
                                    (unsigned long int)
                                    image->bootcat->bootimages[idx]->load_size);
+                    iso_msg_submit(image->id, ISO_GENERAL_NOTE, 0,
+                                 "Roughly estimated EFI image size: %lu bytes",
+                                   img_size);
                 } else {
                     iso_msg_submit(image->id, ISO_EL_TORITO_HIDDEN, 0,
-                           "Found hidden El-Torito image. Its size could not "
-                           "be figured out, so image modify or boot image "
-                           "patching may lead to bad results.");
+                          "Found hidden El-Torito image for Non-EFI platform.",
+                                   img_size);
+                    iso_msg_submit(image->id, ISO_EL_TORITO_HIDDEN, 0,
+                                   "Roughly estimated image size: %lu bytes",
+                                   img_size);
+                    iso_msg_submit(image->id, ISO_EL_TORITO_HIDDEN, 0,
+         "Image modification or boot image patching may lead to bad results.");
                 }
             }
         }
@@ -6926,6 +7022,9 @@ int iso_image_import(IsoImage *image, IsoDataSource *src,
     if (ret < 0)
         goto import_revert;
 
+    /* Second run of iso_analyze_system_area() after El Torito equipment and
+       file tree have been assessed
+    */
     if (opts->load_system_area && image->system_area_data != NULL &&
         !(opts->read_features & 4)) {
         ret = iso_analyze_system_area(image, src, opts, data->nblocks, 0);
