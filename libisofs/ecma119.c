@@ -4693,6 +4693,9 @@ void iso_tell_max_part_range(IsoWriteOpts *opts,
     if (sa_type == 3) { /* SUN Disk Label */
         *first_partition = 2;
         *last_partition = 8;
+    } else if(sa_type == 0 && opts->appended_as_gpt) {
+        *first_partition = 1;
+        *last_partition = 8;
     }  else {
         *first_partition = 1;
         *last_partition = 4;

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2008 Vreixo Formoso
- * Copyright (c) 2012 - 2019 Thomas Schmitt
+ * Copyright (c) 2012 - 2024 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -251,6 +251,15 @@ struct iso_gpt_partition_request {
        bit0= this is an automatically placed filler partition
     */
     uint32_t req_status;
+
+    /* Desired partition number in emerging GPT: first = 1, no desire = 0
+       GPT partitions get sorted by start LBA. Gaps of uncovered blocks get
+       filled. If the resulting sequence positions the partition at a lower
+       slot than desired, then empty slots get inserted to match the desire.
+       If the sequence positions the partition at a higher slot, then a mere
+       note is issued and the partition gets into the higher slot. 
+    */
+    int desired_slot;
 };
 
 /* Copies the content of req and registers it in t.gpt_req[].

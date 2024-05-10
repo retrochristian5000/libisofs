@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2008 Vreixo Formoso
- * Copyright (c) 2010 - 2022 Thomas Schmitt
+ * Copyright (c) 2010 - 2024 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -1735,11 +1735,13 @@ static int iso_write_gpt(Ecma119Image *t, uint32_t img_blocks, uint8_t *buf)
         0x87, 0xc0, 0x68, 0xb6, 0xb7, 0x26, 0x99, 0xc7
     };
 
+    uint8_t *wpt;
     uint32_t p_arr_crc = 0;
     uint64_t start_lba, end_lba, goal, part_end, next_end, backup_end_lba;
     uint64_t eff_gpt_flags;
-    int ret, i, gap_counter = 0, up_to;
+    int ret, i, gap_counter = 0, up_to, slot, j, to_insert;
     struct iso_gpt_partition_request *req;
+    char msg[81];
     uint8_t gpt_name[72];
     static uint8_t zero_uuid[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     static uint8_t *type_guid;
@@ -1825,6 +1827,8 @@ static int iso_write_gpt(Ecma119Image *t, uint32_t img_blocks, uint8_t *buf)
         return ISO_BOOT_TOO_MANY_GPT;
 
     /* Write the GPT entries to buf */
+    wpt= buf + 512 * t->gpt_part_start;
+    slot= 1;
     for (i = 0; i < t->gpt_req_count; i++) {
         req = t->gpt_req[i];
         start_lba = req->start_block;
@@ -1835,11 +1839,38 @@ static int iso_write_gpt(Ecma119Image *t, uint32_t img_blocks, uint8_t *buf)
         if (end_lba > backup_end_lba)
             end_lba = backup_end_lba;
         end_lba = end_lba - 1;
-        iso_write_gpt_entry(t, buf + 512 * t->gpt_part_start + 128 * i,
-                            req->type_guid, req->partition_guid, 
+        if (req->desired_slot > 0) {
+            to_insert= req->desired_slot - slot;
+            if (to_insert > 0 &&
+                slot - 1 + to_insert + t->gpt_req_count - i <=
+                                                    (int) t->gpt_max_entries) {
+                /* There is need and room to insert empty partition entries */
+                for (j = 0; j < to_insert; j++) {
+                    memset(wpt, 0, 128);
+                    wpt+= 128;
+                    slot++;
+                }
+		if (!t->wthread_is_running) {
+                    sprintf(msg,
+                    "Inserted %d empty GPT slots before appended partition %d",
+                            to_insert, req->desired_slot);
+                    iso_msgs_submit(0, msg, 0, "DEBUG", 0);
+                }
+            } else if (slot != req->desired_slot) {
+		if (!t->wthread_is_running) {
+                    sprintf(msg,
+              "Appended GPT partition becomes number %d instead of desired %d",
+                            i + 1, req->desired_slot);
+                    iso_msgs_submit(0, msg, 0, "NOTE", 0);
+                }
+            }
+        }
+        iso_write_gpt_entry(t, wpt, req->type_guid, req->partition_guid, 
                             start_lba, end_lba, req->flags, req->name);
+        wpt+= 128;
+        slot++;
     }
-    for (; i < (int) t->gpt_max_entries; i++)
+    for (i= slot - 1; i < (int) t->gpt_max_entries; i++)
         memset(buf + 512 * t->gpt_part_start + 128 * i, 0, 128);
 
     p_arr_crc = iso_crc32_gpt((unsigned char *) buf + 512 * t->gpt_part_start,
@@ -2719,6 +2750,7 @@ int assess_appended_gpt(Ecma119Image *t, int flag)
     };
     static uint8_t zero_uuid[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     int i, ret, do_apm = 0, do_gpt = 0, index, already_in_gpt = 0;
+    int first_partition, last_partition;
     uint8_t gpt_name[72], *type_uuid;
     char apm_type[33];
 
@@ -2738,7 +2770,8 @@ int assess_appended_gpt(Ecma119Image *t, int flag)
             return 2;
 
     /* Represent appended partitions */
-    for (i = 0; i <= 3; i++) {
+    iso_tell_max_part_range(t->opts, &first_partition, &last_partition, 0);
+    for (i = first_partition - 1; i < last_partition; i++) {
         if (t->opts->appended_partitions[i] == NULL)
     continue;
         if (do_apm) {
@@ -2779,6 +2812,9 @@ int assess_appended_gpt(Ecma119Image *t, int flag)
                                   (uint64_t) 0, gpt_name);
             if (ret < 0)
                 return ret;
+            t->gpt_req[t->gpt_req_count - 1]->desired_slot = i + 1;
+        } else if(do_gpt) {
+            t->gpt_req[index]->desired_slot = i + 1;
         }
     }
     return ISO_SUCCESS;
