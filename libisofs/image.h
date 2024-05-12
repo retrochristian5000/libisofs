@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2009 - 2022 Thomas Schmitt
+ * Copyright (c) 2009 - 2024 Thomas Schmitt
  * 
  * This file is part of the libisofs project; you can redistribute it and/or 
  * modify it under the terms of the GNU General Public License version 2 
@@ -417,6 +417,12 @@ struct iso_imported_sys_area {
     uint64_t sparc_grub2_core_adr;
     uint32_t sparc_grub2_core_size;
     IsoFile *sparc_core_node;
+
+    /* Only for representing the imported ISO:
+       Path of file which held the partition content.
+       NULL = no such file
+    */
+    char *sparc_core_node_path;
 
     /* see image.h : struct Iso_Image */
     int hppa_hdrversion;

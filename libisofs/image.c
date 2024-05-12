@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2009 - 2022 Thomas Schmitt
+ * Copyright (c) 2009 - 2024 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -17,6 +17,7 @@
 #include "node.h"
 #include "messages.h"
 #include "eltorito.h"
+#include "system_area.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -43,6 +44,7 @@ int iso_imported_sa_new(struct iso_imported_sys_area **boots, int flag)
 
     b->sparc_disc_label = NULL;
     b->sparc_core_node = NULL;
+    b->sparc_core_node_path = NULL;
     b->sparc_entries = NULL;
 
     b->hppa_cmdline = NULL;
@@ -71,18 +73,27 @@ int iso_imported_sa_unref(struct iso_imported_sys_area **boots, int flag)
         return 2;
 
     if (b->mbr_req != NULL) {
-        for (i = 0; i < b->mbr_req_count; i++)
+        for (i = 0; i < b->mbr_req_count; i++) {
+            if (b->mbr_req[i] != NULL)
+                LIBISO_FREE_MEM(b->mbr_req[i]->image_path);
             LIBISO_FREE_MEM(b->mbr_req[i]);
+        }
         LIBISO_FREE_MEM(b->mbr_req);
     }
     if (b->apm_req != NULL) {
-        for (i = 0; i < b->apm_req_count; i++)
+        for (i = 0; i < b->apm_req_count; i++) {
+            if (b->apm_req[i] != NULL)
+                LIBISO_FREE_MEM(b->apm_req[i]->image_path);
             LIBISO_FREE_MEM(b->apm_req[i]);
+        }
         LIBISO_FREE_MEM(b->apm_req);
     }
     if (b->gpt_req != NULL) {
-        for (i = 0; i < b->gpt_req_count; i++)
+        for (i = 0; i < b->gpt_req_count; i++) {
+            if (b->gpt_req[i] != NULL)
+                LIBISO_FREE_MEM(b->gpt_req[i]->image_path);
             LIBISO_FREE_MEM(b->gpt_req[i]);
+        }
         LIBISO_FREE_MEM(b->gpt_req);
     }
     LIBISO_FREE_MEM(b->gpt_backup_comments);
@@ -102,6 +113,7 @@ int iso_imported_sa_unref(struct iso_imported_sys_area **boots, int flag)
     LIBISO_FREE_MEM(b->sparc_disc_label);
     if (b->sparc_core_node != NULL)
         iso_node_unref((IsoNode *) b->sparc_core_node);
+    LIBISO_FREE_MEM(b->sparc_core_node_path);
     LIBISO_FREE_MEM(b->sparc_entries);
 
     LIBISO_FREE_MEM(b->hppa_cmdline);

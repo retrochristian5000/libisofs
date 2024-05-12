@@ -104,6 +104,12 @@ struct iso_mbr_partition_request {
     */
     int desired_slot;
 
+    /* Only when representing an imported partition:
+       Path of file in imported ISO which holds the partition content.
+       NULL = no such file
+    */
+    char *image_path;
+
 };
 
 /* Copies the content of req and registers it in t.mbr_req[].
@@ -162,6 +168,13 @@ struct iso_apm_partition_request {
        bit0= this is an automatically placed filler partition
     */
     uint32_t req_status;
+
+    /* Only when representing an imported partition:
+       Path of file in imported ISO which holds the partition content.
+       NULL = no such file
+    */
+    char *image_path;
+
 };
 
 /* Copies the content of req and registers it in t.apm_req[].
@@ -260,6 +273,12 @@ struct iso_gpt_partition_request {
        note is issued and the partition gets into the higher slot. 
     */
     int desired_slot;
+
+    /* Only when representing an imported partition:
+       Path of file in imported ISO which holds the partition content.
+       NULL = no such file
+    */
+    char *image_path;
 };
 
 /* Copies the content of req and registers it in t.gpt_req[].

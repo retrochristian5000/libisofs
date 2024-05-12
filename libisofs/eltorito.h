@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2010 - 2018 Thomas Schmitt
+ * Copyright (c) 2010 - 2024 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -52,6 +52,9 @@ struct el_torito_boot_catalog {
 
 struct el_torito_boot_image {
     IsoFile *image;
+
+    /* Path of image at the time of ISO image loading (NULL = hidden image) */
+    char *image_path;
 
     /* Overrides .image if >= 0 : array index of appended partition */
     int appended_idx;

@@ -4,7 +4,7 @@
 
 /*
  * Copyright (c) 2007-2008 Vreixo Formoso, Mario Danic
- * Copyright (c) 2009-2023 Thomas Schmitt
+ * Copyright (c) 2009-2024 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -4465,8 +4465,8 @@ int iso_image_get_system_area(IsoImage *img, char data[32768],
 "       gives partition number, status byte, type byte, start block,", \
 "       and number of blocks. 512 bytes per block.", \
 "  MBR partition path :   X  path", \
-"       the path of a file in the ISO image which begins at the partition", \
-"       start block of partition X.", \
+"       the path of a file in the ISO image which began at the start block", \
+"       of partition X when the ISO filesystem was imported.", \
 "  PReP boot partition: decimal decimal", \
 "       gives start block and size of a PReP boot partition in ISO 9660", \
 "       block units of 2048 bytes.", \
@@ -4532,8 +4532,8 @@ int iso_image_get_system_area(IsoImage *img, char data[32768],
 "  GPT start and size :   X  decimal  decimal", \
 "       start block and number of blocks of partition X. 512 bytes per block.", \
 "  GPT partition path :   X  path", \
-"       the path of a file in the ISO image which begins at the partition", \
-"       start block of partition X.", \
+"       the path of a file in the ISO image which began at the start block", \
+"       of partition X when the ISO filesystem was imported.", \
 ""
 #define ISO_SYSAREA_REPORT_DOC_APM \
 \
@@ -4553,8 +4553,8 @@ int iso_image_get_system_area(IsoImage *img, char data[32768],
 "  APM start and size :   X   decimal  decimal", \
 "       start block and number of blocks of partition X.", \
 "  APM partition path :   X   path", \
-"       the path of a file in the ISO image which begins at the partition", \
-"       start block of partition X.", \
+"       the path of a file in the ISO image which began at the start block", \
+"       of partition X when the ISO filesystem was imported.", \
 ""
 #define ISO_SYSAREA_REPORT_DOC_MIPS \
 \
@@ -4564,8 +4564,9 @@ int iso_image_get_system_area(IsoImage *img, char data[32768],
 "  MIPS-BE boot entry :   X  upto8chr     decimal     decimal", \
 "       tells name, 512-byte block address, and byte count of boot entry X.", \
 "  MIPS-BE boot path  :   X  path", \
-"       tells the path to the boot image file in the ISO image which belongs", \
-"       to the block address given by boot entry X.", \
+"       tells the path to the boot image file in the ISO image which began", \
+"       at the block address given by boot entry X when the ISO filesystem", \
+"       was imported.", \
 "", \
 "If a DEC Boot Block for MIPS Little Endian is detected, there may be:", \
 "  MIPS-LE boot map   :   LoadAddr    ExecAddr SegmentSize SegmentStart", \
@@ -4575,8 +4576,9 @@ int iso_image_get_system_area(IsoImage *img, char data[32768],
 "       of the boot file. The first two are counted in bytes, the other two", \
 "       are counted in blocks of 512 bytes.", \
 "  MIPS-LE boot path  : path", \
-"       tells the path to the boot file in the ISO image which belongs to the", \
-"       address given by SegmentStart.", \
+"       tells the path to the boot image file in the ISO image which began", \
+"       at the block address given by SegmentStart when the ISO filesystem", \
+"       was imported.", \
 "  MIPS-LE elf offset : decimal", \
 "       tells the relative 512-byte block offset inside the boot file:", \
 "         SegmentStart - FileStartBlock", \
@@ -4600,8 +4602,8 @@ int iso_image_get_system_area(IsoImage *img, char data[32768],
 "  SPARC GRUB2 core   : decimal  decimal", \
 "       tells byte address and byte count of the GRUB2 SPARC core file.", \
 "  SPARC GRUB2 path   : path", \
-"       tells the path to the data file in the ISO image which belongs to the", \
-"       address given by core.", \
+"       tells the path to the data file in the ISO image which began at the", \
+"       address given by core when the ISO filesystem was imported.", \
 ""
 #define ISO_SYSAREA_REPORT_DOC_HPPA \
 \
@@ -4613,7 +4615,9 @@ int iso_image_get_system_area(IsoImage *img, char data[32768],
 "  HP-PA boot files   :   ByteAddr    ByteSize  Path", \
 "       headline for human readers.", \
 "  HP-PA 32-bit kernel: decimal  decimal  path", \
-"       tells start byte, byte count, and file path of the 32-bit kernel.", \
+"       tells start byte and byte count of the 32-bit kernel and the path", \
+"       to the data file in the ISO image which began at the start byte", \
+"       when the ISO filesystem was imported.", \
 "  HP-PA 64-bit kernel: decimal  decimal  path", \
 "       tells the same for the 64-bit kernel.", \
 "  HP-PA ramdisk      : decimal  decimal  path", \
@@ -4629,8 +4633,8 @@ int iso_image_get_system_area(IsoImage *img, char data[32768],
 "  DEC Alpha ldr adr  : decimal", \
 "       tells the start of the loader file in units of 512-byte blocks.", \
 "  DEC Alpha ldr path : path", \
-"       tells the path of a file in the ISO image which starts at the loader", \
-"       start address."
+"       tells the path to a file in the ISO image which began at the", \
+"       loader start address when the ISO filesystem was imported."
 
 /**
  * Obtain an array of texts describing the detected properties of the
@@ -4698,12 +4702,13 @@ int iso_image_report_system_area(IsoImage *image,
 "", \
 "The following lines appear conditionally:", \
 "  El Torito cat path : iso_rr_path", \
-"       tells the path to the data file in the ISO image which belongs to", \
-"       the block address where the boot catalog starts.", \
+"       tells the path to the data file in the ISO image which began at the", \
+"       block address where the boot catalog starts when the ISO filesystem", \
+"       was imported.", \
 "       (This line is not reported if no path points to that block.)", \
 "  El Torito img path :   X  iso_rr_path", \
-"       tells the path to the data file in the ISO image which belongs to", \
-"       the block address given by LBA of boot image X.", \
+"       tells the path to the data file in the ISO image which began at the", \
+"       LBA of boot image X when the ISO filesystem was imported.", \
 "       (This line is not reported if no path points to that block.)", \
 "  El Torito img opts :   X  word ... word", \
 "       tells the presence of extra features:", \
@@ -8565,15 +8570,16 @@ int iso_file_get_md5(IsoImage *image, IsoFile *file, char md5[16], int flag);
 int iso_file_make_md5(IsoFile *file, int flag);
 
 /**
- * Check a data block whether it is a libisofs session checksum tag and
- * eventually obtain its recorded parameters. These tags get written after
- * volume descriptors, directory tree and checksum array and can be detected
- * without loading the image tree.
+ * Check a data block whether it is a libisofs checksum tag and if so, obtain
+ * its recorded parameters. These tags get written after volume descriptors,
+ * directory tree and checksum array and can be detected without loading the
+ * image tree.
  * One may start reading and computing MD5 at the suspected image session
- * start and look out for a session tag on the fly. See doc/checksum.txt .
+ * start and look out for a checksum tag on the fly. See doc/checksum.txt .
  * @param data
  *      A complete and aligned data block read from an ISO image session.
  * @param tag_type
+ *      Returns the tag type:
  *      0= no tag
  *      1= session tag
  *      2= superblock tag
@@ -8593,7 +8599,7 @@ int iso_file_make_md5(IsoFile *file, int flag);
  *      covered by parameter md5.
  * @param next_tag
  *      Returns the predicted block address of the next tag.
- *      next_tag is valid only if not 0 and only with return values 2, 3, 4.
+ *      next_tag is valid only if not 0 and only with tag types 2, 3, 4.
  *      With tag types 2 and 3, reading shall go on sequentially and the MD5
  *      computation shall continue up to that address.
  *      With tag type 4, reading shall resume either at LBA 32 for the first

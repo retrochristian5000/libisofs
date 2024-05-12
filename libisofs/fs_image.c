@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2009 - 2023 Thomas Schmitt
+ * Copyright (c) 2009 - 2024 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -4143,12 +4143,14 @@ ex:;
 static
 int iso_analyze_mbr(IsoImage *image, IsoDataSource *src, int flag)
 {
-    int sub_type = 2, ret, is_isohybrid = 0, is_grub2_mbr = 0;
+    int sub_type = 2, ret, i, is_isohybrid = 0, is_grub2_mbr = 0;
     int is_protective_label = 0;
+    uint32_t next_above = 0;
     uint64_t part2_start;
     char *sad;
     struct iso_imported_sys_area *sai;
     struct iso_mbr_partition_request *part;
+    IsoNode *node;
 
     sad = image->system_area_data;
     sai = image->imported_sa_info;
@@ -4165,6 +4167,17 @@ int iso_analyze_mbr(IsoImage *image, IsoDataSource *src, int flag)
     if((flag & 1)) {
         ret= 1;
         goto ex;
+    }
+
+    /* Possibly obtain ISO paths of MBR partition content */
+    for (i = 0; i < sai->mbr_req_count; i++) {
+        part = sai->mbr_req[i];
+        if (part->block_count == 0 || part->image_path != NULL)
+    continue;
+        ret = iso_tree_get_node_of_block(image, NULL, part->start_block / 4,
+                                         &node, &next_above, 0);
+        if (ret > 0)
+            part->image_path = iso_tree_get_node_path(node);
     }
 
     ret = iso_analyze_isohybrid(image, 0);
@@ -4477,15 +4490,17 @@ ex:
 }
 
 /* @param flag bit0= Pre-run: Only assess partition table.
-                             (Yet without effect, because nothing else is done)
 */
 static
 int iso_analyze_gpt(IsoImage *image, IsoDataSource *src, int flag)
 {
     int ret, i, j;
     uint64_t start_block, block_count, flags, end_block, j_end, j_start;
+    uint32_t next_above;
     uint8_t *part;
     struct iso_imported_sys_area *sai;
+    struct iso_gpt_partition_request *gpt_entry;
+    IsoNode *node;
 
     sai = image->imported_sa_info;
 
@@ -4566,6 +4581,21 @@ int iso_analyze_gpt(IsoImage *image, IsoDataSource *src, int flag)
         }
     }
 
+    if (flag & 1)
+        return 1;
+
+    /* Possibly obtain ISO paths of GPT partition content */
+    for (i = 0; i < sai->gpt_req_count; i++) {
+        gpt_entry = sai->gpt_req[i];
+        if (gpt_entry->block_count == 0 || gpt_entry->image_path != NULL)
+    continue;
+        ret = iso_tree_get_node_of_block(image, NULL,
+                                       (uint32_t) (gpt_entry->start_block / 4),
+                                         &node, &next_above, 0);
+        if (ret > 0)
+            gpt_entry->image_path = iso_tree_get_node_path(node);
+    }
+
     return 1;
 }
 
@@ -4592,15 +4622,16 @@ int iso_analyze_apm_head(IsoImage *image, IsoDataSource *src, int flag)
 }
 
 /* @param flag bit0= Pre-run: Only assess partition table.
-                             (Yet without effect, because nothing else is done)
 */
 static
 int iso_analyze_apm(IsoImage *image, IsoDataSource *src, int flag)
 {
     int ret, i;
-    uint32_t map_entries, start_block, block_count, flags;
+    uint32_t map_entries, start_block, block_count, flags, next_above;
     char *sad, *part, name[33], type_string[33];
     struct iso_imported_sys_area *sai;
+    struct iso_apm_partition_request *apm_entry;
+    IsoNode *node;
 
     sai = image->imported_sa_info;
     sad = image->system_area_data;
@@ -4644,6 +4675,22 @@ int iso_analyze_apm(IsoImage *image, IsoDataSource *src, int flag)
                 sai->apm_req_flags &= ~2;
             }
         }
+    }
+
+    if (flag & 1)
+        return 1;
+
+    /* Possibly obtain ISO paths of APM partition content */
+    for (i = 0; i < sai->apm_req_count; i++) {
+        apm_entry = sai->apm_req[i];
+        if (apm_entry->block_count == 0 || apm_entry->image_path != NULL)
+    continue;
+        ret = iso_tree_get_node_of_block(image, NULL,
+                                         (uint32_t) (apm_entry->start_block /
+                                             (2048 / sai->apm_block_size)),
+                                         &node, &next_above, 0);
+        if (ret > 0)
+            apm_entry->image_path = iso_tree_get_node_path(node);
     }
     return 1;
 }
@@ -4868,6 +4915,7 @@ int iso_analyze_sun(IsoImage *image, IsoDataSource *src, int flag)
         if (ret > 0) {
             iso_node_ref(node);
             sai->sparc_core_node = (IsoFile *) node;
+            sai->sparc_core_node_path = iso_tree_get_node_path(node);
         }
     } else {
         sai->sparc_grub2_core_adr = 0;
@@ -5326,8 +5374,12 @@ int iso_impsysa_report(IsoImage *image, struct iso_impsysa_result *target,
         if (part->block_count == 0)
     continue;
         sprintf(msg, "MBR partition path : %3d  ", part->desired_slot);
-        iso_impsysa_report_blockpath(image, target, msg,
-                                     (uint32_t) (part->start_block / 4), 0);
+        if (part->image_path != NULL) {
+            iso_impsysa_report_text(target, msg, part->image_path, 0);
+        } else {
+            iso_impsysa_report_blockpath(image, target, msg,
+                                        (uint32_t) (part->start_block / 4), 0);
+        }
     }
     if (sai->prep_part_start > 0 && sai->prep_part_size > 0) {
         sprintf(msg, "PReP boot partition: %u  %u",
@@ -5392,11 +5444,17 @@ int iso_impsysa_report(IsoImage *image, struct iso_impsysa_result *target,
                          sai->sparc_grub2_core_size);
             iso_impsysa_line(target, msg);
             if (sai->sparc_core_node != NULL) {
-                path = iso_tree_get_node_path((IsoNode *) sai->sparc_core_node);
+                if(sai->sparc_core_node_path != NULL) {
+                    path = sai->sparc_core_node_path;
+                } else {
+                    path = iso_tree_get_node_path(
+                                             (IsoNode *) sai->sparc_core_node);
+                }
                 if (path != NULL) {
                     sprintf(msg, "SPARC GRUB2 path   : ");
                     iso_impsysa_report_text(target, msg, path, 0);
-                    free(path);
+                    if (sai->sparc_core_node_path == NULL)
+                        free(path);
                 }
             }
         }
@@ -5486,8 +5544,12 @@ int iso_impsysa_report(IsoImage *image, struct iso_impsysa_result *target,
         if (gpt_entry->block_count == 0)
     continue;
         sprintf(msg, "GPT partition path : %3d  ", idx);
-        iso_impsysa_report_blockpath(image, target, msg,
+        if (gpt_entry->image_path != NULL) {
+            iso_impsysa_report_text(target, msg, gpt_entry->image_path, 0);
+        } else {
+            iso_impsysa_report_blockpath(image, target, msg,
                                    (uint32_t) (gpt_entry->start_block / 4), 0);
+        }
     }
 
     if (sai->apm_req_count > 0) {
@@ -5512,10 +5574,14 @@ int iso_impsysa_report(IsoImage *image, struct iso_impsysa_result *target,
         if (apm_entry->block_count == 0)
     continue;
         sprintf(msg, "APM partition path : %3d  ", idx);
-        iso_impsysa_report_blockpath(image, target, msg,
+        if (apm_entry->image_path != NULL) {
+            iso_impsysa_report_text(target, msg, apm_entry->image_path, 0);
+        } else {
+            iso_impsysa_report_blockpath(image, target, msg,
                                      (uint32_t) (apm_entry->start_block /
                                                  (2048 / sai->apm_block_size)),
                                      0);
+        }
     }
 
     ret = 1;
@@ -5671,9 +5737,13 @@ int iso_eltorito_report(IsoImage *image, struct iso_impsysa_result *target,
     }
     for (i= 0; i < bootcat->num_bootimages; i++) {
         img = bootcat->bootimages[i];
-        if (lba_mem[i] != 0xffffffff) {
-            sprintf(msg, "El Torito img path : %3d  ", i + 1);
+        sprintf(msg, "El Torito img path : %3d  ", i + 1);
+        if (img->image_path != NULL) {
+            iso_impsysa_report_text(target, msg, img->image_path, 0);
+        } else if (lba_mem[i] != 0xffffffff) {
             iso_impsysa_report_blockpath(image, target, msg, lba_mem[i], 1);
+        }
+        if (lba_mem[i] != 0xffffffff) {
             if (img->type == 4 && img->emul_hdd_size > 0) {
                 sprintf(msg, "El Torito hdsiz/512: %3d  %u",
                              i + 1, (unsigned int) img->emul_hdd_size);
@@ -6444,7 +6514,7 @@ int iso_image_import(IsoImage *image, IsoDataSource *src,
     struct el_torito_boot_catalog *oldbootcat;
     uint8_t *rpt;
     IsoFileSource *boot_src;
-    IsoNode *node;
+    IsoNode *node, *boot_image_node;
     char *old_checksum_array = NULL;
     char checksum_type[81];
     uint32_t checksum_size, truncate_mode, truncate_length;
@@ -6653,6 +6723,7 @@ int iso_image_import(IsoImage *image, IsoDataSource *src,
                 goto import_revert;
             }
             boot_image->image = NULL;
+            boot_image->image_path = NULL;
             boot_image->bootable = data->boot_flags[idx] & 1;
             boot_image->type = data->media_types[idx];
             boot_image->partition_type = data->partition_types[idx];
@@ -6781,6 +6852,19 @@ int iso_image_import(IsoImage *image, IsoDataSource *src,
                 }
             }
         }
+
+        /* Try to obtain boot image paths */
+        for (idx = 0; idx < image->bootcat->num_bootimages; idx++) {
+            boot_image_node =
+                            (IsoNode *) image->bootcat->bootimages[idx]->image;
+            if (boot_image_node == NULL)
+        continue;
+            if (image->bootcat->bootimages[idx]->image_path != NULL)
+                free(image->bootcat->bootimages[idx]->image_path);
+            image->bootcat->bootimages[idx]->image_path =
+                                       iso_tree_get_node_path(boot_image_node);
+        }
+
         if (image->bootcat->node == NULL) {
             IsoNode *node;
             IsoBoot *bootcat;

@@ -1053,6 +1053,7 @@ int iso_quick_apm_entry(struct iso_apm_partition_request **req_array,
     if (l > 0)
         memcpy((char *) entry->type, type, l);
     entry->req_status = 0;
+    entry->image_path = NULL;
     ret = iso_register_apm_entry(req_array, apm_req_count, entry, 0);
     free(entry);
     return ret;
@@ -1099,6 +1100,7 @@ int iso_quick_gpt_entry(struct iso_gpt_partition_request **req_array,
     entry->flags = flags;
     memcpy(entry->name, name, 72);
     entry->req_status = 0;
+    entry->image_path = NULL;
     ret = iso_register_gpt_entry(req_array, gpt_req_count, entry, 0);
     free(entry);
     return ret;
@@ -1128,6 +1130,7 @@ int iso_quick_mbr_entry(struct iso_mbr_partition_request **req_array,
     entry->type_byte = type_byte;
     entry->status_byte = status_byte;
     entry->desired_slot = desired_slot;
+    entry->image_path = NULL;
     ret = iso_register_mbr_entry(req_array, mbr_req_count, entry, 0);
     free(entry);
     return ret;
@@ -2542,6 +2545,13 @@ int iso_register_apm_entry(struct iso_apm_partition_request **req_array,
         return ISO_OUT_OF_MEM;
     
     memcpy(entry, req, sizeof(struct iso_apm_partition_request));
+    if (req->image_path != NULL) {
+        entry->image_path = strdup(req->image_path);
+        if (entry->image_path == NULL) {
+            LIBISO_FREE_MEM(entry);
+            return ISO_OUT_OF_MEM;
+        }
+    }
     req_array[*apm_req_count] = entry;
     (*apm_req_count)++;
     return ISO_SUCCESS;
@@ -2561,6 +2571,13 @@ int iso_register_mbr_entry(struct iso_mbr_partition_request **req_array,
         return ISO_OUT_OF_MEM;
     
     memcpy(entry, req, sizeof(struct iso_mbr_partition_request));
+    if (req->image_path != NULL) {
+        entry->image_path = strdup(req->image_path);
+        if (entry->image_path == NULL) {
+            LIBISO_FREE_MEM(entry);
+            return ISO_OUT_OF_MEM;
+        }
+    }
     req_array[*mbr_req_count] = entry;
     (*mbr_req_count)++;
     return ISO_SUCCESS;
@@ -2579,6 +2596,13 @@ int iso_register_gpt_entry(struct iso_gpt_partition_request **req_array,
         return ISO_OUT_OF_MEM;
     
     memcpy(entry, req, sizeof(struct iso_gpt_partition_request));
+    if (req->image_path != NULL) {
+        entry->image_path = strdup(req->image_path);
+        if (entry->image_path == NULL) {
+            LIBISO_FREE_MEM(entry);
+            return ISO_OUT_OF_MEM;
+        }
+    }
     req_array[*gpt_req_count] = entry;
     (*gpt_req_count)++;
     return ISO_SUCCESS;

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2010 - 2016 Thomas Schmitt
+ * Copyright (c) 2010 - 2024 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -845,6 +845,8 @@ void el_torito_boot_catalog_free(struct el_torito_boot_catalog *cat)
     continue;
         if ((IsoNode*)image->image != NULL)
             iso_node_unref((IsoNode*)image->image);
+        if (image->image_path != NULL)
+            free(image->image_path);
         free(image);
     }
     if ((IsoNode*)cat->node != NULL)
