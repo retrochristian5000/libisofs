@@ -2198,7 +2198,10 @@ int iso_write_opts_set_fifo_size(IsoWriteOpts *opts, size_t fifo_size);
  * @param opts
  *      The option set to be manipulated.
  * @param data
- *        Either NULL or 32 kB of data. Do not submit less bytes !
+ *        Either NULL or 32768 bytes of data. Do not submit less bytes !
+ *        NULL means that the possibly imported System Area content of the
+ *        possibly imported ISO image is to be re-used unchanged.
+ *        Submit 32 KiB of 0-bytes to surely get an empty System Area written.
  * @param options
  *        Can cause manipulations of submitted data before they get written:
  *        bit0= Only with System area type 0 = MBR
@@ -2294,7 +2297,7 @@ int iso_write_opts_set_fifo_size(IsoWriteOpts *opts, size_t fifo_size);
  *              written.
  * @param flag
  *        bit0 = invalidate any attached system area data. Same as data == NULL
- *               (This re-activates eventually loaded image System Area data.
+ *               (This re-activates possibly loaded image System Area data.
  *                To erase those, submit 32 kB of zeros without flag bit0.)
  *        bit1 = keep data unaltered
  *        bit2 = keep options unaltered
