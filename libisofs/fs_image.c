@@ -4770,8 +4770,8 @@ int iso_analyze_mips(IsoImage *image, IsoDataSource *src, int flag)
                                      &node, NULL, 0);
             if (ret > 0)
                 sai->mips_boot_file_paths[idx] = iso_tree_get_node_path(node);
-            sai->num_mips_boot_files++;
         }
+        sai->num_mips_boot_files++;
     }
     if (sai->num_mips_boot_files > 0)
         sai->system_area_options = (1 << 2);/* MIPS Big Endian Volume Header */
