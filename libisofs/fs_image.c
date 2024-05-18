@@ -4496,7 +4496,6 @@ int iso_analyze_gpt(IsoImage *image, IsoDataSource *src, int flag)
 {
     int ret, i, j;
     uint64_t start_block, block_count, flags, end_block, j_end, j_start;
-    uint32_t next_above;
     uint8_t *part;
     struct iso_imported_sys_area *sai;
     struct iso_gpt_partition_request *gpt_entry;
@@ -4591,7 +4590,7 @@ int iso_analyze_gpt(IsoImage *image, IsoDataSource *src, int flag)
     continue;
         ret = iso_tree_get_node_of_block(image, NULL,
                                        (uint32_t) (gpt_entry->start_block / 4),
-                                         &node, &next_above, 0);
+                                         &node, NULL, 0);
         if (ret > 0)
             gpt_entry->image_path = iso_tree_get_node_path(node);
     }
@@ -4627,7 +4626,7 @@ static
 int iso_analyze_apm(IsoImage *image, IsoDataSource *src, int flag)
 {
     int ret, i;
-    uint32_t map_entries, start_block, block_count, flags, next_above;
+    uint32_t map_entries, start_block, block_count, flags;
     char *sad, *part, name[33], type_string[33];
     struct iso_imported_sys_area *sai;
     struct iso_apm_partition_request *apm_entry;
@@ -4688,7 +4687,7 @@ int iso_analyze_apm(IsoImage *image, IsoDataSource *src, int flag)
         ret = iso_tree_get_node_of_block(image, NULL,
                                          (uint32_t) (apm_entry->start_block /
                                              (2048 / sai->apm_block_size)),
-                                         &node, &next_above, 0);
+                                         &node, NULL, 0);
         if (ret > 0)
             apm_entry->image_path = iso_tree_get_node_path(node);
     }

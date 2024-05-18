@@ -1294,6 +1294,8 @@ ex:;
 }
 
 /* Note: No reference is taken to the found node.
+   Warning: Do not submit next_above uninitialized.
+            Submit NULL if next_above is not of interest.
    @param flag bit0= recursion
 */
 int iso_tree_get_node_of_block(IsoImage *image, IsoDir *dir, uint32_t block,
