@@ -933,6 +933,12 @@ struct ecma119_image
     unsigned long joliet_symlinks;
     unsigned long joliet_specials;
 
+    /* Count of symbolic links and special files which could not be represented
+       in ISO 9660:1999.
+    */
+    unsigned long iso1999_symlinks;
+    unsigned long iso1999_specials;
+
 };
 
 #define BP(a,b) [(b) - (a) + 1]

@@ -251,14 +251,33 @@ int create_tree(Ecma119Image *t, IsoNode *iso, Iso1999Node **tree, int pathlen)
         }
         break;
     case LIBISO_SYMLINK:
-    case LIBISO_SPECIAL:
-        {
+        t->iso1999_symlinks++;
+        if (t->iso1999_symlinks == 1) {
             char *ipath = iso_tree_get_node_path(iso);
             ret = iso_msg_submit(t->image->id, ISO_FILE_IGNORED, 0,
-                     "Can't add %s to ISO 9660:1999 tree. This kind of files "
-                     "can only be added to a Rock Ridget tree. Skipping.",
-                     ipath);
+                "Cannot add symbolic link %s to ISO 9660:1999 tree. Skipping.",
+                                 ipath);
             free(ipath);
+        } else {
+            if (t->iso1999_symlinks == 2)
+                iso_msg_submit(t->image->id, ISO_FILE_IGNORED, 0,
+                  "More symbolic links were omitted from ISO 9660:1999 tree.");
+            ret = 0;
+        }
+        break;
+    case LIBISO_SPECIAL:
+        t->iso1999_specials++;
+        if (t->iso1999_specials == 1) {
+            char *ipath = iso_tree_get_node_path(iso);
+            ret = iso_msg_submit(t->image->id, ISO_FILE_IGNORED, 0,
+                 "Cannot add special file %s to ISO 9660:1999 tree. Skipping.",
+                                 ipath);
+            free(ipath);
+        } else {
+            if (t->iso1999_specials == 2)
+                iso_msg_submit(t->image->id, ISO_FILE_IGNORED, 0,
+                   "More special files were omitted from ISO 9660:1999 tree.");
+            ret = 0;
         }
         break;
     default:
