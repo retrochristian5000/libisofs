@@ -131,11 +131,11 @@ int iso_lib_is_compatible(int major, int minor, int micro);
  *
  * Vreixo Formoso advises to leave proper version matching to properly
  * programmed checks in the the application's build system, which will
- * eventually refuse compilation.
+ * refuse compilation in case of mismatch.
  *
  * Thomas Schmitt advises to use the macros defined here for comparison with
- * the application's requirements of library revisions and to eventually
- * break compilation.
+ * the application's requirements of library revisions and to break compilation
+ * in case of mismatch.
  *
  * Both advises are combinable. I.e. be master of your build system and have
  * #if checks in the source code of your application, nevertheless.
@@ -858,7 +858,7 @@ struct IsoFileSource_Iface
      *
      * @param flag       Bitfield for control purposes
      *                   bit0= Transfer ownership of AAIP string data.
-     *                         src will free the eventual cached data and might
+     *                         src will free the possibly cached data and might
      *                         not be able to produce it again.
      *                   bit1= No need to get ACL (no guarantee of exclusion)
      *                   bit2= No need to get xattr (no guarantee of exclusion)
@@ -1082,7 +1082,7 @@ struct IsoStream_Iface
     /**
      * Update the size of the IsoStream with the current size of the underlying
      * source, if the source is prone to size changes. After calling this,
-     * get_size() shall eventually return the new size.
+     * get_size() shall return the new size.
      * This will never be called after iso_image_create_burn_source() was
      * called and before the image was completely written.
      * (The API call to update the size of all files in the image is
@@ -1097,10 +1097,10 @@ struct IsoStream_Iface
     int (*update_size)(IsoStream *stream);
 
     /**
-     * Retrieve the eventual input stream of a filter stream.
+     * Retrieve the input stream of a filter stream.
      *
      * @param stream
-     *     The eventual filter stream to be inquired.
+     *     The filter stream to be inquired.
      * @param flag
      *     Bitfield for control purposes. 0 means normal behavior.
      * @return
@@ -1638,8 +1638,8 @@ int iso_write_opts_set_old_empty(IsoWriteOpts *opts, int enable);
  * @param len
  *      0 = disable this feature and perform name translation according to
  *          other settings.
- *     >0 = Omit any translation. Eventually abort image production
- *          if a name is longer than the given value.
+ *     >0 = Omit any translation. Abort image production if a name is longer
+ *          than the given value.
  *     -1 = Like >0. Allow maximum possible length (currently 96)
  * @return >=0 success, <0 failure
  *         In case of >=0 the return value tells the effectively set len.
@@ -1956,7 +1956,7 @@ int iso_write_opts_set_record_md5(IsoWriteOpts *opts, int session, int files);
  *      A9 = 2009, B0 = 2010, B1 = 2011, ... C0 = 2020, ...
  * @param tag_written
  *      Either NULL or the address of an array with at least 512 characters.
- *      In the latter case the eventually produced scdbackup tag will be
+ *      In the latter case the possibly produced scdbackup tag will be
  *      copied to this array when the image gets written. This call sets
  *      scdbackup_tag_written[0] = 0 to mark its preliminary invalidity.
  * @return
@@ -2152,7 +2152,7 @@ int iso_write_opts_set_ms_block(IsoWriteOpts *opts, uint32_t ms_block);
  * - Together with iso_write_opts_set_appendable(opts, 0) the buffer allows
  *   to write the first session on overwritable media to start addresses
  *   other than 0.
- *   This address must not be smaller than 32 blocks plus the eventual
+ *   This address must not be smaller than 32 blocks plus the possible
  *   partition offset as defined by iso_write_opts_set_part_offset().
  *   libisoburn in most cases writes the first session on overwritable media
  *   and disk files to LBA (32 + partition_offset) in order to preserve its
@@ -2254,8 +2254,8 @@ int iso_write_opts_set_fifo_size(IsoWriteOpts *opts, size_t fifo_size);
  *                 Submit bootloader path in ISO by iso_image_set_alpha_boot().
  *        bit8-9= Only with System area type 0 = MBR
  *              @since 1.0.4
- *              Cylinder alignment mode eventually pads the image to make it
- *              end at a cylinder boundary.
+ *              Cylinder alignment mode pads the image to make it end at a
+ *              cylinder boundary.
  *                0 = auto (align if bit1)
  *                1 = always align to cylinder boundary
  *                2 = never align to cylinder boundary
@@ -2348,7 +2348,7 @@ int iso_write_opts_set_disc_label(IsoWriteOpts *opts, char *label);
  * @param vol_uuid
  *        If this text is not empty, then it overrides vol_creation_time and
  *        vol_modification_time by copying the first 16 decimal digits from
- *        uuid, eventually padding up with decimal '1', and writing a NUL-byte
+ *        uuid, possibly padding up with decimal '1', and writing a NUL-byte
  *        as timezone.
  *        Other than with vol_*_time the resulting string in the ISO image
  *        is fully predictable and free of timezone pitfalls.
@@ -2434,7 +2434,7 @@ int iso_write_opts_set_part_offset(IsoWriteOpts *opts,
 int iso_write_opts_attach_jte(IsoWriteOpts *opts, void *libjte_handle);
 
 /**
- * Remove eventual association to a libjte environment handle.
+ * Remove association to a libjte environment handle.
  * The call will fail if no libjte support was enabled at compile time.
  * @param opts
  *        The option set to be manipulated.
@@ -2451,9 +2451,9 @@ int iso_write_opts_detach_jte(IsoWriteOpts *opts, void **libjte_handle);
 
 /**
  * Cause a number of blocks with zero bytes to be written after the payload
- * data, but before the eventual checksum data. Unlike libburn tail padding,
- * these blocks are counted as part of the image and covered by eventual
- * image checksums.
+ * data, but before the possible checksum data. Unlike libburn tail padding,
+ * these blocks are counted as part of the image and covered by image
+ * checksums.
  * A reason for such padding can be the wish to prevent the Linux read-ahead
  * bug by sacrificial data which still belong to image and Jigdo template.
  * Normally such padding would be the job of the burn program which should know
@@ -3047,7 +3047,7 @@ int iso_read_opts_set_no_iso1999(IsoReadOpts *opts, int noiso1999);
  * existing images.
  * For importing ACL and xattr when inserting nodes from external filesystems
  * (e.g. the local POSIX filesystem) see iso_image_set_ignore_aclea().
- * For eventual writing of this information see iso_write_opts_set_aaip().
+ * For writing of this information see iso_write_opts_set_aaip().
  *
  * @param opts
  *       The option set to be manipulated
@@ -3060,7 +3060,7 @@ int iso_read_opts_set_no_iso1999(IsoReadOpts *opts, int noiso1999);
 int iso_read_opts_set_no_aaip(IsoReadOpts *opts, int noaaip);
 
 /**
- * Control reading of an array of MD5 checksums which is eventually stored
+ * Control reading of an array of MD5 checksums which is possibly stored
  * at the end of a session. See also iso_write_opts_set_record_md5().
  * Important: Loading of the MD5 array will only work if AAIP is enabled
  *            because its position and layout is recorded in xattr "isofs.ca".
@@ -3080,7 +3080,7 @@ int iso_read_opts_set_no_md5(IsoReadOpts *opts, int no_md5);
 
 
 /**
- * Control discarding of eventual inode numbers from existing images.
+ * Control discarding of inode numbers from existing images.
  * Such numbers may come from RRIP 1.12 entries PX. If not discarded they
  * get written unchanged when the file object gets written into an ISO image. 
  * If this inode number is missing with a file in the imported image,
@@ -3095,7 +3095,7 @@ int iso_read_opts_set_no_md5(IsoReadOpts *opts, int no_md5);
  * @param new_inos
  *     1 = Discard imported inode numbers and finally hand out a unique new
  *         one to each single file before it gets written into an ISO image.
- *     0 = Keep eventual inode numbers from PX entries.
+ *     0 = Keep imported inode numbers from PX entries.
  *         All other values are reserved.
  * @since 0.6.20
  */
@@ -3201,17 +3201,17 @@ int iso_read_opts_set_input_charset(IsoReadOpts *opts, const char *charset);
 
 /**
  * Enable or disable methods to automatically choose an input charset.
- * This eventually overrides the name set via iso_read_opts_set_input_charset()
+ * This overrides the name set via iso_read_opts_set_input_charset()
  *
  * @param opts
  *       The option set to be manipulated
  * @param mode
  *       Bitfield for control purposes:
- *       bit0= Allow to use the input character set name which is eventually
+ *       bit0= Allow to use the input character set name which is possibly
  *             stored in attribute "isofs.cs" of the root directory.
  *             Applications may attach this xattr by iso_node_set_attrs() to
  *             the root node, call iso_write_opts_set_output_charset() with the
- *             same name and enable iso_write_opts_set_aaip() when writing
+ *             same name, and enable iso_write_opts_set_aaip() when writing
  *             an image.
  *       Submit any other bits with value 0.
  *
@@ -3495,8 +3495,8 @@ void iso_image_unref(IsoImage *image);
  *      image. You can pass NULL to remove any already attached data.
  * @param give_up
  *      Function that will be called when the image does not need the data
- *      any more. It receives the data pointer as an argumente, and eventually
- *      causes data to be freed. It can be NULL if you don't need it.
+ *      any more. It receives the data pointer as an argument, and should free
+ *      allocated data if needed. give_up may be NULL if not needed.
  * @return
  *      1 on success, < 0 on error
  *
@@ -4389,7 +4389,7 @@ int el_torito_get_isolinux_options(ElToritoBootImage *bootimg, int flag);
 void el_torito_patch_isolinux_image(ElToritoBootImage *bootimg);
 
 /**
- * Obtain a copy of the eventually loaded first 32768 bytes of the imported
+ * Obtain a copy of the possibly loaded first 32768 bytes of the imported
  * session, the System Area.
  * It will be written to the start of the next session unless it gets
  * overwritten by iso_write_opts_set_system_area().
@@ -4641,7 +4641,7 @@ int iso_image_get_system_area(IsoImage *img, char data[32768],
 
 /**
  * Obtain an array of texts describing the detected properties of the
- * eventually loaded System Area.
+ * possibly loaded System Area.
  * The array will be NULL if no System Area was loaded. It will be non-NULL
  * with zero line count if the System Area was loaded and contains only
  * 0-bytes. 
@@ -4741,7 +4741,7 @@ int iso_image_report_system_area(IsoImage *image,
 
 /**
  * Obtain an array of texts describing the detected properties of the
- * eventually loaded El Torito boot information.
+ * possibly loaded El Torito boot information.
  * The array will be NULL if no El Torito info was loaded.
  * Else it will consist of lines as described in ISO_ELTORITO_REPORT_DOC above.
  *
@@ -4831,7 +4831,7 @@ int iso_image_add_mips_boot_file(IsoImage *image, char *path, int flag);
  * @param paths
  *        An array of pointers to be set to the registered boot file paths.
  *        This are just pointers to data inside IsoImage. Do not free() them.
- *        Eventually make own copies of the data before manipulating the image.
+ *        Make own copies of the data before manipulating the image.
  * @param flag
  *        Bitfield for control purposes, unused yet, submit 0
  * @return
@@ -5372,7 +5372,7 @@ time_t iso_node_get_ctime(const IsoNode *node);
 void iso_node_set_hidden(IsoNode *node, int hide_attrs);
 
 /**
- * Get the hide_attrs as eventually set by iso_node_set_hidden().
+ * Get the hide_attrs as possibly set by iso_node_set_hidden().
  *
  * @param node
  *      The node to inquire.
@@ -6889,8 +6889,8 @@ int iso_obtain_msgs(char *minimum_severity, int *error_code, int *imgid,
  * @param msg_text
  *      Not more than ISO_MSGS_MESSAGE_LEN characters of message text.
  * @param os_errno
- *      Eventual errno related to the message. Submit 0 if the message is not
- *      related to a operating system error.
+ *      errno related to the message. Submit 0 if the message is not related
+ *      to an operating system error.
  * @param severity
  *      One of "ABORT", "FATAL", "FAILURE", "SORRY", "WARNING", "HINT", "NOTE",
  *      "UPDATE", "DEBUG". Defaults to "FATAL".
@@ -7020,8 +7020,8 @@ void *iso_get_messenger();
 void iso_file_source_ref(IsoFileSource *src);
 
 /**
- * Drop your ref to the given IsoFileSource, eventually freeing the associated
- * system resources.
+ * Drop your ref to the given IsoFileSource, freeing the associated system
+ * resources if not still needed by other objects.
  *
  * @since 0.6.2
  */
@@ -7256,7 +7256,7 @@ int iso_file_source_readlink(IsoFileSource *src, char *buf, size_t bufsiz);
  *                   on non-NULL results.
  * @param flag       Bitfield for control purposes
  *                   bit0= Transfer ownership of AAIP string data.
- *                         src will free the eventual cached data and might
+ *                         src will free the possibly cached data and might
  *                         not be able to produce it again.
  *                   bit1= No need to get ACL (but no guarantee of exclusion)
  *                   bit2= No need to get xattr (but no guarantee of exclusion)
@@ -7400,8 +7400,8 @@ const char *iso_image_fs_get_biblio_file_id(IsoImageFilesystem *fs);
 void iso_stream_ref(IsoStream *stream);
 
 /**
- * Decrement reference count of an IsoStream, and eventually free it if
- * refcount reach 0.
+ * Decrement reference count of an IsoStream, and free it if reference count
+ * reaches 0.
  *
  * @since 0.6.4
  */
@@ -7491,7 +7491,7 @@ void iso_stream_get_id(IsoStream *stream, unsigned int *fs_id, dev_t *dev_id,
                       ino_t *ino_id);
 
 /**
- * Try to get eventual source path string of a stream. Meaning and availability
+ * Try to get the source path string of a stream. Meaning and availability
  * of this string depends on the stream.class . Expect valid results with
  * types "fsrc" and "cout". Result formats are
  * fsrc: result of file_source_get_path()
@@ -7531,7 +7531,7 @@ int iso_stream_cmp_ino(IsoStream *s1, IsoStream *s2, int flag);
  * Produce a copy of a stream. It must be possible to operate both stream
  * objects concurrently. The success of this function depends on the
  * existence of a IsoStream_Iface.clone_stream() method with the stream
- * and with its eventual subordinate streams. 
+ * and with its subordinate streams, if there are any. 
  * See iso_tree_clone() for a list of surely clonable built-in streams.
  * 
  * @param old_stream
@@ -7584,7 +7584,7 @@ int aaip_xinfo_func(void *data, int flag);
 int aaip_xinfo_cloner(void *old_data, void **new_data, int flag);
 
 /**
- * Get the eventual ACLs which are associated with the node.
+ * Get the ACLs which are associated with the node.
  * The result will be in "long" text form as of man acl and acl_to_text().
  * Call this function with flag bit15 to finally release the memory
  * occupied by an ACL inquiry.
@@ -7592,11 +7592,11 @@ int aaip_xinfo_cloner(void *old_data, void **new_data, int flag);
  * @param node
  *      The node that is to be inquired.
  * @param access_text
- *      Will return a pointer to the eventual "access" ACL text or NULL if it
- *      is not available and flag bit 4 is set.
+ *      Will return a pointer to the "access" ACL text or NULL if it is
+ *      not available and flag bit 4 is set.
  * @param default_text
- *      Will return a pointer to the eventual "default" ACL  or NULL if it
- *      is not available.
+ *      Will return a pointer to the "default" ACL or NULL if it is
+ *      not available.
  *      (GNU/Linux directories can have a "default" ACL which influences
  *       the permissions of newly created files.)
  * @param flag
@@ -7629,11 +7629,11 @@ int iso_node_get_acl_text(IsoNode *node,
  * @param node
  *      The node that is to be manipulated.
  * @param access_text
- *      The text to be set into effect as "access" ACL. NULL will delete an
- *      eventually existing "access" ACL of the node.
+ *      The text to be set into effect as "access" ACL. NULL will delete a
+ *      possibly existing "access" ACL of the node.
  * @param default_text
- *      The text to be set into effect as "default" ACL. NULL will delete an
- *      eventually existing "default" ACL of the node.
+ *      The text to be set into effect as "default" ACL. NULL will delete a
+ *      possibly existing "default" ACL of the node.
  *      (GNU/Linux directories can have a "default" ACL which influences
  *       the permissions of newly created files.)
  * @param flag
@@ -7681,9 +7681,9 @@ mode_t iso_node_get_perms_wo_acl(const IsoNode *node);
  * to manipulate the attribute list before submitting it to other calls.
  *
  * If enabled by flag bit0, this list possibly includes the ACLs of the node.
- * They are eventually encoded in a pair with empty name. It is not advisable
- * to alter the value or name of that pair. One may decide to erase both ACLs
- * by deleting this pair or to copy both ACLs by copying the content of this
+ * They are encoded in a pair with empty name. It is not advisable to alter
+ * the value or name of that pair. One may decide to erase both ACLs by
+ * deleting this pair or to copy both ACLs by copying the content of this
  * pair to an empty named pair of another node.
  * For all other ACL purposes use iso_node_get_acl_text().
  *
@@ -7699,7 +7699,7 @@ mode_t iso_node_get_perms_wo_acl(const IsoNode *node);
  *      Will return an array of pointers to strings of 8-bit bytes
  * @param flag
  *      Bitfield for control purposes
- *      bit0=  obtain eventual ACLs as attribute with empty name
+ *      bit0=  obtain ACLs as attribute with empty name
  *      bit2=  with bit0: do not obtain attributes other than ACLs
  *      bit15= free memory (node may be NULL)
  * @return
@@ -7713,8 +7713,8 @@ int iso_node_get_attrs(IsoNode *node, size_t *num_attrs,
 
 
 /**
- * Obtain the value of a particular xattr name. Eventually make a copy of
- * that value and add a trailing 0 byte for caller convenience.
+ * Obtain the value of a particular xattr name. Make a copy of that value and
+ * add a trailing 0 byte for caller convenience.
  * @param node
  *      The node that is to be inquired.
  * @param name
@@ -7738,8 +7738,8 @@ int iso_node_lookup_attr(IsoNode *node, char *name,
  * The data get copied so that you may dispose your input data afterwards.
  *
  * If enabled by flag bit0 then the submitted list of attributes will not only
- * overwrite xattr but also both eventual ACLs of the node. Eventual ACL in
- * the submitted list have to reside in an attribute with empty name.
+ * overwrite xattr but also both ACLs of the node. ACLs in the submitted list
+ * have to reside in an attribute with empty name.
  *
  * @param node
  *      The node that is to be manipulated.
@@ -7753,11 +7753,11 @@ int iso_node_lookup_attr(IsoNode *node, char *name,
  *      Array of pointers to the value bytes
  * @param flag
  *      Bitfield for control purposes
- *      bit0= Do not maintain eventual existing ACL of the node.
- *            Set eventual new ACL from value of empty name.
+ *      bit0= Do not maintain existing ACLs of the node.
+ *            Set new ACLs from value of empty name.
  *      bit1= Do not clear the existing attribute list but merge it with
  *            the list given by this call.
- *            The given values override the values of their eventually existing
+ *            The given values override the values of their possibly existing
  *            names. If no xattr with a given name exists, then it will be
  *            added as new xattr. So this bit can be used to set a single
  *            xattr without inquiring any other xattr of the node.
@@ -7892,8 +7892,8 @@ int iso_local_get_perms_wo_acl(char *disk_path, mode_t *st_mode, int flag);
  * The resulting data has finally to be disposed by a call to this function
  * with flag bit15 set.
  *
- * Eventual ACLs will get encoded as attribute pair with empty name if this is
- * enabled by flag bit0. An ACL which simply replects stat(2) permissions
+ * ACLs will get encoded as attribute pair with empty name if this is
+ * enabled by flag bit0. An ACL which simply reflects stat(2) permissions
  * will not be put into the result.
  *
  * @param disk_path
@@ -7908,9 +7908,9 @@ int iso_local_get_perms_wo_acl(char *disk_path, mode_t *st_mode, int flag);
  *      Will return an array of pointers to 8-bit values
  * @param flag
  *      Bitfield for control purposes
- *      bit0=  obtain eventual ACLs as attribute with empty name
- *      bit2=  do not obtain attributes other than ACLs
- *      bit3=  do not ignore eventual non-user attributes.
+ *      bit0=  obtain non-trivial ACLs as attribute with empty name
+ *      bit2=  do not obtain attributes other than non-trivial ACLs
+ *      bit3=  do not ignore non-user attributes.
  *             I.e. those with a name which does not begin by "user."
  *      bit5=  in case of symbolic link: inquire link target
  *      bit15= free memory
@@ -7930,7 +7930,7 @@ int iso_local_get_attrs(char *disk_path, size_t *num_attrs, char ***names,
 /**
  * Attach a list of xattr and ACLs to the given file in the local filesystem.
  *
- * Eventual ACLs have to be encoded as attribute pair with empty name.
+ * Given ACLs have to be encoded as attribute pair with empty name.
  *
  * @param disk_path
  *      Absolute path to the file
@@ -7949,8 +7949,8 @@ int iso_local_get_attrs(char *disk_path, size_t *num_attrs, char ***names,
  *      >0 = errno as of local system calls to set xattr and ACLs
  * @param flag
  *      Bitfield for control purposes
- *      bit0=  do not attach ACLs from an eventual attribute with empty name
- *      bit3=  do not ignore eventual non-user attributes.
+ *      bit0=  do not attach ACLs from a given attribute with empty name
+ *      bit3=  do not ignore non-user attributes.
  *             I.e. those with a name which does not begin by "user."
  *      bit5=  in case of symbolic link: manipulate link target
  *      bit6=  @since 1.1.6
@@ -7993,8 +7993,8 @@ int iso_local_set_attrs(char *disk_path, size_t num_attrs, char **names,
  * The consequences are:
  *   iso_file_get_stream() will return the filter stream.
  *   iso_stream_get_size() will return the (cached) size of the filtered data,
- *   iso_stream_open()     will start eventual child processes,
- *   iso_stream_close()    will kill eventual child processes,
+ *   iso_stream_open()     will start child processes if there are any,
+ *   iso_stream_close()    will kill child processes if there are any,
  *   iso_stream_read()     will return filtered data. E.g. as data file content
  *                         during ISO image generation.
  *
@@ -8016,8 +8016,8 @@ int iso_local_set_attrs(char *disk_path, size_t num_attrs, char **names,
  * which was added by iso_file_add_*_filter().
  * Caution: One should not do this while the IsoStream of the file is opened.
  *          For now there is no general way to determine this state.
- *          Filter stream implementations are urged to eventually call .close()
- *          inside method .free() . This will close the input stream too.
+ *          Filter stream implementations are urged to call .close() inside
+ *          method .free() . This will close the input stream too.
  * @param file
  *      The data file node which shall get rid of one layer of content
  *      filtering.
@@ -8032,9 +8032,9 @@ int iso_local_set_attrs(char *disk_path, size_t num_attrs, char **names,
 int iso_file_remove_filter(IsoFile *file, int flag);
 
 /**
- * Obtain the eventual input stream of a filter stream.
+ * Obtain the input stream of a filter stream.
  * @param stream
- *      The eventual filter stream to be inquired.
+ *      The stream to be inquired.
  * @param flag
  *      Bitfield for control purposes.
  *      bit0= Follow the chain of input streams and return the one at the
@@ -8107,7 +8107,7 @@ struct iso_external_filter_command
      */
     int behavior;
 
-    /* The eventual suffix which is supposed to be added to the IsoFile name
+    /* The possible suffix which is supposed to be added to the IsoFile name
      * or to be removed from the name.
      * (This is to be done by the application, not by calls
      *  iso_file_add_external_filter() or iso_file_remove_filter().
@@ -8138,8 +8138,8 @@ int iso_file_add_external_filter(IsoFile *file, IsoExternalFilterCommand *cmd,
                                  int flag);
 
 /**
- * Obtain the IsoExternalFilterCommand which is eventually associated with the
- * given stream. (Typically obtained from an IsoFile by iso_file_get_stream()
+ * Obtain the IsoExternalFilterCommand which is associated with the given
+ * stream. (Typically obtained from an IsoFile by iso_file_get_stream()
  * or from an IsoStream by iso_stream_get_input_stream()).
  * @param stream
  *      The stream to be inquired.
@@ -8421,8 +8421,8 @@ int iso_zisofs_ctrl_susp_z2(int enable);
 
 /**
  * Check for the given node or for its subtree whether the data file content
- * effectively bears zisofs file headers and eventually mark the outcome
- * by an xinfo data record if not already marked by a zisofs compressor filter.
+ * effectively bears zisofs file headers and mark the outcome by an xinfo data
+ * record if not already marked by a zisofs compressor filter.
  * This does not install any filter but only a hint for image generation
  * that the already compressed files shall get written with zisofs ZF entries.
  * Use this if you insert the compressed results of program mkzftree from disk
@@ -8530,16 +8530,16 @@ int iso_image_get_session_md5(IsoImage *image, uint32_t *start_lba,
                               uint32_t *end_lba, char md5[16], int flag);
 
 /**
- * Eventually obtain the recorded MD5 checksum of a data file from the loaded
- * ISO image. Such a checksum may be stored with others in a contiguous
- * array at the end of the loaded session. The data file eventually has an
- * xattr "isofs.cx" which gives the index in that array.
+ * Obtain the recorded MD5 checksum of a data file from the loaded * ISO image.
+ * Such a checksum may be stored with others in a contiguous array at the end
+ * of the loaded session. The data file then has an xattr "isofs.cx" which
+ * gives the index in that array.
  * @param image
  *      The image from which file stems.
  * @param file
  *      The file object to inquire
  * @param md5
- *      Eventually returns 16 byte of MD5 checksum 
+ *      Will be filled with 16 byte of MD5 checksum if available
  * @param flag
  *      Bitfield for control purposes
  *      bit0= only determine return value, do not touch parameter md5
@@ -8561,8 +8561,8 @@ int iso_file_get_md5(IsoImage *image, IsoFile *file, char md5[16], int flag);
  * @param file
  *      The file object to read data from and to which to attach the checksum.
  *      If the file is from the imported image, then its most original stream
- *      will be checksummed. Else the eventual filter streams will get into
- *      effect.
+ *      will be checksummed. Else the possible filter streams of file will get
+ *      into effect.
  * @param flag
  *      Bitfield for control purposes. Unused yet. Submit 0.
  * @return
@@ -9569,7 +9569,7 @@ struct burn_source {
 	/** Program the reply of (*get_size) to a fixed value. It is advised
 	    to implement this by a attribute  off_t fixed_size;  in *data .
 	    The read() function does not have to take into respect this fake
-	    setting. It is rather a note of libburn to itself. Eventually
+	    setting. It is rather a note of libburn to itself. Possibly
 	    necessary truncation or padding is done in libburn. Truncation
 	    is usually considered a misburn. Padding is considered ok.
 
