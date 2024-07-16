@@ -900,6 +900,26 @@ int aaip_add_acl_st_mode(char *acl_text, mode_t st_mode, int flag)
 }
 
 
+int aaip_encode_lfa_flags(uint64_t lfa_flags, unsigned char value[8],
+                          int *length, int flag)
+{
+ int i, l;
+
+ *length = 1;
+ value[0] = 0;
+
+ /* How many bytes are needed to catch all set bits ? Minimum is 1. */
+ l= 8;
+ for(i= 1; i < l; i++)
+   if(lfa_flags < (uint64_t) 1 << (i * 8))
+ break;
+ *length= i;
+ for(i= 0; i < *length; i++)
+   value[*length - 1 - i]= (lfa_flags >> (8 * i)) & 0xff;
+ return(1);
+}
+
+
 /* --------------------------------- Decoder ---------------------------- */
 
 /* --- private --- */

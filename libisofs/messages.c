@@ -573,6 +573,10 @@ const char *iso_error_to_msg(int errcode)
         return "Too many CE entries for single file when mounted by Linux";
     case ISO_CE_REMOVING_ATTR:
         return "Too many CE entries for single file, removing attributes";
+    case ISO_LFA_UNKNOWN_LETTER:
+        return "Unknown Linux-like chattr letter encountered during conversion";
+    case ISO_LFA_UNKNOWN_BIT:
+        return "Unknown Linux-like file attribute flag bit encountered during conversion";
     default:
         return "Unknown error";
     }

@@ -9,7 +9,7 @@
 
  test/aaip_0_2.h - Public declarations
 
- Copyright (c) 2009 - 2016 Thomas Schmitt
+ Copyright (c) 2009 - 2024 Thomas Schmitt
 
  This file is part of the libisofs project; you can redistribute it and/or
  modify it under the terms of the GNU General Public License version 2
@@ -155,6 +155,17 @@ int aaip_cleanout_st_mode(char *acl_text, mode_t *st_mode, int flag);
 int aaip_add_acl_st_mode(char *acl_text, mode_t st_mode, int flag);
 
 
+/* Encode a Linux style file attribute flag bits array to a byte string
+   which represents the flags bits in isofs.fa .
+   @param lfa_flags   Bit array as obtained by aaip_get_lfa_flags()
+   @param value       Will be filled with 1 to 8 byte values
+   @param length      Will return the number of filled-in value bytes
+   @return            <0 failure
+*/
+int aaip_encode_lfa_flags(uint64_t lfa_flags, unsigned char value[8],
+                          int *length, int flag);
+
+
 /* ------ OS interface ------ */
 
 /* See also API iso_local_attr_support().
@@ -162,14 +173,17 @@ int aaip_add_acl_st_mode(char *acl_text, mode_t st_mode, int flag);
         Bitfield for control purposes
              bit0= inquire availability of ACL
              bit1= inquire availability of xattr
-             bit2 - bit7= Reserved for future types.
+             bit2= inquire availability of Linux-like file attribute flags
+             bit3 - bit7= Reserved for future types.
                           It is permissibile to set them to 1 already now.
              bit8 and higher: reserved, submit 0
    @return
         Bitfield corresponding to flag. If bits are set, th
              bit0= ACL adapter is enabled
              bit1= xattr adapter is enabled
-             bit2 - bit7= Reserved for future types.
+             bit2= Linux-like file attribute flags adapter is enabled
+             bit3 - bit7= Reserved for future types.
+                          It is permissibile to set them to 1 already now.
              bit8 and higher: reserved, do not interpret these
 */
 int aaip_local_attr_support(int flag);
@@ -210,12 +224,37 @@ int aaip_get_acl_text(char *path, char **text, int flag);
                                I.e. those with a name which does not begin
                                by "user."
                         bit4=  do not return trivial ACL that matches st_mode
+                        bit5=  in case of symbolic link: inquire link target
+                        bit6=  do not obtain Linux style file attribute flags
+                               (chattr)
                         bit15= free memory of names, value_lengths, values
    @return              >0  ok
                         <=0 error
 */
 int aaip_get_attr_list(char *path, size_t *num_attrs, char ***names,
                        size_t **value_lengths, char ***values, int flag);
+
+
+/* Obtain the file attribute flags of the given file as bit array in uint64_t.
+   The bit numbers are compatible to the FS_*_FL definitions in Linux
+   include file <linux/fs.h>. A (possibly outdated) copy of them is in
+   doc/susp_aaip_isofs_names.txt, name isofs.fa .
+   The attribute flags of other systems may or may not be mappable to these
+   flags.
+   @param path          Path to the file
+   @param lfa_flags     Will get filled with the FS_*_FL
+   @param max_bit       Will tell the highest bit that is possibly set
+                        (-1 = surely no bit is valid)
+   @param os_errno      Will get filled with errno if a system call fails
+   @param flag          Bitfield for control purposes. Submit 0.
+   @return              1= ok, all local attribute flags are in lfa_flags
+                        2= ok, but some local flags could not be mapped to
+                           the FS_*_FL bits
+                        0= local flags retrieval not enabled at compile time
+                        <0 error with system calls
+*/
+int aaip_get_lfa_flags(char *path, uint64_t *lfa_flags, int *max_bit,
+                       int *os_errno, int flag);
 
 
 /* --------------------------------- Decoder ---------------------------- */
@@ -514,6 +553,30 @@ int aaip_set_acl_text(char *path, char *text, int flag);
 int aaip_set_attr_list(char *path, size_t num_attrs, char **names,
                        size_t *value_lengths, char **values,
                        int *errnos, int flag);
+
+
+/* Bring the given file attribute flags into effect with the given file.
+   The bit numbers are compatible to the FS_*_FL definitions in Linux
+   include file <linux/fs.h>. A (possibly outdated) copy of them is in
+   doc/susp_aaip_isofs_names.txt, name isofs.fa .
+   The attribute flags of other systems may or may not be mappable to these
+   flags.
+   @param path          Path to the file
+   @param lfa_flags     File attribute flag bits
+   @param max_bit       Gives an upper limit of the highest set flag bit.
+                        (-1 = surely no bit is valid)
+                        On Linux this must be smaller than sizeof(long) * 8.
+   @param os_errno      Will get filled with errno if a system call fails
+   @param flag          Bitfield for control purposes. Submit 0.
+   @return              1= ok, all lfa_flags bits were written
+                        2= ok, but some FS_*_FL bits could not be mapped to
+                           local flags
+                        0= local flags setting not enabled at compile time
+                        <0 error with system calls or with max_bit
+*/
+int aaip_set_lfa_flags(char *path, uint64_t lfa_flags, int max_bit,
+                       int *os_errno, int flag);
+
 
 #endif /* ! Aaip_h_is_includeD */
 

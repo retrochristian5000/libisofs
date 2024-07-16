@@ -1,6 +1,6 @@
 
 # Copyright (c) 2007 Vreixo Formoso
-# Copyright (c) 2009 - 2019 Thomas Schmitt
+# Copyright (c) 2009 - 2024 Thomas Schmitt
 # Provided under the terms of the GNU General Public License version 2 or later.
 
 # ts A90315 : LIBBURNIA_PKGCONFDIR is defined OS specific in acinclude.m4
@@ -22,11 +22,12 @@ ACLOCAL_AMFLAGS = -I ./
 libisofs_libisofs_la_LDFLAGS = \
 	-version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE) $(LIBLDFLAGS)
 
-# Eventually enabling system adapters for ACL and EA.
-# ts A90409: Eventually enabling use of zlib.
-# ts B00927: Eventually enabling use of libjte (Jigdo Template Extraction)
-libisofs_libisofs_la_CFLAGS = $(LIBACL_DEF) $(XATTR_DEF) $(ZLIB_DEF) \
-                              $(LIBJTE_DEF)
+# Enabling system adapters for ACL and EA.
+# ts A90409: Enabling use of zlib.
+# ts B00927: Enabling use of libjte (Jigdo Template Extraction)
+# ts C40713: Enabling system adapter for Linux chattr(1) flags
+libisofs_libisofs_la_CFLAGS = $(LIBACL_DEF) $(XATTR_DEF) $(LFA_DEF) \
+                              $(ZLIB_DEF) $(LIBJTE_DEF)
 
 # ts A90114 : added aaip_0_2.*
 

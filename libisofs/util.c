@@ -2510,3 +2510,103 @@ int iso_nowtime(time_t *now, int flag)
     return 2;
 }
 
+
+/* Bit sequence as of Linux 6.1.0 <linux/fs.h> FS_*_FL .
+   Letters as of e2fsprogs 1.47.1, man chattr and lib/pf.c for lsattr(1).
+*/
+static char lfa_flag_letters[] = { 's', 'u', 'c', 'S', 'i', 'a', 'd', 'A',
+                                   'Z', '-', 'm', 'E', 'I', '-', 'j', 't',
+                                   'D', 'T', 'h', 'e', 'V', '-', '-', 'C',
+                                   '-', 'x', '-', '-', 'N', 'P', 'F', '-' };
+
+/* Sequence and coverage as of e2fsprogs 1.47.1, lib/pf.c for lsattr(1) */
+
+static int lsattr_permutation[] = {  0,  1,  3, 16,  4,  5,  6,  7,
+                                     2, 11, 14, 12, 15, 17, 19, 23,
+                                    25, 30, 28, 29, 20, 10, -1};
+static int num_lsattr_bits = 22;
+static int max_lsattr_bit = 30;
+static int non_lsattr_bits[] = {  8, 9, 13, 18, 21, 22, 24, 26, 27, -1 };
+
+
+/* @param flag bit0= produce lsattr format with '-' and peculiar sequence
+*/
+int iso_util_encode_lfa_flags(uint64_t lfa_flags, char **flags_text, int flag)
+{
+    int i, len = 0, w = 0, was_unknown = 0, pi;
+
+    *flags_text = NULL;
+    if (flag & 1)
+        goto lsattr_format;
+
+    for (i = 0; i < 64; i++)
+      if (lfa_flags & (((uint64_t) 1) << i))
+        len++;
+    *flags_text = calloc(len + 1, 1);
+    if (*flags_text == NULL)
+        return ISO_OUT_OF_MEM;
+
+    for (i = 0; i < 64; i++) {
+        if (!(lfa_flags & (((uint64_t) 1) << i)))
+    continue;
+        if (lfa_flag_letters[i] == '-') {
+            was_unknown = 1;
+        } else {
+            (*flags_text)[w++] = lfa_flag_letters[i];
+        }
+    }
+    flags_text[w] = 0;
+    if (was_unknown)
+        return ISO_LFA_UNKNOWN_BIT;
+    return ISO_SUCCESS;
+
+lsattr_format:;
+
+    *flags_text = calloc(num_lsattr_bits + 1, 1);
+    if (*flags_text == NULL)
+        return ISO_OUT_OF_MEM;
+
+    for (i = 0; i < num_lsattr_bits; i++) {
+        pi = lsattr_permutation[i];
+        if (pi < 0)
+    break;
+        if (lfa_flags & (((uint64_t) 1) << pi)) {
+            (*flags_text)[w++] = lfa_flag_letters[pi];
+        } else {
+            (*flags_text)[w++] = '-';
+        }
+    }
+    (*flags_text)[num_lsattr_bits] = 0;
+
+    for (i = 0; non_lsattr_bits[i] >= 0; i++)
+        if (lfa_flags & (((uint64_t) 1) << non_lsattr_bits[i]))
+            return ISO_LFA_UNKNOWN_BIT;
+    for (i= max_lsattr_bit + 1; i < 63; i++)
+        if (lfa_flags & (((uint64_t) 1) << i))
+            return ISO_LFA_UNKNOWN_BIT;
+    return ISO_SUCCESS;
+}
+
+
+int iso_util_decode_lfa_flags(char *flags_text, uint64_t *lfa_flags, int flag)
+{
+    int i, j, was_unknown = 0;
+
+    *lfa_flags = 0;
+    for (i = 0; flags_text[i] != 0; i++) {
+        if (flags_text[i] == '-')
+    continue;
+        for (j = 0; j < 64; j++)
+            if (lfa_flag_letters[j] == flags_text[i])
+        break;
+        if (j >= 64) {
+            was_unknown = 1;
+    continue;
+        }
+        *lfa_flags |= ((uint64_t) 1) << j;
+    }
+    if (was_unknown)
+        return ISO_LFA_UNKNOWN_LETTER;
+    return 1;
+}
+

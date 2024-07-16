@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2009 - 2023 Thomas Schmitt
+ * Copyright (c) 2009 - 2024 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -2057,6 +2057,7 @@ ex:;
 
 /* @param flag
         bit0= delete ACL, too
+        bit1= delete file attribute flags (isofs.fa), too
 */
 int iso_node_remove_fattr(IsoNode *node, int flag)
 {
@@ -2072,7 +2073,8 @@ int iso_node_remove_fattr(IsoNode *node, int flag)
     /* Delete variables of all namespaces except isofs */
     w = 0;
     for (i = 0; i < num_attrs; i++) {
-        if (strncmp(names[i], "isofs.", 6) != 0) {
+        if (strncmp(names[i], "isofs.", 6) != 0 ||
+            ((flag & 2) && strcmp(names[i], "isofs.fa") == 0)) {
             free(names[i]);
             names[i] = NULL;
             free(values[i]);
@@ -2449,6 +2451,53 @@ mode_t iso_node_get_perms_wo_acl(const IsoNode *node)
 ex:;
     iso_node_get_acl_text((IsoNode *) node, &a_text, &d_text, 1 << 15);
     return st_mode;
+}
+
+
+int iso_node_set_lfa_flags(IsoNode *node, uint64_t lfa_flags, int flag)
+{
+    static char *names = "isofs.fa";
+    static size_t value_lengths[1];
+    unsigned char value[8];
+    char *valuept;
+    int ret, l;
+
+    ret = aaip_encode_lfa_flags(lfa_flags, value, &l, 0);
+    if (ret < 0)
+        return ret; 
+    value_lengths[0] = l;
+    valuept= (char *) value;
+    ret = iso_node_set_attrs(node, (size_t) 1,
+                             &names, value_lengths, &valuept, 2 | 8);
+    return ret;
+}
+
+
+int iso_node_get_lfa_flags(IsoNode *node, uint64_t *lfa_flags, int *max_bit,
+                           int flag)
+{
+    int ret, i;
+    size_t value_len;
+    char *value = NULL;
+
+    *lfa_flags = 0;
+    *max_bit = -1;
+
+    ret = iso_node_lookup_attr(node, "isofs.fa", &value_len, &value, 0);
+    if (ret <= 0)
+        return ret;
+    if (value_len <= 0) {
+        *max_bit = 7;
+        return 1;
+    }
+    if (value_len > 8) {
+        value += value_len - 8;
+        value_len = 8;
+    }
+    for (i = 0; i < (int) value_len; i++)
+        *lfa_flags = (*lfa_flags << 8) | ((unsigned char *) value)[i];
+    *max_bit = value_len * 8 - 1;
+    return 1;
 }
 
 

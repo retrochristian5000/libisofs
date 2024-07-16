@@ -7,7 +7,7 @@
 
  To be included by aaip_0_2.c for Linux
 
- Copyright (c) 2009 - 2022 Thomas Schmitt
+ Copyright (c) 2009 - 2024 Thomas Schmitt
 
  This file is part of the libisofs project; you can redistribute it and/or
  modify it under the terms of the GNU General Public License version 2
@@ -42,6 +42,11 @@
 #endif
 #endif
 
+#ifdef Libisofs_with_aaip_lfa_flagS
+#include <sys/ioctl.h>
+#include <linux/fs.h>
+#endif
+ 
 
 /* ------------------------------ Inquiry --------------------------------- */
 
@@ -50,14 +55,16 @@
         Bitfield for control purposes
              bit0= inquire availability of ACL
              bit1= inquire availability of xattr
-             bit2 - bit7= Reserved for future types.
+             bit2= inquire availability of Linux-like file attribute flags
+             bit3 - bit7= Reserved for future types.
                           It is permissibile to set them to 1 already now.
              bit8 and higher: reserved, submit 0
    @return
         Bitfield corresponding to flag. If bits are set, th
              bit0= ACL adapter is enabled
              bit1= xattr adapter is enabled
-             bit2 - bit7= Reserved for future types.
+             bit2= Linux-like file attribute flags adapter is enabled
+             bit3 - bit7= Reserved for future types.
              bit8 and higher: reserved, do not interpret these
 */
 int aaip_local_attr_support(int flag)
@@ -68,9 +75,19 @@ int aaip_local_attr_support(int flag)
  if(flag & 1)
    ret|= 1;
 #endif
+
 #ifdef Libisofs_with_aaip_xattR
  if(flag & 2)
    ret|= 2;
+#endif
+
+#ifdef Libisofs_with_aaip_lfa_flagS
+#ifdef FS_IOC_GETFLAGS
+#ifdef FS_IOC_SETFLAGS
+ if(flag & 4)
+   ret|= 4;
+#endif
+#endif
 #endif
 
  return(ret);
@@ -260,6 +277,8 @@ static int get_single_attr(char *path, char *name, size_t *value_length,
                                by "user."
                         bit4=  do not return trivial ACL that matches st_mode
                         bit5=  in case of symbolic link: inquire link target
+                        bit6=  do not obtain Linux style file attribute flags
+                               (chattr)
                         bit15= free memory of names, value_lengths, values
    @return              1  ok
                         (reserved for FreeBSD: 2 ok, no permission to inspect
@@ -287,6 +306,11 @@ int aaip_get_attr_list(char *path, size_t *num_attrs, char ***names,
 #endif
 #ifdef Libisofs_aaip_get_attr_activE
  ssize_t i, num_names= 0;
+#endif
+#ifdef Libisofs_with_aaip_lfa_flagS
+ uint64_t lfa_flags;
+ int max_bit, os_errno, lfa_length;
+ unsigned char lfa_value[8];
 #endif
 
  if(flag & (1 << 15)) { /* Free memory */
@@ -351,6 +375,13 @@ ex:;
 
 #endif
 
+#ifdef Libisofs_with_aaip_lfa_flagS
+
+ if(!(flag & 64))
+   num_names++;
+
+#endif
+
  if(num_names == 0)
    {ret= 1; goto ex;}
  (*names)= calloc(num_names, sizeof(char *));
@@ -397,7 +428,7 @@ ex:;
    aaip_get_acl_text(path, &a_acl_text, flag & (16 | 32));
    aaip_get_acl_text(path, &d_acl_text, 1 | (flag & 32));
    if(a_acl_text == NULL && d_acl_text == NULL)
-     {ret= 1; goto ex;}
+     goto try_lfa_flags;
    ret= aaip_encode_both_acl(a_acl_text, d_acl_text, (mode_t) 0,
                              &acl_len, &acl, (flag & 2));
    if(ret <= 0)
@@ -414,6 +445,30 @@ ex:;
  }
 
 #endif /* Libisofs_with_aaip_acL */
+
+try_lfa_flags:;
+
+#ifdef Libisofs_with_aaip_lfa_flagS
+
+ if(!(flag & 64)) {
+   ret= aaip_get_lfa_flags(path, &lfa_flags, &max_bit, &os_errno, 0);
+   if(ret > 0) {
+     ret= aaip_encode_lfa_flags(lfa_flags, lfa_value, &lfa_length, 0);
+     if(ret > 0) {
+       (*names)[*num_attrs]= strdup("isofs.fa");
+       if((*names)[*num_attrs] == NULL)
+         {ret= -1; goto ex;}
+       (*values)[*num_attrs]= calloc(lfa_length, 1);
+       if((*values)[*num_attrs] == NULL)
+         {ret= -1; goto ex;}
+       memcpy((*values)[*num_attrs], (char *) lfa_value, lfa_length);
+       (*value_lengths)[*num_attrs]= lfa_length;
+       (*num_attrs)++;
+     }
+   }
+ }
+
+#endif /* Libisofs_with_aaip_lfa_flagS */
 
  ret= 1;
 ex:;
@@ -452,6 +507,69 @@ ex:;
 
 #endif /* Libisofs_aaip_get_attr_activE */
 
+}
+
+
+/* Obtain the file attribute flags of the given file as bit array in uint64_t.
+   The bit numbers are compatible to the FS_*_FL definitions in Linux
+   include file <linux/fs.h>. A (possibly outdated) copy of them is in
+   doc/susp_aaip_isofs_names.txt, name isofs.fa .
+   The attribute flags of other systems may or may not be mappable to these
+   flags.
+   @param path          Path to the file
+   @param lfa_flags     Will get filled with the FS_*_FL
+   @param max_bit       Will tell the highest bit that is possibly set
+                        (-1 = surely no bit is valid)
+   @param flag          Bitfield for control purposes. Submit 0.
+   @return              1= ok, all local attribute flags are in lfa_flags
+                        2= ok, but some local flags could not be mapped to
+                           the FS_*_FL bits
+                        0= local flag retrieval not enabled at compile time
+                        <0 error with system calls
+*/
+int aaip_get_lfa_flags(char *path, uint64_t *lfa_flags, int *max_bit,
+                       int *os_errno, int flag)
+{
+ int ret= 0;
+
+#ifdef Libisofs_with_aaip_lfa_flagS
+ int fd;
+ long ioctl_result= 0;
+#endif
+
+ *lfa_flags= 0;
+ *max_bit= -1;
+ *os_errno= 0;
+
+#ifdef Libisofs_with_aaip_lfa_flagS
+#ifdef FS_IOC_GETFLAGS
+ fd= open(path, O_RDONLY | O_NDELAY);
+ if(fd == -1) {
+   aaip_local_error("open", path, errno, 0);
+   *os_errno= errno;
+   return(-1);
+ }
+ ret= ioctl(fd, FS_IOC_GETFLAGS, &ioctl_result);
+ close(fd);
+ if(ret == -1) {
+   aaip_local_error("ioctl(FS_IOC_GETFLAGS)", path, errno, 0);
+   *os_errno= errno;
+   return(-1);
+ }
+ *lfa_flags= ioctl_result;
+ if(*lfa_flags < 1 << 24)
+   *max_bit= 23;
+ else if(*lfa_flags < (uint64_t) 1 << 32)
+   *max_bit= 31;
+ else
+   *max_bit= sizeof(long) * 8 - 1;
+
+ ret= 1;
+   
+#endif /* FS_IOC_GETFLAGS */
+#endif /* Libisofs_with_aaip_lfa_flagS */
+
+ return(ret);
 }
 
 
@@ -744,6 +862,52 @@ ex:;
  if(list != NULL)
    free(list);
 #endif
+
+ return(ret);
+}
+
+
+int aaip_set_lfa_flags(char *path, uint64_t lfa_flags, int max_bit,
+                       int *os_errno, int flag)
+{
+ int ret= 0;
+
+#ifdef Libisofs_with_aaip_lfa_flagS
+ int fd;
+ long ioctl_arg;
+#endif
+
+ *os_errno= 0;
+
+#ifdef Libisofs_with_aaip_lfa_flagS
+#ifdef FS_IOC_GETFLAGS
+
+ if(max_bit > (int) sizeof(long) * 8 - 1) {
+   aaip_local_error("ioctl(FS_IOC_SETFLAGS) with too many bits", path, 0, 0);
+   return(-1);
+ }
+   
+ fd= open(path, O_RDONLY | O_NDELAY);
+ if(fd == -1) {
+   aaip_local_error("open", path, errno, 0);
+   *os_errno= errno;
+   return(-1);
+ }
+ if(max_bit < 0)
+   ioctl_arg= 0;
+ else
+   ioctl_arg= lfa_flags;
+ ret= ioctl(fd, FS_IOC_SETFLAGS, ioctl_arg);
+ close(fd);
+ if(ret == -1) {
+   aaip_local_error("ioctl(FS_IOC_SETFLAGS)", path, errno, 0);
+   *os_errno= errno;
+   return(-1);
+ }
+ ret= 1;
+   
+#endif /* FS_IOC_GETFLAGS */
+#endif /* Libisofs_with_aaip_lfa_flagS */
 
  return(ret);
 }

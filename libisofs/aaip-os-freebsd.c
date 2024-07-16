@@ -7,7 +7,7 @@
 
  To be included by aaip_0_2.c for FreeBSD, NetBSD, and OpenBSD
 
- Copyright (c) 2009 - 2016 Thomas Schmitt
+ Copyright (c) 2009 - 2024 Thomas Schmitt
 
  This file is part of the libisofs project; you can redistribute it and/or
  modify it under the terms of the GNU General Public License version 2
@@ -388,6 +388,9 @@ static int get_single_attr(char *path, char *name, size_t *value_length,
                                by "user."
                         bit4=  do not return trivial ACL that matches st_mode
                         bit5=  in case of symbolic link: inquire link target
+                        bit6=  do not obtain Linux style file attribute flags
+                               (chattr).
+                               This obtaining is not implemented here anyways.
                         bit15= free memory of names, value_lengths, values
    @return              1   ok
                         2   ok, no permission to inspect non-user namespaces
@@ -601,6 +604,10 @@ ex:;
                                I.e. those which are not from name space
                                EXTATTR_NAMESPACE_USER
                         bit4=  do not return trivial ACL that matches st_mode
+                        bit5=  in case of symbolic link: inquire link target
+                        bit6=  do not obtain Linux style file attribute flags
+                               (chattr).
+                               This obtaining is not implemented here anyways.
                         bit15= free memory of names, value_lengths, values
    @return              >0  ok
                         <=0 error
@@ -703,6 +710,19 @@ ex:;
 }
 
 #endif /* Libisofs_old_freebsd_acl_adapteR */
+
+
+/* Obtain the file attribute flags of the given file as bit array in uint64_t.
+   The bit numbers are compatible to the FS_*_FL definitions in Linux.
+*/
+int aaip_get_lfa_flags(char *path, uint64_t *lfa_flags, int *max_bit,
+                       int *os_errno, int flag)
+{
+ *lfa_flags= 0;
+ *max_bit= -1;
+ *os_errno= 0;
+ return(0);
+}
 
 
 /* ------------------------------ Setters --------------------------------- */
@@ -1093,4 +1113,13 @@ ex:;
 }
 
 #endif /* Libisofs_old_freebsd_acl_adapteR */
+
+
+int aaip_set_lfa_flags(char *path, uint64_t lfa_flags, int max_bit,
+                       int *os_errno, int flag)
+{
+ *os_errno= 0;
+ return(0);
+}
+
 

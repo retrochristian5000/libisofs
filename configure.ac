@@ -207,7 +207,7 @@ AC_ARG_ENABLE(xattr,
               [  --enable-xattr          Enable use of extended file attributes by libisofs, default=yes],
               , enable_xattr=yes)
 AC_ARG_ENABLE(xattr_h_pref_attr,
-              [  --enable-xattr-h-pref-attr   Prefer include file attr/xattr.h over sys/xattr.h, default=no],
+              [  --enable-xattr-h-pref-attr  Prefer include file attr/xattr.h over sys/xattr.h, default=no],
               , enable_xattr_h_pref_attr=no)
 
 XATTR_DEF=
@@ -286,6 +286,21 @@ XATTR_DEF="$XATTR_DEF $XATTR_ADDON_DEF"
 
 AC_SUBST(XATTR_DEF)
 
+dnl ts C40713
+LFA_DEF=
+AC_ARG_ENABLE(linux-attr-flags,
+[  --enable-linux-attr-flags   Enable processing of Linux chattr(1) flags, default=yes],
+               , linux_attr_flags=yes)
+if test x"$linux_attr_flags" = xyes; then
+    AC_CHECK_HEADER(linux/fs.h, LFA_DEF="-DLibisofs_with_aaip_lfa_flagS",
+                    LFA_DEF=)
+fi
+if test x"$LFA_DEF" = x; then
+    echo "disabled Linux chattr(1) flags"
+else
+    echo "enabled  Linux chattr(1) flags"
+fi
+AC_SUBST(LFA_DEF)
 
 dnl ts A90409
 AC_ARG_ENABLE(zlib,
@@ -306,7 +321,7 @@ AC_SUBST(ZLIB_DEF)
 
 dnl ts B00927
 AC_ARG_ENABLE(libjte,
-[  --enable-libjte           Enable use of libjte >= 2.0 by libisofs, default=yes],
+[  --enable-libjte         Enable use of libjte >= 2.0 by libisofs, default=yes],
                , enable_libjte=yes)
 if test "x$enable_libjte" = xyes; then
     LIBJTE_DEF="-DLibisofs_with_libjtE"

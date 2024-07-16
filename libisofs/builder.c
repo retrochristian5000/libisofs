@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2009 - 2015 Thomas Schmitt
+ * Copyright (c) 2009 - 2024 Thomas Schmitt
  * 
  * This file is part of the libisofs project; you can redistribute it and/or 
  * modify it under the terms of the GNU General Public License version 2 
@@ -253,7 +253,8 @@ int default_create_node(IsoNodeBuilder *builder, IsoImage *image,
     ret = iso_file_source_get_aa_string(src, &aa_string,
             1 | (image->builder_ignore_acl << 1) |
                 (image->builder_ignore_ea << 2) |
-                (image->builder_take_all_ea << 3));
+                (image->builder_take_all_ea << 3) |
+                ((!image->builder_ignore_lfa_flags) << 4));
     if(ret == 2)
       image->blind_on_local_get_attrs = 1;
     if (ret > 0 && aa_string != NULL) {

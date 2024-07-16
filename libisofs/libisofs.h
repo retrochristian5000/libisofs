@@ -1307,6 +1307,10 @@ int iso_image_new(const char *name, IsoImage **image);
  *     A bit field which sets the behavior:
  *     bit0= ignore ACLs if the external file object bears some
  *     bit1= ignore xattr if the external file object bears some
+ *     bit2= read Linux-like file attribute flags (chattr)
+ *           if the external file object bears some.
+ *           (I.e. a do-not-ignore, because ignoring was default before)
+ *           @since 1.5.8
  *     bit3= if not bit1: import all xattr namespaces, not only "user."
  *           @since 1.5.0
  *     all other bits are reserved
@@ -7263,6 +7267,9 @@ int iso_file_source_readlink(IsoFileSource *src, char *buf, size_t bufsiz);
  *                   bit3= if not bit2: import all xattr namespaces from
  *                                      local filesystem, not only "user."
  *                         @since 1.5.0
+ *                   bit4= Try to get Linux-like file attribute flags (chattr)
+ *                         as "isofs.fa"
+ *                         @since 1.5.8
  * @return           1 means success (*aa_string == NULL is possible)
  *                  <0 means failure and must b a valid libisofs error code
  *                     (e.g. ISO_FILE_ERROR if no better one can be found).
@@ -7780,6 +7787,53 @@ int iso_node_set_attrs(IsoNode *node, size_t num_attrs, char **names,
                        size_t *value_lengths, char **values, int flag);
 
 
+/**
+ * Obtain the Linux-like file attribute flags (chattr) as bit array.
+ * The bit numbers are compatible to the FS_*_FL definitions in Linux
+ * include file <linux/fs.h>. A (possibly outdated) copy of them is in
+ * doc/susp_aaip_isofs_names.txt, name isofs.fa .
+ * 
+ * @param node
+ *      The node that is to be inquired.
+ * @param lfa_flags
+ *      Will get filled with the FS_*_FL bits
+ * @param max_bit
+ *      Will tell the highest bit that is possibly set
+ *      (-1 = surely no bit is valid)
+ * @param flag
+ *      Bitfield for control purposes. Submit 0.
+ * @return
+ *      1 = ok, lfa_flags and max_bit are valid
+ *      0 = no Linux-like file attributes are associated with the node
+ *    < 0 = error
+ *
+ * @since 1.5.8
+ */
+int iso_node_get_lfa_flags(IsoNode *node, uint64_t *lfa_flags, int *max_bit,
+                           int flag);
+
+/**
+ * Set the Linux-like file attribute flags (chattr) which are associated with
+ * the node.
+ * The bit numbers are compatible to the FS_*_FL definitions in Linux
+ * include file <linux/fs.h>. A (possibly outdated) copy of them is in
+ * doc/susp_aaip_isofs_names.txt, name isofs.fa .
+ *
+ * @param node
+ *      The node that is to be manipulated.
+ * @param lfa_flags
+ *      File attribute flag bits
+ * @param flag
+ *      Bitfield for control purposes. Submit 0.
+ * @return
+ *      1 = ok
+ *    < 0 = error
+ *
+ * @since 1.5.8
+ */
+int iso_node_set_lfa_flags(IsoNode *node, uint64_t lfa_flags, int flag);
+
+
 /* ----- This is an interface to ACL and xattr of the local filesystem ----- */
 
 /**
@@ -7806,7 +7860,10 @@ int iso_node_set_attrs(IsoNode *node, size_t num_attrs, char **names,
  *      Bitfield corresponding to flag.
  *           bit0= ACL adapter is enabled
  *           bit1= xattr adapter is enabled
- *           bit2 - bit7= Reserved for future types.
+ *           bit2= Linux-like file attribute flags (chattr) adapter is enabled
+ *                 @since 1.5.8
+ *           bit3 - bit7= Reserved for future types.
+ *                        It is permissibile to set them to 1 already now.
  *           bit8 and higher: reserved, do not interpret these
  *
  * @since 1.1.6
@@ -7888,7 +7945,8 @@ int iso_local_get_perms_wo_acl(char *disk_path, mode_t *st_mode, int flag);
 
 
 /**
- * Get xattr and non-trivial ACLs of the given file in the local filesystem.
+ * Get xattr, non-trivial ACLs, and possible Linux-like file attribute flags
+ * (chattr) of the given file in the local filesystem.
  * The resulting data has finally to be disposed by a call to this function
  * with flag bit15 set.
  *
@@ -7913,6 +7971,7 @@ int iso_local_get_perms_wo_acl(char *disk_path, mode_t *st_mode, int flag);
  *      bit3=  do not ignore non-user attributes.
  *             I.e. those with a name which does not begin by "user."
  *      bit5=  in case of symbolic link: inquire link target
+ *      bit6=  obtain Linux-like file attribute flags (chattr) as "isofs.fa"
  *      bit15= free memory
  * @return
  *        1 ok
@@ -7976,6 +8035,121 @@ int iso_local_set_attrs_errno(char *disk_path, size_t num_attrs, char **names,
  */
 int iso_local_set_attrs(char *disk_path, size_t num_attrs, char **names,
                         size_t *value_lengths, char **values, int flag);
+
+
+/**
+ * Obtain the Linux-like file attribute flags (chattr) of the given file as
+ * bit array.
+ * The bit numbers are compatible to the FS_*_FL definitions in Linux
+ * include file <linux/fs.h>. A (possibly outdated) copy of them is in
+ * doc/susp_aaip_isofs_names.txt, name isofs.fa .
+ * The attribute flags of other systems may or may not be mappable to these
+ * flags.
+ * @param disk_path
+ *      Path to the file
+ * @param lfa_flags
+ *      Will get filled with the FS_*_FL bits
+ * @param max_bit
+ *      Will tell the highest bit that is possibly set
+ *      (-1 = surely no bit is valid)
+ * @param os_errno
+ *      Will get filled with errno if a system call fails.
+ *      Else it will be filled with 0.
+ * @param flag
+ *      Bitfield for control purposes
+ *      bit5=  in case of symbolic link: inquire link target
+ * @return
+ *      1 = ok, lfa_flags is valid
+ *      2 = ok, but some local flags could not be mapped to the FS_*_FL bits
+ *      3 = ok, symbolic link encountered, flag bit5 not set,lfa_flags set to 0
+ *     <0 = error
+ *
+ * @since 1.5.8
+ */
+int iso_local_get_lfa_flags(char *disk_path, uint64_t *lfa_flags, int *max_bit,
+                            int *os_errno, int flag);
+
+
+/**
+ * Bring the given Linux-like file attribute flags (chattr) into effect with
+ * the given file.
+ * The bit numbers are compatible to the FS_*_FL definitions in Linux
+ * include file <linux/fs.h>. A (possibly outdated) copy of them is in
+ * doc/susp_aaip_isofs_names.txt, name isofs.fa .
+ * The attribute flags of other systems may or may not be mappable to these
+ * flags.
+ * @param disk_path
+ *      Path to the file
+ * @param lfa_flags
+ *      File attribute flag bits
+ * @param max_bit
+ *      Gives an upper limit of the highest possibly set flag bit.
+ *      (-1 = surely no bit is valid)
+ *      On Linux this must be smaller than sizeof(long) * 8.
+ * @param os_errno
+ *      Will get filled with errno if a system call fails.
+ *      Else it will be filled with 0.
+ * @param flag
+ *      Bitfield for control purposes
+ *      bit0= do not try to set known chattr superuser flags: iaj
+ *      bit1= set only known chattr settable flags: sucSiadAmjtDTCxPF
+ *      bit5= in case of symbolic link: operate on link target
+ * @return
+ *      1 = ok, all lfa_flags bits were written
+ *      2 = ok, but some FS_*_FL bits could not be mapped to local flags
+ *      3 = ok, symbolic link encountered, flag bit5 not set, nothing done
+ *     <0 = error
+ *
+ * @since 1.5.8
+ */
+int iso_local_set_lfa_flags(char *disk_path, uint64_t lfa_flags, int max_bit,
+                            int *os_errno, int flag);
+
+
+/**
+ * Convert the known set bits of the given Linux-like file attribute flags
+ * to a string of flag letters like expected by chattr(1).
+ *
+ * @param lfa_flags
+ *      File attribute flag bits to be converted
+ * @param flags_text
+ *      Will return the string of known set flag letters.
+ *      If it is not returned as NULL, then submit it to free(2) when
+ *      no longer needed.
+ * @param flag
+ *      Bitfield for control purposes.
+ *      bit0= produce lsattr(1) format with '-' and peculiar sequence
+ *            (This might be more prone to ISO_LFA_UNKNOWN_BIT. 
+ *             Some versions of lsattr showed less bits. Maybe newer versions
+ *             will show more bits.)
+ * @return
+ *      >0 = success
+ *      <0 = error
+ *           ISO_LFA_UNKNOWN_BIT indicates a partial result in flags_text
+ *      
+ * @since 1.5.8
+ */
+int iso_util_encode_lfa_flags(uint64_t lfa_flags, char **flags_text, int flag);
+
+
+/** 
+ * Convert the given string of flag letters to a bit array usable by
+ * iso_*_set_lfa_flags(). The letters are as expected by chattr(1) or shown
+ * by lsattr(1).
+ *
+ * @param flags_text
+ *      The string of flag letters to be converted
+ * @param lfa_flags
+ *      Will return the resultig file attribute flag bits
+ * @param flag
+ *      Bitfield for control purposes. Submit 0.
+ * @return
+ *      >0 = success
+ *      <0 = error
+ *      
+ * @since 1.5.8
+ */
+int iso_util_decode_lfa_flags(char *flags_text, uint64_t *lfa_flags, int flag);
 
 
 /* Default in case that the compile environment has no macro PATH_MAX.
@@ -9459,6 +9633,14 @@ int iso_conv_name_chars(IsoWriteOpts *opts, char *name, size_t name_len,
 /** Too many CE entries for single file, omitting attributes
                                                        (WARNING,HIGH, -429) */
 #define ISO_CE_REMOVING_ATTR        0xD030FE53
+
+/** Unknown Linux-like chattr letter encountered during conversion
+                                                       (WARNING,HIGH, -430) */
+#define ISO_LFA_UNKNOWN_LETTER      0xD030FE52
+
+/** Unknown Linux-like file attribute flag bit encountered during conversion
+                                                       (WARNING,HIGH, -431) */
+#define ISO_LFA_UNKNOWN_BIT         0xD030FE51
 
 
 /* Internal developer note: 

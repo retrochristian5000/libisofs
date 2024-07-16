@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2009 - 2017 Thomas Schmitt
+ * Copyright (c) 2009 - 2024 Thomas Schmitt
  * 
  * This file is part of the libisofs project; you can redistribute it and/or 
  * modify it under the terms of the GNU General Public License version 2 
@@ -507,12 +507,14 @@ int lfs_get_aa_string(IsoFileSource *src, unsigned char **aa_string, int flag)
 
     *aa_string = NULL;
 
-    if ((flag & 6 ) == 6) { /* Neither ACL nor xattr shall be read */
+    if ((flag & (2 | 4 | 16) ) == (2 | 4)) {
+        /* Neither ACL nor xattr shall be read, lfa_flags are not wanted */
         ret = 1;
         goto ex;
     }
     /* Obtain EAs and ACLs ("access" and "default"). ACLs encoded according
        to AAIP ACL representation. Clean out st_mode ACL entries.
+       Obtain Linux style attribute flags.
     */ 
     path = iso_file_source_get_path(src);
     if (path == NULL) {
@@ -521,7 +523,8 @@ int lfs_get_aa_string(IsoFileSource *src, unsigned char **aa_string, int flag)
     }
     ret = aaip_get_attr_list(path, &num_attrs, &names,
                              &value_lengths, &values,
-                             (!(flag & 2)) | 2 | (flag & 4) | (flag & 8) | 16);
+                             (!(flag & 2)) | 2 | (flag & 4) | (flag & 8) | 16 |
+                             ((!(flag & 16)) << 6));
     if (ret <= 0) {
         if (ret == -2)
             ret = ISO_AAIP_NO_GET_LOCAL;
@@ -863,11 +866,13 @@ int iso_local_set_acl_text(char *disk_path, char *text, int flag)
 int iso_local_get_attrs(char *disk_path, size_t *num_attrs, char ***names,
                         size_t **value_lengths, char ***values, int flag)
 {
-    int ret;
+    int ret, lfa;
 
+    lfa = (flag & 64) ^ 64;
     ret = aaip_get_attr_list(disk_path,
                              num_attrs, names, value_lengths, values,
-                             (flag & (1 | 4 | 8 | 32 | (1 << 15))) | 2 | 16);
+                             (flag & (1 | 4 | 8 | 32 | (1 << 15))) |
+                             2 | 16 | lfa);
     if (ret <= 0)
         return ISO_AAIP_NO_GET_LOCAL;
     return 1 + (ret == 2);
@@ -939,4 +944,91 @@ int iso_local_get_perms_wo_acl(char *disk_path, mode_t *st_mode, int flag)
     }
     return 1;
 }
+
+/*
+ * @param flag
+ *      Bitfield for control purposes
+ *      bit5=  in case of symbolic link: inquire link target
+ * @return
+ *      1= ok, lfa_flags is valid
+ *      2= ok, but some local flags could not be mapped to the FS_*_FL bits
+ *      3= ok, symbolic link encountered, flag bit5 not set, lfa_flags set to 0
+ *      0= local flags retrieval not enabled at compile time
+ *     <0= error with system calls
+ */
+int iso_local_get_lfa_flags(char *disk_path, uint64_t *lfa_flags, int *max_bit,
+                            int *os_errno, int flag)
+{
+    int ret;
+    struct stat stbuf;
+
+    *lfa_flags = 0;
+    *max_bit = -1;
+    *os_errno = 0;
+    if (flag & 32)
+        ret = stat(disk_path, &stbuf);
+    else
+        ret = lstat(disk_path, &stbuf);
+    if (ret == -1) {
+        *os_errno = errno;
+        return -1;
+    }
+    if ((stbuf.st_mode & S_IFMT) == S_IFLNK && !(flag & 32))
+        return 3;
+    ret= aaip_get_lfa_flags(disk_path, lfa_flags, max_bit, os_errno, 0);
+    if(ret == 0)
+        return ISO_AAIP_NOT_ENABLED;
+    if (ret < 0)
+        return ISO_AAIP_NO_GET_LOCAL;
+    return ret;
+}
+
+
+/*
+ * @param flag          Bitfield for control purposes
+ *      bit0= do not try to set known superuser flags
+ *      bit1= set only known chattr settable flags
+ *      bit5= in case of symbolic link: inquire link target
+ * @return
+ *      1 = ok, all lfa_flags bits were written
+ *      2 = ok, but some FS_*_FL bits could not be mapped to local flags
+ *      3 = ok, symbolic link encountered, flag bit5 not set, nothing done
+ *     <0 = error
+ */
+int iso_local_set_lfa_flags(char *disk_path, uint64_t lfa_flags, int max_bit,
+                            int *os_errno, int flag)
+{
+    int ret;
+    struct stat stbuf;
+
+    /* chattr letters: User:         sucSdAmtDTCxPF
+                       Superuser:    iaj 
+                       Non-settable: Z(9)EI(13)heV(21)(22)N(31)
+    */
+    static uint64_t known_user_mask = 0x628384cf;
+    static uint64_t known_su_mask =   0x00004030;
+
+    *os_errno = 0;
+    if (flag & 32)
+        ret = stat(disk_path, &stbuf);
+    else
+        ret = lstat(disk_path, &stbuf);
+    if (ret == -1) {
+        *os_errno = errno;
+        return -1;
+    }
+    if ((stbuf.st_mode & S_IFMT) == S_IFLNK && !(flag & 32))
+        return 3;
+    if (flag & 1)
+        lfa_flags &= ~known_su_mask;
+    if (flag & 2)
+        lfa_flags &= known_user_mask | known_su_mask;
+    ret= aaip_set_lfa_flags(disk_path, lfa_flags, max_bit, os_errno, 0);
+    if(ret == 0)
+        return ISO_AAIP_NOT_ENABLED;
+    if(ret < 0)
+        return ISO_AAIP_NO_SET_LOCAL;
+    return ret;
+}
+
 

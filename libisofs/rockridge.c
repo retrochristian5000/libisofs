@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
  * Copyright (c) 2007 Mario Danic
- * Copyright (c) 2009 - 2023 Thomas Schmitt
+ * Copyright (c) 2009 - 2024 Thomas Schmitt
  * 
  * This file is part of the libisofs project; you can redistribute it and/or 
  * modify it under the terms of the GNU General Public License version 2 
@@ -1600,10 +1600,10 @@ try_again:
             }
         } else if (retry == 2) {
             if ((t->opts->max_ce_drop_attr & 15) >= 2) {
-                ret = iso_node_remove_fattr(n->node, 1);
+                ret = iso_node_remove_fattr(n->node, 1 | 2);
                 if (ret > 0) {
                     iso_msg_submit(t->image->id, ISO_CE_REMOVING_ATTR, 0,
-                                   "Removed ACL");
+                                   "Removed ACL and attribute flags");
                     goto try_again;
                 }
             }

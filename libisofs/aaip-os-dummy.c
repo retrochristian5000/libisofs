@@ -11,7 +11,7 @@
 
  To be included by aaip_0_2.c
 
- Copyright (c) 2009 - 2011 Thomas Schmitt
+ Copyright (c) 2009 - 2024 Thomas Schmitt
 
  This file is part of the libisofs project; you can redistribute it and/or
  modify it under the terms of the GNU General Public License version 2
@@ -82,6 +82,19 @@ int aaip_get_attr_list(char *path, size_t *num_attrs, char ***names,
 }
 
 
+/* Obtain the file attribute flags of the given file as bit array in uint64_t.
+   The bit numbers are compatible to the FS_*_FL definitions in Linux.
+*/
+int aaip_get_lfa_flags(char *path, uint64_t *lfa_flags, int *max_bit,
+                       int *os_errno, int flag)
+{
+ *lfa_flags= 0;
+ *max_bit= -1;
+ *os_errno= 0;
+ return(0);
+}
+
+
 /* ------------------------------ Setters --------------------------------- */
 
 
@@ -131,6 +144,14 @@ int aaip_set_attr_list(char *path, size_t num_attrs, char **names,
  if(flag & 2)
    return(-6);
  return(1);
+}
+
+
+int aaip_set_lfa_flags(char *path, uint64_t lfa_flags, int max_bit,
+                       int *os_errno, int flag)
+{
+ *os_errno= 0;
+ return(0);
 }
 
 
