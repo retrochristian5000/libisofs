@@ -8089,10 +8089,15 @@ int iso_local_get_lfa_flags(char *disk_path, uint64_t *lfa_flags, int *max_bit,
  * @param os_errno
  *      Will get filled with errno if a system call fails.
  *      Else it will be filled with 0.
+ * @param change_mask
+ *      Tells which bits of lfa_flags are meant to change attribute flags
+ *      of the file. Submit ~((uint64_t) 0) if all bits may cause changes.
+ *      The set of changeable bits may further be restricted by bit0 and bit1
+ *      of parameter flag.
  * @param flag
  *      Bitfield for control purposes
- *      bit0= do not try to set known chattr superuser flags: iaj
- *      bit1= set only known chattr settable flags: sucSiadAmjtDTCxPF
+ *      bit0= do not try to change known chattr superuser flags: iaj
+ *      bit1= change only known chattr settable flags: sucSiadAmjtDTCxPF
  *      bit5= in case of symbolic link: operate on link target
  * @return
  *      1 = ok, all lfa_flags bits were written
@@ -8103,7 +8108,7 @@ int iso_local_get_lfa_flags(char *disk_path, uint64_t *lfa_flags, int *max_bit,
  * @since 1.5.8
  */
 int iso_local_set_lfa_flags(char *disk_path, uint64_t lfa_flags, int max_bit,
-                            int *os_errno, int flag);
+                            uint64_t change_mask, int *os_errno, int flag);
 
 
 /**
@@ -8151,6 +8156,34 @@ int iso_util_encode_lfa_flags(uint64_t lfa_flags, char **flags_text, int flag);
  */
 int iso_util_decode_lfa_flags(char *flags_text, uint64_t *lfa_flags, int flag);
 
+
+/**
+ * Return the bit patterns of four classes of Linux-like file attribute flags.
+ * They were determined according to man 1 chattr and the source of lsattr
+ * in juli 2024. The symbolic strings and bit numbers are given here only
+ * for convenience. Decisive are the returned bit patterns.
+ *
+ * @param user_settable
+ *      The flag bits which are known to be user settable with chattr:
+ *        sucSdAmtDTCxPF
+ * @param su_settable
+ *      The flag bits which are known to be settable with chattr only by
+ *      bearers of various superuser powers:
+ *        iaj
+ * @param non_settable
+ *      The flags bits which are known to be not settable or not clearable
+ *      by chattr or only known to lsattr:
+ *        ZEIheVN
+ * @param unknown
+ *      The flags bits for which no symbolic letter is known. Some of them are
+ *      defined in <linux/fs.h> with sparse info, some not even that:
+ *        9, 13, 21, 22, 24, 26, 27, 31
+ *      
+ * @since 1.5.8
+ */
+void iso_util_get_lfa_masks(uint64_t *user_settable, uint64_t *su_settable,
+                            uint64_t *non_settable, uint64_t *unknown);
+ 
 
 /* Default in case that the compile environment has no macro PATH_MAX.
 */

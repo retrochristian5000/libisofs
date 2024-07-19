@@ -392,5 +392,6 @@ iso_node_get_lfa_flags;
 iso_node_set_lfa_flags;
 iso_util_decode_lfa_flags;
 iso_util_encode_lfa_flags;
+iso_util_get_lfa_masks;
 } LIBISOFS6;
 

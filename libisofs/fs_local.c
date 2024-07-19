@@ -975,7 +975,7 @@ int iso_local_get_lfa_flags(char *disk_path, uint64_t *lfa_flags, int *max_bit,
     }
     if ((stbuf.st_mode & S_IFMT) == S_IFLNK && !(flag & 32))
         return 3;
-    ret= aaip_get_lfa_flags(disk_path, lfa_flags, max_bit, os_errno, 0);
+    ret = aaip_get_lfa_flags(disk_path, lfa_flags, max_bit, os_errno, 0);
     if(ret == 0)
         return ISO_AAIP_NOT_ENABLED;
     if (ret < 0)
@@ -986,8 +986,8 @@ int iso_local_get_lfa_flags(char *disk_path, uint64_t *lfa_flags, int *max_bit,
 
 /*
  * @param flag          Bitfield for control purposes
- *      bit0= do not try to set known superuser flags
- *      bit1= set only known chattr settable flags
+ *      bit0= do not try to change known superuser flags
+ *      bit1= change only known chattr settable flags
  *      bit5= in case of symbolic link: inquire link target
  * @return
  *      1 = ok, all lfa_flags bits were written
@@ -996,18 +996,14 @@ int iso_local_get_lfa_flags(char *disk_path, uint64_t *lfa_flags, int *max_bit,
  *     <0 = error
  */
 int iso_local_set_lfa_flags(char *disk_path, uint64_t lfa_flags, int max_bit,
-                            int *os_errno, int flag)
+                            uint64_t change_mask, int *os_errno, int flag)
 {
-    int ret;
+    int ret, old_max_bit;
     struct stat stbuf;
+    uint64_t known_user_mask, known_su_mask, non_settable, unknown, eff_flags;
 
-    /* chattr letters: User:         sucSdAmtDTCxPF
-                       Superuser:    iaj 
-                       Non-settable: Z(9)EI(13)heV(21)(22)N(31)
-    */
-    static uint64_t known_user_mask = 0x628384cf;
-    static uint64_t known_su_mask =   0x00004030;
-
+    iso_util_get_lfa_masks(&known_user_mask, &known_su_mask, &non_settable,
+                           &unknown);
     *os_errno = 0;
     if (flag & 32)
         ret = stat(disk_path, &stbuf);
@@ -1020,10 +1016,22 @@ int iso_local_set_lfa_flags(char *disk_path, uint64_t lfa_flags, int max_bit,
     if ((stbuf.st_mode & S_IFMT) == S_IFLNK && !(flag & 32))
         return 3;
     if (flag & 1)
-        lfa_flags &= ~known_su_mask;
+        change_mask &= ~known_su_mask;
     if (flag & 2)
-        lfa_flags &= known_user_mask | known_su_mask;
-    ret= aaip_set_lfa_flags(disk_path, lfa_flags, max_bit, os_errno, 0);
+        change_mask &= (known_user_mask | known_su_mask);
+    if (change_mask == ~((uint64_t) 0)) {
+        eff_flags = lfa_flags;
+    } else {
+        ret = aaip_get_lfa_flags(disk_path, &eff_flags, &old_max_bit, os_errno,
+                                 0);
+        if (ret == 0)
+            return ISO_AAIP_NOT_ENABLED;
+        if (ret < 0)
+            return ISO_AAIP_NO_GET_LOCAL;
+        eff_flags &= ~change_mask;
+        eff_flags |= (lfa_flags & change_mask);
+    }
+    ret= aaip_set_lfa_flags(disk_path, eff_flags, max_bit, os_errno, 0);
     if(ret == 0)
         return ISO_AAIP_NOT_ENABLED;
     if(ret < 0)

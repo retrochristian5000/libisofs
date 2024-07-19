@@ -2555,7 +2555,7 @@ int iso_util_encode_lfa_flags(uint64_t lfa_flags, char **flags_text, int flag)
             (*flags_text)[w++] = lfa_flag_letters[i];
         }
     }
-    flags_text[w] = 0;
+    (*flags_text)[w] = 0;
     if (was_unknown)
         return ISO_LFA_UNKNOWN_BIT;
     return ISO_SUCCESS;
@@ -2608,5 +2608,20 @@ int iso_util_decode_lfa_flags(char *flags_text, uint64_t *lfa_flags, int flag)
     if (was_unknown)
         return ISO_LFA_UNKNOWN_LETTER;
     return 1;
+}
+
+
+void iso_util_get_lfa_masks(uint64_t *user_settable, uint64_t *su_settable,
+                            uint64_t *non_settable, uint64_t *unknown)
+{
+    /* chattr letters: User settable     :  sucSdAmtDTCxPF
+                       Superuser settable:  iaj
+                       Non-settable      :  ZEIheVN
+                       unknown           :  9, 13, 21, 22, 24, 26, 27, >= 31 
+    */
+    *user_settable   = 0x628384cf;
+    *su_settable     = 0x00004030;
+    *non_settable    = 0x101c1900;
+    *unknown = 0xffffffff8d602200;
 }
 
