@@ -897,7 +897,7 @@ int aaip_set_lfa_flags(char *path, uint64_t lfa_flags, int max_bit,
    ioctl_arg= 0;
  else
    ioctl_arg= lfa_flags;
- ret= ioctl(fd, FS_IOC_SETFLAGS, ioctl_arg);
+ ret= ioctl(fd, FS_IOC_SETFLAGS, &ioctl_arg);
  close(fd);
  if(ret == -1) {
    aaip_local_error("ioctl(FS_IOC_SETFLAGS)", path, errno, 0);
@@ -911,5 +911,4 @@ int aaip_set_lfa_flags(char *path, uint64_t lfa_flags, int max_bit,
 
  return(ret);
 }
-
 
