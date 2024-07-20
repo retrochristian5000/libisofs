@@ -8165,15 +8165,16 @@ int iso_util_decode_lfa_flags(char *flags_text, uint64_t *lfa_flags, int flag);
  *
  * @param user_settable
  *      The flag bits which are known to be user settable with chattr:
- *        sucSdAmtDTCxPF
+ *        AcCdDFmPsStTux
  * @param su_settable
  *      The flag bits which are known to be settable with chattr only by
  *      bearers of various superuser powers:
- *        iaj
+ *        aij
  * @param non_settable
  *      The flags bits which are known to be not settable or not clearable
  *      by chattr or only known to lsattr:
- *        ZEIheVN
+ *        eEhINVZ
+ *        
  * @param unknown
  *      The flags bits for which no symbolic letter is known. Some of them are
  *      defined in <linux/fs.h> with sparse info, some not even that:

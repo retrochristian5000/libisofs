@@ -2520,10 +2520,20 @@ static char lfa_flag_letters[] = { 's', 'u', 'c', 'S', 'i', 'a', 'd', 'A',
                                    '-', 'x', '-', '-', 'N', 'P', 'F', '-' };
 
 /* Sequence and coverage as of e2fsprogs 1.47.1, lib/pf.c for lsattr(1) */
+static int lsattr_sequence[] = {  0,  1,  3, 16,  4,  5,  6,  7,
+                                  2, 11, 14, 12, 15, 17, 19, 23,
+                                 25, 30, 28, 29, 20, 10, -1 };
 
-static int lsattr_permutation[] = {  0,  1,  3, 16,  4,  5,  6,  7,
-                                     2, 11, 14, 12, 15, 17, 19, 23,
-                                    25, 30, 28, 29, 20, 10, -1};
+/* Semi-alphabetic sequence: aAcCdDeE FhiIjNmP sStTuVxZ */
+static int semi_alphabetic[] = {  5,  7,  2, 23,  6, 16, 19, 11,
+                                 20, 18,  4, 12, 14, 28, 10, 29,
+                                  0,  3, 15, 17,  1, 20, 25,  8,
+                                 -1 };
+
+/* Unknown bits up to 31 */
+static int unknown_flags[] =   {  9, 13, 21, 22, 24, 26, 27, 31,
+                                 -1 };
+
 static int num_lsattr_bits = 22;
 static int max_lsattr_bit = 30;
 static int non_lsattr_bits[] = {  8, 9, 13, 18, 21, 22, 24, 26, 27, -1 };
@@ -2546,19 +2556,26 @@ int iso_util_encode_lfa_flags(uint64_t lfa_flags, char **flags_text, int flag)
     if (*flags_text == NULL)
         return ISO_OUT_OF_MEM;
 
-    for (i = 0; i < 64; i++) {
-        if (!(lfa_flags & (((uint64_t) 1) << i)))
-    continue;
-        if (lfa_flag_letters[i] == '-') {
+    for (i = 0; semi_alphabetic[i] >= 0; i++) {
+        pi = semi_alphabetic[i];
+        if (lfa_flags & (((uint64_t) 1) << pi))
+            (*flags_text)[w++] = lfa_flag_letters[pi];
+    }
+    for (i = 0; unknown_flags[i] >= 0; i++) {
+        pi = unknown_flags[i];
+        if (lfa_flags & (((uint64_t) 1) << pi))
             was_unknown = 1;
-        } else {
-            (*flags_text)[w++] = lfa_flag_letters[i];
-        }
+    }
+    for (i = 32; i < 64; i++) {
+        if (lfa_flags & (((uint64_t) 1) << i))
+            was_unknown = 1;
     }
     (*flags_text)[w] = 0;
     if (was_unknown)
         return ISO_LFA_UNKNOWN_BIT;
     return ISO_SUCCESS;
+
+
 
 lsattr_format:;
 
@@ -2567,7 +2584,7 @@ lsattr_format:;
         return ISO_OUT_OF_MEM;
 
     for (i = 0; i < num_lsattr_bits; i++) {
-        pi = lsattr_permutation[i];
+        pi = lsattr_sequence[i];
         if (pi < 0)
     break;
         if (lfa_flags & (((uint64_t) 1) << pi)) {

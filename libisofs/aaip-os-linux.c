@@ -880,7 +880,7 @@ int aaip_set_lfa_flags(char *path, uint64_t lfa_flags, int max_bit,
  *os_errno= 0;
 
 #ifdef Libisofs_with_aaip_lfa_flagS
-#ifdef FS_IOC_GETFLAGS
+#ifdef FS_IOC_SETFLAGS
 
  if(max_bit > (int) sizeof(long) * 8 - 1) {
    aaip_local_error("ioctl(FS_IOC_SETFLAGS) with too many bits", path, 0, 0);
@@ -906,7 +906,7 @@ int aaip_set_lfa_flags(char *path, uint64_t lfa_flags, int max_bit,
  }
  ret= 1;
    
-#endif /* FS_IOC_GETFLAGS */
+#endif /* FS_IOC_SETFLAGS */
 #endif /* Libisofs_with_aaip_lfa_flagS */
 
  return(ret);
