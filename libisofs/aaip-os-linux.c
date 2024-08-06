@@ -451,7 +451,8 @@ try_lfa_flags:;
 #ifdef Libisofs_with_aaip_lfa_flagS
 
  if(!(flag & 64)) {
-   ret= aaip_get_lfa_flags(path, &lfa_flags, &max_bit, &os_errno, 0);
+   /* ( aaip_get_lfa_flags() does not gracefully handle dead symbolic links) */
+   ret= iso_local_get_lfa_flags(path, &lfa_flags, &max_bit, &os_errno, 0);
    if(ret == 1 || ret == 2) {
      ret= aaip_encode_lfa_flags(lfa_flags, lfa_value, &lfa_length, 0);
      if(ret > 0) {
