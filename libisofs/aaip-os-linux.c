@@ -452,7 +452,7 @@ try_lfa_flags:;
 
  if(!(flag & 64)) {
    ret= aaip_get_lfa_flags(path, &lfa_flags, &max_bit, &os_errno, 0);
-   if(ret > 0) {
+   if(ret == 1 || ret == 2) {
      ret= aaip_encode_lfa_flags(lfa_flags, lfa_value, &lfa_length, 0);
      if(ret > 0) {
        (*names)[*num_attrs]= strdup("isofs.fa");
@@ -520,10 +520,13 @@ ex:;
    @param lfa_flags     Will get filled with the FS_*_FL
    @param max_bit       Will tell the highest bit that is possibly set
                         (-1 = surely no bit is valid)
-   @param flag          Bitfield for control purposes. Submit 0.
+   @param flag          Bitfield for control purposes.
+                        bit0= consider ENOTTY from FS_IOC_GETFLAGS an error
+                              (else return 4 on ENOTTY)
    @return              1= ok, all local attribute flags are in lfa_flags
                         2= ok, but some local flags could not be mapped to
                            the FS_*_FL bits
+                        4= ok, ENOTTY from FS_IOC_GETFLAGS
                         0= local flag retrieval not enabled at compile time
                         <0 error with system calls
 */
@@ -552,6 +555,11 @@ int aaip_get_lfa_flags(char *path, uint64_t *lfa_flags, int *max_bit,
  ret= ioctl(fd, FS_IOC_GETFLAGS, &ioctl_result);
  close(fd);
  if(ret == -1) {
+   if(errno == ENOTTY && !(flag & 1)) {
+     /* Usual result with file type or filesystem without Linux attributes */
+     *max_bit= 23;
+     return(4);
+   }
    aaip_local_error("ioctl(FS_IOC_GETFLAGS)", path, errno, 0);
    *os_errno= errno;
    return(-1);

@@ -8062,6 +8062,9 @@ int iso_local_set_attrs(char *disk_path, size_t num_attrs, char **names,
  *      1 = ok, lfa_flags is valid
  *      2 = ok, but some local flags could not be mapped to the FS_*_FL bits
  *      3 = ok, symbolic link encountered, flag bit5 not set,lfa_flags set to 0
+ *      4 = ok, file did not bear attribute flags. E.g. because not S_IFDIR or
+ *              S_IFREG, or because unsuitable filesystem.
+ *              lfa_flags is set to 0
  *     <0 = error
  *
  * @since 1.5.8
