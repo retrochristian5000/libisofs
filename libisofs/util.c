@@ -2613,10 +2613,10 @@ int iso_util_decode_lfa_flags(char *flags_text, uint64_t *lfa_flags, int flag)
     for (i = 0; flags_text[i] != 0; i++) {
         if (flags_text[i] == '-')
     continue;
-        for (j = 0; j < 64; j++)
+        for (j = 0; j < 32; j++)
             if (lfa_flag_letters[j] == flags_text[i])
         break;
-        if (j >= 64) {
+        if (j >= 32) {
             was_unknown = 1;
     continue;
         }
