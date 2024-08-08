@@ -1022,7 +1022,9 @@ int iso_local_set_lfa_flags(char *disk_path, uint64_t lfa_flags, int max_bit,
         change_mask &= ~known_su_mask;
     if (flag & 2)
         change_mask &= (known_user_mask | known_su_mask);
-    if (change_mask == ~((uint64_t) 0)) {
+    if (change_mask == 0) {
+        return 1;
+    } else if (change_mask == ~((uint64_t) 0)) {
         eff_flags = lfa_flags;
     } else {
         ret = aaip_get_lfa_flags(disk_path, &eff_flags, &old_max_bit, os_errno,
