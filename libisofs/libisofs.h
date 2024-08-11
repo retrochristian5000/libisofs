@@ -8187,6 +8187,27 @@ int iso_util_decode_lfa_flags(char *flags_text, uint64_t *lfa_flags, int flag);
  */
 void iso_util_get_lfa_masks(uint64_t *user_settable, uint64_t *su_settable,
                             uint64_t *non_settable, uint64_t *unknown);
+
+
+/**
+ * Return the effective change mask which will be used by
+ * iso_local_set_lfa_flags() with the same input of parameters change_mask
+ * and flag bits 0 and 1.
+ *      
+ * @param change_mask
+ *      Tells which bits of lfa_flags are meant to change attribute flags
+ *      of the file. Submit ~((uint64_t) 0) if all bits may cause changes.
+ *      The set of changeable bits may further be restricted by bit0 and bit1
+ *      of parameter flag.
+ * @param flag
+ *      Bitfield for control purposes
+ *      bit0= do not try to change known superuser flags
+ *      bit1= change only known chattr settable flags
+ *
+ * @since 1.5.8
+ */
+uint64_t iso_util_get_effective_lfa_mask(uint64_t change_mask, int flag);
+
  
 
 /* Default in case that the compile environment has no macro PATH_MAX.

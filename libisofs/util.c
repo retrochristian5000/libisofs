@@ -2642,3 +2642,23 @@ void iso_util_get_lfa_masks(uint64_t *user_settable, uint64_t *su_settable,
     *unknown = 0xffffffff8d602200;
 }
 
+
+/*
+ * @param flag          Bitfield for control purposes
+ *      bit0= do not try to change known superuser flags
+ *      bit1= change only known chattr settable flags
+ */
+uint64_t iso_util_get_effective_lfa_mask(uint64_t change_mask, int flag)
+{
+    uint64_t known_user_mask, known_su_mask, non_settable, unknown;
+
+    iso_util_get_lfa_masks(&known_user_mask, &known_su_mask, &non_settable,
+                           &unknown);
+    if (flag & 1)
+        change_mask &= ~known_su_mask;
+    if (flag & 2)
+        change_mask &= (known_user_mask | known_su_mask);
+    return change_mask;
+}
+
+

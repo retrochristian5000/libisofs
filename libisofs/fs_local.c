@@ -1003,10 +1003,8 @@ int iso_local_set_lfa_flags(char *disk_path, uint64_t lfa_flags, int max_bit,
 {
     int ret, old_max_bit;
     struct stat stbuf;
-    uint64_t known_user_mask, known_su_mask, non_settable, unknown, eff_flags;
+    uint64_t eff_flags;
 
-    iso_util_get_lfa_masks(&known_user_mask, &known_su_mask, &non_settable,
-                           &unknown);
     *os_errno = 0;
     if (flag & 32)
         ret = stat(disk_path, &stbuf);
@@ -1018,10 +1016,7 @@ int iso_local_set_lfa_flags(char *disk_path, uint64_t lfa_flags, int max_bit,
     }
     if ((stbuf.st_mode & S_IFMT) == S_IFLNK && !(flag & 32))
         return 3;
-    if (flag & 1)
-        change_mask &= ~known_su_mask;
-    if (flag & 2)
-        change_mask &= (known_user_mask | known_su_mask);
+    change_mask= iso_util_get_effective_lfa_mask(change_mask, flag & 3);
     if (change_mask == 0) {
         return 1;
     } else if (change_mask == ~((uint64_t) 0)) {
