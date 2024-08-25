@@ -577,6 +577,12 @@ const char *iso_error_to_msg(int errcode)
         return "Unknown Linux-like chattr letter encountered during conversion";
     case ISO_LFA_UNKNOWN_BIT:
         return "Unknown Linux-like file attribute flag bit encountered during conversion";
+    case ISO_LFA_NOT_ENABLED:
+        return "Local Linux-like file attribute processing not enabled at compile time";
+    case ISO_LFA_NO_GET_LOCAL:
+        return "Error with getting Linux-like file attributes of local file";
+    case ISO_LFA_NO_SET_LOCAL:
+        return "Error with setting Linux-like file attributes of local file";
     default:
         return "Unknown error";
     }

@@ -9700,6 +9700,18 @@ int iso_conv_name_chars(IsoWriteOpts *opts, char *name, size_t name_len,
                                                        (WARNING,HIGH, -431) */
 #define ISO_LFA_UNKNOWN_BIT         0xD030FE51
 
+/** Local Linux-like file attribute processing not enabled at compile time 
+                                                         (SORRY,HIGH, -432) */
+#define ISO_LFA_NOT_ENABLED         0xE030FE50
+
+/** Error with getting Linux-like file attributes of local file
+                                                         (SORRY,HIGH, -433) */
+#define ISO_LFA_NO_GET_LOCAL        0xE030FE4F
+
+/** Error with setting Linux-like file attributes of local file
+                                                         (SORRY,HIGH, -434) */
+#define ISO_LFA_NO_SET_LOCAL        0xE030FE4E
+
 
 /* Internal developer note: 
    Place new error codes directly above this comment. 
