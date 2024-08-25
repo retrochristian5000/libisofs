@@ -948,7 +948,8 @@ int iso_local_get_perms_wo_acl(char *disk_path, mode_t *st_mode, int flag)
 /*
  * @param flag
  *      Bitfield for control purposes
- *      bit5=  in case of symbolic link: inquire link target
+ *      bit2= do not issue own error messages with operating system errors
+ *      bit5= in case of symbolic link: inquire link target
  * @return
  *      1= ok, lfa_flags is valid
  *      2= ok, but some local flags could not be mapped to the FS_*_FL bits
@@ -978,7 +979,8 @@ int iso_local_get_lfa_flags(char *disk_path, uint64_t *lfa_flags, int *max_bit,
     }
     if ((stbuf.st_mode & S_IFMT) == S_IFLNK && !(flag & 32))
         return 3;
-    ret = aaip_get_lfa_flags(disk_path, lfa_flags, max_bit, os_errno, 0);
+    ret = aaip_get_lfa_flags(disk_path, lfa_flags, max_bit, os_errno,
+                             flag & 4);
     if(ret == 0)
         return ISO_LFA_NOT_ENABLED;
     if(ret < 0)
@@ -991,6 +993,7 @@ int iso_local_get_lfa_flags(char *disk_path, uint64_t *lfa_flags, int *max_bit,
  * @param flag          Bitfield for control purposes
  *      bit0= do not try to change known superuser flags
  *      bit1= change only known chattr settable flags
+ *      bit2= do not issue own error messages with operating system errors
  *      bit5= in case of symbolic link: inquire link target
  * @return
  *      1 = ok, all lfa_flags bits were written
@@ -1023,7 +1026,7 @@ int iso_local_set_lfa_flags(char *disk_path, uint64_t lfa_flags, int max_bit,
         eff_flags = lfa_flags;
     } else {
         ret = aaip_get_lfa_flags(disk_path, &eff_flags, &old_max_bit, os_errno,
-                                 0);
+                                 flag & 4);
         if (ret == 0)
             return ISO_LFA_NOT_ENABLED;
         if (ret < 0)
@@ -1031,7 +1034,7 @@ int iso_local_set_lfa_flags(char *disk_path, uint64_t lfa_flags, int max_bit,
         eff_flags &= ~change_mask;
         eff_flags |= (lfa_flags & change_mask);
     }
-    ret= aaip_set_lfa_flags(disk_path, eff_flags, max_bit, os_errno, 0);
+    ret= aaip_set_lfa_flags(disk_path, eff_flags, max_bit, os_errno, flag & 4);
     if(ret == 0)
         return ISO_LFA_NOT_ENABLED;
     if(ret < 0)

@@ -8057,7 +8057,8 @@ int iso_local_set_attrs(char *disk_path, size_t num_attrs, char **names,
  *      Else it will be filled with 0.
  * @param flag
  *      Bitfield for control purposes
- *      bit5=  in case of symbolic link: inquire link target
+ *      bit2= do not issue own error messages with system call errors
+ *      bit5= in case of symbolic link: inquire link target
  * @return
  *      1 = ok, lfa_flags is valid
  *      2 = ok, but some local flags could not be mapped to the FS_*_FL bits
@@ -8101,6 +8102,7 @@ int iso_local_get_lfa_flags(char *disk_path, uint64_t *lfa_flags, int *max_bit,
  *      Bitfield for control purposes
  *      bit0= do not try to change known chattr superuser flags: iaj
  *      bit1= change only known chattr settable flags: sucSiadAmjtDTCxPF
+ *      bit2= do not issue own error messages with system call errors
  *      bit5= in case of symbolic link: operate on link target
  * @return
  *      1 = ok, all lfa_flags bits were written
