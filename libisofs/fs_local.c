@@ -524,7 +524,7 @@ int lfs_get_aa_string(IsoFileSource *src, unsigned char **aa_string, int flag)
     ret = aaip_get_attr_list(path, &num_attrs, &names,
                              &value_lengths, &values,
                              (!(flag & 2)) | 2 | (flag & 4) | (flag & 8) | 16 |
-                             ((!(flag & 16)) << 6));
+                             ((!(flag & 16)) << 6) | ((!!(flag & 32)) << 7));
     if (ret <= 0) {
         if (ret == -2)
             ret = ISO_AAIP_NO_GET_LOCAL;
@@ -950,6 +950,7 @@ int iso_local_get_perms_wo_acl(char *disk_path, mode_t *st_mode, int flag)
  *      Bitfield for control purposes
  *      bit2= do not issue own error messages with operating system errors
  *      bit5= in case of symbolic link: inquire link target
+ *      bit7= Ignore non-settable Linux-like file attribute flags 
  * @return
  *      1= ok, lfa_flags is valid
  *      2= ok, but some local flags could not be mapped to the FS_*_FL bits
@@ -980,7 +981,7 @@ int iso_local_get_lfa_flags(char *disk_path, uint64_t *lfa_flags, int *max_bit,
     if ((stbuf.st_mode & S_IFMT) == S_IFLNK && !(flag & 32))
         return 3;
     ret = aaip_get_lfa_flags(disk_path, lfa_flags, max_bit, os_errno,
-                             flag & 4);
+                             flag & (4 | (1 << 7)));
     if(ret == 0)
         return ISO_LFA_NOT_ENABLED;
     if(ret < 0)

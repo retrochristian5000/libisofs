@@ -862,6 +862,15 @@ struct IsoFileSource_Iface
      *                         not be able to produce it again.
      *                   bit1= No need to get ACL (no guarantee of exclusion)
      *                   bit2= No need to get xattr (no guarantee of exclusion)
+     *                   bit3= if not bit2: import all xattr namespaces from
+     *                                      local filesystem, not only "user."
+     *                   bit4= Try to get Linux-like file attribute flags
+     *                         (chattr) as "isofs.fa"
+     *                         @since 1.5.8
+     *                   bit5= With bit4: Ignore non-settable Linux-like file
+     *                         attribute flags and do not record "isofs.fa"
+     *                         if the other flags are all zero
+     *                         @since 1.5.8
      * @param aa_string  Returns a pointer to the AAIP string data. If no AAIP
      *                   string is available, *aa_string becomes NULL.
      *                   (See doc/susp_aaip_*_*.txt for the meaning of AAIP and
@@ -1313,6 +1322,9 @@ int iso_image_new(const char *name, IsoImage **image);
  *           @since 1.5.8
  *     bit3= if not bit1: import all xattr namespaces, not only "user."
  *           @since 1.5.0
+ *     bit5= with bit2: Ignore non-settable Linux-like file attribute flags
+ *           and do not record "isofs.fa" if the other flags are all zero
+ *           @since 1.5.8
  *     all other bits are reserved
  *
  * @since 0.6.14
@@ -7270,6 +7282,10 @@ int iso_file_source_readlink(IsoFileSource *src, char *buf, size_t bufsiz);
  *                   bit4= Try to get Linux-like file attribute flags (chattr)
  *                         as "isofs.fa"
  *                         @since 1.5.8
+ *                   bit5= With bit4: Ignore non-settable Linux-like file
+ *                         attribute flags and do not record "isofs.fa"
+ *                         if the other flags are all zero
+ *                         @since 1.5.8
  * @return           1 means success (*aa_string == NULL is possible)
  *                  <0 means failure and must b a valid libisofs error code
  *                     (e.g. ISO_FILE_ERROR if no better one can be found).
@@ -8059,6 +8075,8 @@ int iso_local_set_attrs(char *disk_path, size_t num_attrs, char **names,
  *      Bitfield for control purposes
  *      bit2= do not issue own error messages with system call errors
  *      bit5= in case of symbolic link: inquire link target
+ *      bit7= Ignore non-settable Linux-like file attribute flags 
+ *            @since 1.5.8
  * @return
  *      1 = ok, lfa_flags is valid
  *      2 = ok, but some local flags could not be mapped to the FS_*_FL bits

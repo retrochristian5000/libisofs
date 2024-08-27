@@ -281,6 +281,8 @@ static int get_single_attr(char *path, char *name, size_t *value_length,
                         bit5=  in case of symbolic link: inquire link target
                         bit6=  do not obtain Linux style file attribute flags
                                (chattr)
+                        bit7=  With bit6: Ignore non-settable flags and do
+                               not record "isofs.fa" if all flags are zero
                         bit15= free memory of names, value_lengths, values
    @return              1  ok
                         (reserved for FreeBSD: 2 ok, no permission to inspect
@@ -454,7 +456,12 @@ try_lfa_flags:;
 
  if(!(flag & 64)) {
    /* ( aaip_get_lfa_flags() does not gracefully handle dead symbolic links) */
-   ret= iso_local_get_lfa_flags(path, &lfa_flags, &max_bit, &os_errno, 0);
+   ret= iso_local_get_lfa_flags(path, &lfa_flags, &max_bit, &os_errno,
+                                flag & (1 << 7));
+   if((flag & (1 << 7)) && lfa_flags == (uint64_t) 0) {
+     /* virtually no lfa_flags because no settable ones */
+     ret= 4;
+   }
    if(ret == 1 || ret == 2) {
      ret= aaip_encode_lfa_flags(lfa_flags, lfa_value, &lfa_length, 0);
      if(ret > 0) {
@@ -528,6 +535,7 @@ ex:;
                               (else return 4 on ENOTTY)
                         bit2= do not issue own error messages with operating
                               system errors
+                        bit7= Ignore non-settable flags
    @return              1= ok, all local attribute flags are in lfa_flags
                         2= ok, but some local flags could not be mapped to
                            the FS_*_FL bits
@@ -539,6 +547,7 @@ int aaip_get_lfa_flags(char *path, uint64_t *lfa_flags, int *max_bit,
                        int *os_errno, int flag)
 {
  int ret= 0;
+ static uint64_t user_settable= 0, su_settable= 0, non_settable= 0, unknown= 0;
 
 #ifdef Libisofs_with_aaip_lfa_flagS
  int fd;
@@ -548,6 +557,10 @@ int aaip_get_lfa_flags(char *path, uint64_t *lfa_flags, int *max_bit,
  *lfa_flags= 0;
  *max_bit= -1;
  *os_errno= 0;
+
+ if(non_settable == (uint64_t) 0)
+   iso_util_get_lfa_masks(&user_settable, &su_settable, &non_settable,
+                          &unknown);
 
 #ifdef Libisofs_with_aaip_lfa_flagS
 #ifdef FS_IOC_GETFLAGS
@@ -578,6 +591,9 @@ int aaip_get_lfa_flags(char *path, uint64_t *lfa_flags, int *max_bit,
    *max_bit= 31;
  else
    *max_bit= sizeof(long) * 8 - 1;
+
+ if(flag & (1 << 7))
+   *lfa_flags&= ~non_settable;
 
  ret= 1;
    

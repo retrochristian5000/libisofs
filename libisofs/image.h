@@ -153,6 +153,14 @@ struct Iso_Image
     unsigned int builder_ignore_lfa_flags : 1;
 
     /**
+     * Whether to ignore Linux style file attribute flags (chattr) which are
+     * only readable but non-settable ("ZEIheVN").
+     * Not in effect with loading a complete ISO image but only with image
+     * manipulation.
+     */
+    unsigned int builder_ignore_ro_lfa_flags : 1;
+
+    /**
      * If not builder_ignore_ea : import all xattr namespaces from local
      *                            filesystem, not only "user.
      */

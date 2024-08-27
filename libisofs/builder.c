@@ -254,7 +254,8 @@ int default_create_node(IsoNodeBuilder *builder, IsoImage *image,
             1 | (image->builder_ignore_acl << 1) |
                 (image->builder_ignore_ea << 2) |
                 (image->builder_take_all_ea << 3) |
-                ((!image->builder_ignore_lfa_flags) << 4));
+                ((!image->builder_ignore_lfa_flags) << 4) |
+                (image->builder_ignore_ro_lfa_flags << 5) );
     if(ret == 2)
       image->blind_on_local_get_attrs = 1;
     if (ret > 0 && aa_string != NULL) {
