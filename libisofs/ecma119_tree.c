@@ -596,6 +596,28 @@ int cmp_node_name(const void *f1, const void *f2)
 }
 
 /**
+ * Compare the iso name of two ECMA-119 nodes, without equivalences.
+ * Nodes with equal iso names are instead ordered by their real names.
+ *
+ * This is used to make the initial tree sort deterministic, before
+ * iso names are mangled to become unique.
+ */
+static
+int cmp_node_name_tiebreak(const void *f1, const void *f2)
+{
+    Ecma119Node *f, *g;
+    int cmp;
+
+    cmp = cmp_node_name(f1, f2);
+    if (cmp)
+        return cmp;
+
+    f = *((Ecma119Node**)f1);
+    g = *((Ecma119Node**)f2);
+    return strcmp(f->node->name, g->node->name);
+}
+
+/**
  * Sorts a the children of each directory in the ECMA-119 tree represented
  * by \p root, according to the order specified in ECMA-119, section 9.3.
  */
@@ -607,7 +629,7 @@ void sort_tree(Ecma119Node *root)
     if (root->info.dir->children == NULL)
         return;
     qsort(root->info.dir->children, root->info.dir->nchildren, sizeof(void*),
-          cmp_node_name);
+          cmp_node_name_tiebreak);
     for (i = 0; i < root->info.dir->nchildren; i++) {
         if (root->info.dir->children[i]->type == ECMA119_DIR)
             sort_tree(root->info.dir->children[i]);
