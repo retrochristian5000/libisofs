@@ -4633,8 +4633,8 @@ void ecma119_filesrc_array(Ecma119Node *dir,
             } else {
                 if (!child->info.file->taken) {
                     filelist[*size] = child->info.file;
-                    child->info.file->taken = 1;
                     (*size)++;
+                    child->info.file->taken = *size;
                 }
             }
         }
@@ -4658,8 +4658,8 @@ void hidden_filesrc_array(Ecma119Image *t,
         } else {
             if (!item->src->taken) {
                 filelist[*size] = item->src;
-                item->src->taken = 1;
                 (*size)++;
+                item->src->taken = *size;
             }
         }
     }

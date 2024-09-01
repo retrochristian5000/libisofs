@@ -32,11 +32,14 @@ struct Iso_File_Src
     */
     unsigned int no_write :1;
 
-    /* Is 1 if the object was already put into the filelist array.
-    */
-    unsigned int taken :1;
-
     unsigned int checksum_index :31;
+
+    /* Is > 0 if the object was already put into the filelist array.
+       In this case, the value is the order in which it was inserted,
+       which can be used for stable sorting of the filelist array in
+       case of identical file weights.
+    */
+    size_t taken;
 
     /** File Sections of the file in the image */
     /* Special sections[0].block values while they are relative

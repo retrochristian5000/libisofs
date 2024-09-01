@@ -218,8 +218,19 @@ static int cmp_by_weight(const void *f1, const void *f2)
 {
     IsoFileSrc *f = *((IsoFileSrc**)f1);
     IsoFileSrc *g = *((IsoFileSrc**)f2);
+    int cmp;
+
     /* higher weighted first */
-    return g->sort_weight - f->sort_weight;
+    cmp = g->sort_weight - f->sort_weight;
+    if (cmp)
+        return cmp;
+    /* Make the result of qsort(3) stable by avoiding return value 0 as good
+       as possible. If not f == g, then their ->taken values are supposed
+       to differ.
+     */
+    if(f->taken == g->taken)
+      return 0;
+    return f->taken < g->taken ? -1 : 1;
 }
 
 static
