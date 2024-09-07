@@ -133,38 +133,42 @@ Purpose:
       Records the file attribute flags as of Linux program chattr(1) and
       ioctl(FS_IOC_GETFLAGS) in <linux/fs.h> as bits in a byte string.
       Known from Debian GNU/Linux 8 to 12 are:
-      bit0=  FS_SECRM_FL        's' zero blocks on deletion
-      bit1=  FS_UNRM_FL         'u' on delete prepare for undelete
-      bit2=  FS_COMPR_FL        'c' compress
-      bit3=  FS_SYNC_FL         'S' synchronous write
-      bit4=  FS_IMMUTABLE_FL    'i' immutable
-      bit5=  FS_APPEND_FL       'a' appending write only
-      bit6=  FS_NODUMP_FL       'd' dump(8) shall ignore this file
-      bit7=  FS_NOATIME_FL      'A' do not update atime
+      bit0=  FS_SECRM_FL        's' zero blocks on deletion               +
+      bit1=  FS_UNRM_FL         'u' on delete prepare for undelete        +
+      bit2=  FS_COMPR_FL        'c' compress                              +
+      bit3=  FS_SYNC_FL         'S' synchronous write                     +
+      bit4=  FS_IMMUTABLE_FL    'i' immutable                             +*
+      bit5=  FS_APPEND_FL       'a' appending write only                  +*
+      bit6=  FS_NODUMP_FL       'd' dump(8) shall ignore this file        +
+      bit7=  FS_NOATIME_FL      'A' do not update atime                   +
       bit8=  FS_DIRTY_FL        'Z' compressed dirty file
-      bit9=  FS_COMPRBLK_FL     (? one or more compressed clusters) 
-      bit10= FS_NOCOMP_FL       'm' do not compress
+      bit9=  FS_COMPRBLK_FL     (? one or more compressed clusters)
+      bit10= FS_NOCOMP_FL       'm' do not compress                       +
       bit11= FS_ECOMPR_FL       'E' compression error (old)
              FS_ENCRYPT_FL      'E' encrypted file (new)
       bit12= FS_BTREE_FL        (? btree format dir)
-             FS_INDEX_FL        'I' hash-indexed directory ?
+             FS_INDEX_FL        'I' hash-indexed directory
       bit13= FS_IMAGIC_FL       (? AFS directory)
-      bit14= FS_JOURNAL_DATA_FL 'j' data journalling
-      bit15= FS_NOTAIL_FL       't' no tail-merging
-      bit16= FS_DIRSYNC_FL      'D' synchronous directory updates
-      bit17= FS_TOPDIR_FL       'T' top of directory hierarchy
+      bit14= FS_JOURNAL_DATA_FL 'j' data journalling                      +*
+      bit15= FS_NOTAIL_FL       't' no tail-merging                       +
+      bit16= FS_DIRSYNC_FL      'D' synchronous directory updates         +/
+      bit17= FS_TOPDIR_FL       'T' top of directory hierarchy            +/
       bit18= FS_HUGE_FILE_FL    ('h' huge file ? 'h' old, FS_HUGE_FILE_FL new)
       bit19= FS_EXTENT_FL       'e' using extents
       bit20= FS_DIRECTIO_FL     (? use direct i/o) (old)
              FS_VERITY_FL       'V' fs-verity enabled (new)
       bit21= FS_EA_INODE_FL     (? Inode used for large EA)
       bit22= FS_EOFBLOCKS_FL    (? reserved for ext4)
-      bit23= FS_NOCOW_FL        'C' no copy on write
-      bit25= FS_DAX_FL          'x' direct access
+      bit23= FS_NOCOW_FL        'C' no copy on write                      +
+      bit25= FS_DAX_FL          'x' direct access                         +
       bit28= FS_INLINE_DATA_FL  'N' data stored in inode
-      bit29= FS_PROJINHERIT_FL  'P' project hierarchy
-      bit30= FS_CASEFOLD_FL     'F' case-insensitive directory lookups
+      bit29= FS_PROJINHERIT_FL  'P' project hierarchy                     +/
+      bit30= FS_CASEFOLD_FL     'F' case-insensitive directory lookups    +/
       bit31= FS_RESERVED_FL     (? reserved for ext2 lib)
+      Marks for supposed settability properties according to man chattr:
+      "+" means "settable".
+      "*" means "superuser power is needed".
+      "/" means "for directories only".
 
 Format of Value:
       A byte string which begins with the most significant byte.
