@@ -2526,7 +2526,7 @@ static int lsattr_sequence[] = {  0,  1,  3, 16,  4,  5,  6,  7,
 
 /* Semi-alphabetic sequence: aAcCdDeE FhiIjNmP sStTuVxZ */
 static int semi_alphabetic[] = {  5,  7,  2, 23,  6, 16, 19, 11,
-                                 20, 18,  4, 12, 14, 28, 10, 29,
+                                 30, 18,  4, 12, 14, 28, 10, 29,
                                   0,  3, 15, 17,  1, 20, 25,  8,
                                  -1 };
 
