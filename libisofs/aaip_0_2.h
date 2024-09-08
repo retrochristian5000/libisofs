@@ -246,12 +246,20 @@ int aaip_get_attr_list(char *path, size_t *num_attrs, char ***names,
    @param max_bit       Will tell the highest bit that is possibly set
                         (-1 = surely no bit is valid)
    @param os_errno      Will get filled with errno if a system call fails
-   @param flag          Bitfield for control purposes. Submit 0.
+   @param flag          Bitfield for control purposes.
+                        bit0= consider ENOTTY from FS_IOC_GETFLAGS an error
+                              (else return 4 on ENOTTY)
+                        bit2= do not issue own error messages with operating
+                              system errors
+                        bit7= Ignore non-settable flags
    @return              1= ok, all local attribute flags are in lfa_flags
                         2= ok, but some local flags could not be mapped to
                            the FS_*_FL bits
+                        4= ok, ENOTTY from FS_IOC_GETFLAGS
                         0= local flags retrieval not enabled at compile time
-                        <0 error with system calls
+                        <0 error with system calls:
+                        -1= error with open(2)
+                        -2= error with ioctl(2), not pardoned by bit0
 */
 int aaip_get_lfa_flags(char *path, uint64_t *lfa_flags, int *max_bit,
                        int *os_errno, int flag);
@@ -567,12 +575,17 @@ int aaip_set_attr_list(char *path, size_t num_attrs, char **names,
                         (-1 = surely no bit is valid)
                         On Linux this must be smaller than sizeof(long) * 8.
    @param os_errno      Will get filled with errno if a system call fails
-   @param flag          Bitfield for control purposes. Submit 0.
+   @param flag          Bitfield for control purposes:
+                        bit2= do not issue own error messages with operating
+                              system errors
    @return              1= ok, all lfa_flags bits were written
                         2= ok, but some FS_*_FL bits could not be mapped to
                            local flags
                         0= local flags setting not enabled at compile time
-                        <0 error with system calls or with max_bit
+                        <0 error with system calls or with max_bit:
+                        -1= error with open(2)
+                        -2= error with ioctl(2)
+                        -3= error with max_bit
 */
 int aaip_set_lfa_flags(char *path, uint64_t lfa_flags, int max_bit,
                        int *os_errno, int flag);

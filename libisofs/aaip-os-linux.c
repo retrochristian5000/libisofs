@@ -541,7 +541,9 @@ ex:;
                            the FS_*_FL bits
                         4= ok, ENOTTY from FS_IOC_GETFLAGS
                         0= local flag retrieval not enabled at compile time
-                        <0 error with system calls
+                        <0 error with system calls:
+                        -1= error with open(2)
+                        -2= error with ioctl(2), not pardoned by bit0
 */
 int aaip_get_lfa_flags(char *path, uint64_t *lfa_flags, int *max_bit,
                        int *os_errno, int flag)
@@ -582,7 +584,7 @@ int aaip_get_lfa_flags(char *path, uint64_t *lfa_flags, int *max_bit,
    if(!(flag & 4))
      aaip_local_error("ioctl(FS_IOC_GETFLAGS)", path, errno, 0);
    *os_errno= errno;
-   return(-1);
+   return(-2);
  }
  *lfa_flags= ioctl_result;
  if(*lfa_flags < 1 << 24)
@@ -902,6 +904,14 @@ ex:;
    @param flag          Bitfield for control purposes.
                         bit2= do not issue own error messages with operating
                               system errors
+   @return              1= ok, all lfa_flags bits were written
+                        2= ok, but some FS_*_FL bits could not be mapped to
+                           local flags
+                        0= local flags setting not enabled at compile time
+                        <0 error with system calls or with max_bit:
+                        -1= error with open(2)
+                        -2= error with ioctl(2)
+                        -3= error with max_bit
 */
 int aaip_set_lfa_flags(char *path, uint64_t lfa_flags, int max_bit,
                        int *os_errno, int flag)
@@ -920,7 +930,7 @@ int aaip_set_lfa_flags(char *path, uint64_t lfa_flags, int max_bit,
 
  if(max_bit > (int) sizeof(long) * 8 - 1) {
    aaip_local_error("ioctl(FS_IOC_SETFLAGS) with too many bits", path, 0, 0);
-   return(-1);
+   return(-3);
  }
    
  fd= open(path, O_RDONLY | O_NDELAY);
@@ -940,7 +950,7 @@ int aaip_set_lfa_flags(char *path, uint64_t lfa_flags, int max_bit,
    if(!(flag & 4))
      aaip_local_error("ioctl(FS_IOC_SETFLAGS)", path, errno, 0);
    *os_errno= errno;
-   return(-1);
+   return(-2);
  }
  ret= 1;
    

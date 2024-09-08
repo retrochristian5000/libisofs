@@ -9732,6 +9732,11 @@ int iso_conv_name_chars(IsoWriteOpts *opts, char *name, size_t name_len,
                                                          (SORRY,HIGH, -434) */
 #define ISO_LFA_NO_SET_LOCAL        0xE030FE4E
 
+/** Failure to open local file for setting Linux-like file attributes
+                                                         (SORRY,HIGH, -435) */
+#define ISO_LFA_NO_OPEN_LOCAL       0xE030FE4D
+
+
 
 /* Internal developer note: 
    Place new error codes directly above this comment. 

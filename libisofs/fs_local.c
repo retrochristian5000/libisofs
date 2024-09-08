@@ -984,6 +984,8 @@ int iso_local_get_lfa_flags(char *disk_path, uint64_t *lfa_flags, int *max_bit,
                              flag & (4 | (1 << 7)));
     if(ret == 0)
         return ISO_LFA_NOT_ENABLED;
+    if(ret == -1)
+        return ISO_LFA_NO_OPEN_LOCAL;
     if(ret < 0)
         return ISO_LFA_NO_SET_LOCAL;
     return ret;
@@ -1030,6 +1032,8 @@ int iso_local_set_lfa_flags(char *disk_path, uint64_t lfa_flags, int max_bit,
                                  flag & 4);
         if (ret == 0)
             return ISO_LFA_NOT_ENABLED;
+        if (ret == -1)
+            return ISO_LFA_NO_OPEN_LOCAL;
         if (ret < 0)
             return ISO_LFA_NO_GET_LOCAL;
         eff_flags &= ~change_mask;
@@ -1038,6 +1042,8 @@ int iso_local_set_lfa_flags(char *disk_path, uint64_t lfa_flags, int max_bit,
     ret= aaip_set_lfa_flags(disk_path, eff_flags, max_bit, os_errno, flag & 4);
     if(ret == 0)
         return ISO_LFA_NOT_ENABLED;
+    if (ret == -1)
+        return ISO_LFA_NO_OPEN_LOCAL;
     if(ret < 0)
         return ISO_LFA_NO_SET_LOCAL;
     return ret;

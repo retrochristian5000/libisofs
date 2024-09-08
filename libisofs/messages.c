@@ -583,6 +583,8 @@ const char *iso_error_to_msg(int errcode)
         return "Error with getting Linux-like file attributes of local file";
     case ISO_LFA_NO_SET_LOCAL:
         return "Error with setting Linux-like file attributes of local file";
+    case ISO_LFA_NO_OPEN_LOCAL:
+        return "Failure to open local file for Linux-like file attributes";
     default:
         return "Unknown error";
     }
