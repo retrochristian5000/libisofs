@@ -281,7 +281,7 @@ static int get_single_attr(char *path, char *name, size_t *value_length,
                         bit5=  in case of symbolic link: inquire link target
                         bit6=  do not obtain Linux style file attribute flags
                                (chattr)
-                        bit7=  With bit6: Ignore non-settable flags and do
+                        bit7=  Without bit6: Ignore non-settable flags and do
                                not record "isofs.fa" if all flags are zero
                         bit15= free memory of names, value_lengths, values
    @return              1  ok
