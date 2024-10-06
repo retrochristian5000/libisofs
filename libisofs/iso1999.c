@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2011-2014 Thomas Schmitt
+ * Copyright (c) 2011-2024 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -59,7 +59,7 @@ int get_iso1999_name(Ecma119Image *t, const char *str, char **fname)
         }
     }
 
-    /* ISO 9660:1999 7.5.1 */
+    /* ISO 9660:1999 7.5.1 and ECMA-119 4th Edition 7.5.1 */
     if (strlen(name) > 207) {
         name[207] = '\0';
     }
@@ -90,7 +90,8 @@ void iso1999_node_free(Iso1999Node *node)
 }
 
 /**
- * Create a low level ISO 9660:1999 node
+ * Create a low level node of the tree of Enhanced Volume Descriptor
+ * (aka ISO 9660:1999) as of ECMA-119 4th Edition.
  * @return
  *      1 success, 0 ignored, < 0 error
  */
@@ -172,7 +173,8 @@ int create_node(Ecma119Image *t, IsoNode *iso, Iso1999Node **node)
 }
 
 /**
- * Create the low level ISO 9660:1999 tree from the high level ISO tree.
+ * Create the low level tree of an Enhanced Volume Descriptor
+ * (aka ISO 9660:1999) as of ECMA-119 4th Edition from the high level ISO tree.
  *
  * @return
  *      1 success, 0 file ignored, < 0 error
@@ -300,8 +302,8 @@ cmp_node(const void *f1, const void *f2)
     Iso1999Node *g = *((Iso1999Node**)f2);
 
     /**
-     * TODO #00027 Follow ISO 9660:1999 specs when sorting files
-     * strcmp do not does exactly what ISO 9660:1999, 9.3, as characters
+     * TODO #00027 Follow ECMA-119 4th Edition specs when sorting files
+     * strcmp do not does exactly what paragraph 9.3 prescribe, as characters
      * < 0x20 " " are allowed, so name len must be taken into account
      */
     return strcmp(f->name, g->name);
@@ -309,7 +311,7 @@ cmp_node(const void *f1, const void *f2)
 
 /**
  * Sort the entries inside an ISO 9660:1999 directory, according to
- * ISO 9660:1999, 9.3
+ * ISO 9660:1999 / ECMA-119 4th Edition, 9.3
  */
 static
 void sort_tree(Iso1999Node *root)
@@ -585,7 +587,7 @@ size_t calc_dirent_len(Ecma119Image *t, Iso1999Node *n)
 
 /**
  * Computes the total size of all directory entries of a single dir, as
- * stated in ISO 9660:1999, 6.8.1.3
+ * stated in ISO 9660:1999 / ECMA-119 4th Edition, 6.8.1.3
  */
 static
 size_t calc_dir_size(Ecma119Image *t, Iso1999Node *dir)
@@ -616,7 +618,7 @@ size_t calc_dir_size(Ecma119Image *t, Iso1999Node *dir)
     /*
      * The size of a dir is always a multiple of block size, as we must add
      * the size of the unused space after the last directory record
-     * (ISO 9660:1999, 6.8.1.3)
+     * (ISO 9660:1999 / ECMA-119 4th Edition, 6.8.1.3)
      */
     len = ROUND_UP(len, BLOCK_SIZE);
 
@@ -643,7 +645,8 @@ void calc_dir_pos(Ecma119Image *t, Iso1999Node *dir)
 }
 
 /**
- * Compute the length of the path table (ISO 9660:1999, 6.9), in bytes.
+ * Compute the length of the path table (ISO 9660:1999 / ECMA-119 4th Edition,
+ * 6.9), in bytes.
  */
 static
 uint32_t calc_path_table_size(Iso1999Node *dir)
@@ -699,7 +702,7 @@ int iso1999_writer_compute_data_blocks(IsoImageWriter *writer)
 }
 
 /**
- * Write a single directory record (ISO 9660:1999, 9.1).
+ * Write a single directory record (ISO 9660:1999 / ECMA-119 4th Edition, 9.1).
  *
  * @param file_id
  *     if >= 0, we use it instead of the filename (for "." and ".." entries).
@@ -765,7 +768,8 @@ void write_one_dir_record(Ecma119Image *t, Iso1999Node *node, int file_id,
 }
 
 /**
- * Write the enhanced volume descriptor (ISO/IEC 9660:1999, 8.5)
+ * Write the enhanced volume descriptor
+ * (ISO/IEC 9660:1999 / ECMA-119 4th Edition, 8.5)
  */
 static
 int iso1999_writer_write_vol_desc(IsoImageWriter *writer)
@@ -806,7 +810,9 @@ int iso1999_writer_write_vol_desc(IsoImageWriter *writer)
     vol.vol_desc_type[0] = 2;
     memcpy(vol.std_identifier, "CD001", 5);
 
-    /* descriptor version is 2 (ISO/IEC 9660:1999, 8.5.2) */
+    /* descriptor version is 2
+     * (ISO/IEC 9660:1999 / ECMA-119 4th Edition, 8.5.2)
+     */
     vol.vol_desc_version[0] = 2;
     strncpy_pad((char*)vol.volume_id, vol_id, 32);
 
@@ -1052,7 +1058,9 @@ int iso1999_writer_write_data(IsoImageWriter *writer)
 static
 int iso1999_writer_free_data(IsoImageWriter *writer)
 {
-    /* free the ISO 9660:1999 tree */
+    /* free the ISO 9660:1999 / ECMA-119 4th Edition Enhanced Volume Descriptor
+     * tree
+     */
     Ecma119Image *t = writer->target;
     iso1999_node_free(t->iso1999_root);
     return ISO_SUCCESS;

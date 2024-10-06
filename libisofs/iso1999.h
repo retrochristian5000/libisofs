@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
+ * Copyright (c) 2024 Thomas Schmitt
  * 
  * This file is part of the libisofs project; you can redistribute it and/or 
  * modify it under the terms of the GNU General Public License version 2 
@@ -8,11 +9,11 @@
  */
 
 /**
- * Structures related to ISO/IEC 9660:1999, that is version 2 of ISO-9660 
- * "See doc/devel/cookbook/ISO 9660-1999" and
- * ISO/IEC DIS 9660:1999(E) "Information processing. Volume and file structure
- *                           of CD­-ROM for Information Interchange"
- * for further details.
+ * Structures related to the Enhanced Volume Descriptor as of ECMA-119 4th
+ * Edition. See there and in "doc/devel/cookbook/ISO 9660-1999" for further
+ * details.
+ * This optional tree is also known as ISO/IEC DIS 9660:1999, a once proposed
+ * version 2 of ISO-9660.
  */
 
 #ifndef LIBISO_ISO1999_H
@@ -49,7 +50,7 @@ struct iso1999_node
 };
 
 /**
- * Create a IsoWriter to deal with ISO 9660:1999 estructures, and add it to 
+ * Create a IsoWriter to deal with ISO 9660:1999 structures, and add it to 
  * the given target.
  * 
  * @return

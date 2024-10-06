@@ -19,9 +19,13 @@ Contents:
 -------------------------------------------------------------------------------
 1. References:
 
+Meanwhile this is specified in ECMA-119 4th Edition of 2019 by the description
+of the Enhanced Volume Descriptor.
+
+The old name "ISO 9660:1999" comes from:
 ISO/IEC DIS 9660:1999(E) "Information processing. Volume and file structure of
                           CD­-ROM for Information Interchange"
-                          
+
 
 -------------------------------------------------------------------------------
 2. General

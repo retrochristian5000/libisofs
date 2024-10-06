@@ -304,7 +304,10 @@ enum IsoHideNodeFlag {
     LIBISO_HIDE_ON_RR = 1 << 0,
     /** Hide the node in the Joliet tree, if Joliet extension are enabled */
     LIBISO_HIDE_ON_JOLIET = 1 << 1,
-    /** Hide the node in the ISO-9660:1999 tree, if that format is enabled */
+    /** Hide the node in the tree of an Enhanced Volume Descriptor
+        (aka ISO 9660:1999) as of ECMA-119 4th Edition, if that format is
+        enabled
+    */
     LIBISO_HIDE_ON_1999 = 1 << 2,
 
     /** Hide the node in the HFS+ tree, if that format is enabled.
@@ -1557,11 +1560,12 @@ int iso_write_opts_set_hfsp_block_size(IsoWriteOpts *opts,
 
 
 /**
- * Whether to use newer ISO-9660:1999 version.
+ * Whether to create an additional tree starting at Enhanced Volume Descriptor
+ * (aka ISO 9660:1999) as of ECMA-119 4th Edition.
  *
- * This is the second version of ISO-9660. It allows longer filenames and has
- * less restrictions than old ISO-9660. However, nobody is using it so there
- * are no much reasons to enable this.
+ * This allows longer filenames and has less restrictions than ECMA-119 2nd
+ * Edition aka ISO-9660:1988. However, nobody is using it. So there are
+ * not many reasons to enable this.
  *
  * @since 0.6.2
  */
@@ -1889,8 +1893,9 @@ int iso_write_opts_set_aaip_susp_1_10(IsoWriteOpts *opts, int oldvers);
  * iso_write_opts_set_replace_timestamps() apply. (replace==1 will revoke,
  * replace==2 will override mtime by iso_write_opts_set_default_timestamp().
  *
- * Since version 1.2.0 this may apply also to Joliet and ISO 9660:1999. To
- * reduce the probability of unwanted behavior changes between pre-1.2.0 and
+ * Since version 1.2.0 this may apply also to Joliet and an Enhanced Volume
+ * Descriptor tree (aka ISO 9660:1999) as of ECMA-119 4th Edition.
+ * To reduce the probability of unwanted behavior changes between pre-1.2.0 and
  * post-1.2.0, the bits for Joliet and ISO 9660:1999 also enable ECMA-119.
  * The hopefully unlikely bit14 may then be used to disable mtime for ECMA-119.
  *
@@ -2342,8 +2347,9 @@ int iso_write_opts_set_disc_label(IsoWriteOpts *opts, char *label);
 
 /**
  * Explicitly set the four timestamps of the emerging Primary Volume
- * Descriptor and in the volume descriptors of Joliet and ISO 9660:1999,
- * if those are to be generated.
+ * Descriptor, in the volume descriptor of Joliet, and in the Enhanced Volume
+ * Descriptor (aka ISO 9660:1999) as of ECMA-119 4th Edition, if those are
+ * to be generated.
  * Default with all parameters is 0.
  *
  * ECMA-119 defines them as:
@@ -3052,7 +3058,8 @@ int iso_read_opts_set_no_rockridge(IsoReadOpts *opts, int norr);
 int iso_read_opts_set_no_joliet(IsoReadOpts *opts, int nojoliet);
 
 /**
- * Do not read ISO 9660:1999 enhanced tree
+ * Do not read the tree of an Enhanced Volume Descriptor (aka ISO 9660:1999)
+ * as of ECMA-119 4th Edition.
  *
  * @since 0.6.2
  */
@@ -3360,8 +3367,8 @@ int iso_read_image_features_has_rockridge(IsoReadImageFeatures *f);
 int iso_read_image_features_has_joliet(IsoReadImageFeatures *f);
 
 /**
- * Whether the image is recorded according to ISO 9660:1999, i.e. it has
- * a version 2 Enhanced Volume Descriptor.
+ * Whether the image is recorded with an Enhanced Volume Descriptor
+ * (aka ISO 9660:1999) as of ECMA-119 4th Edition.
  *
  * @since 0.6.2
  */
@@ -3376,7 +3383,9 @@ int iso_read_image_features_has_eltorito(IsoReadImageFeatures *f);
 
 /**
  * Tells what directory tree was loaded:
- *     0= ISO 9660 , 1 = Joliet , 2 = ISO 9660:1999
+ *     0 = ISO 9660 , 1 = Joliet ,
+ *     2 = Enhanced Volume Descriptor tree as of ECMA-119 4th Edition
+ *        (aka ISO 9660:1999)
  *
  * @since 1.5.4
  */
@@ -5367,7 +5376,8 @@ time_t iso_node_get_ctime(const IsoNode *node);
 
 /**
  * Set whether the node will be hidden in the directory trees of RR/ISO 9660,
- * or of Joliet (if enabled at all), or of ISO-9660:1999 (if enabled at all).
+ * or of Joliet (if enabled at all), or of an Enhanced Volume Descriptor
+ * (aka ISO 9660:1999) as of ECMA-119 4th Edition (if enabled at all).
  *
  * A hidden file does not show up by name in the affected directory tree.
  * For example, if a file is hidden only in Joliet, it will normally
