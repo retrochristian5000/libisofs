@@ -7,7 +7,7 @@
  See libisofs/aaip_0_2.h
      http://libburnia-project.org/wiki/AAIP
 
- Copyright (c) 2009 - 2019 Thomas Schmitt
+ Copyright (c) 2009 - 2024 Thomas Schmitt
 
  This file is part of the libisofs project; you can redistribute it and/or
  modify it under the terms of the GNU General Public License version 2
@@ -1321,8 +1321,11 @@ static int aaip_consume_aa_data(struct aaip_state *aaip,
  while(*num_data > 0 && aaip->aa_missing > 0) {
    if(aaip->rec_head_missing > 0) {
      aaip_consume_rec_head(aaip, data, num_data, 0);
-     if(*num_data == 0 || aaip->aa_missing <= 0)
-       return(1);
+     if(*num_data == 0 || aaip->aa_missing <= 0) {
+       if(aaip->rec_head_missing > 0 || aaip->rec_missing > 0)
+         return(1);
+       /* empty record data: go on with processing it */
+     }
    }
    aaip_consume_rec_data(aaip, data, num_data, 0);
  }
