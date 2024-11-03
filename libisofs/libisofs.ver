@@ -387,9 +387,13 @@ local: *;
 
 LIBISOFS6_1.5.8 {
 iso_local_get_lfa_flags;
+iso_local_get_projid;
 iso_local_set_lfa_flags;
+iso_local_set_projid;
 iso_node_get_lfa_flags;
+iso_node_get_projid;
 iso_node_set_lfa_flags;
+iso_node_set_projid;
 iso_util_decode_lfa_flags;
 iso_util_encode_lfa_flags;
 iso_util_get_effective_lfa_mask;

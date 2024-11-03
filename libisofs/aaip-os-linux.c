@@ -56,7 +56,8 @@
              bit0= inquire availability of ACL
              bit1= inquire availability of xattr
              bit2= inquire availability of Linux-like file attribute flags
-             bit3 - bit7= Reserved for future types.
+             bit3= inquire availability of XFS-style project id
+             bit4 - bit7= Reserved for future types.
                           It is permissibile to set them to 1 already now.
              bit8 and higher: reserved, submit 0
    @return
@@ -64,7 +65,8 @@
              bit0= ACL adapter is enabled
              bit1= xattr adapter is enabled
              bit2= Linux-like file attribute flags adapter is enabled
-             bit3 - bit7= Reserved for future types.
+             bit3= XFS-style project id is enabled
+             bit4 - bit7= Reserved for future types.
              bit8 and higher: reserved, do not interpret these
 */
 int aaip_local_attr_support(int flag)
@@ -86,6 +88,15 @@ int aaip_local_attr_support(int flag)
 #ifdef FS_IOC_SETFLAGS
  if(flag & 4)
    ret|= 4;
+#endif
+#endif
+#endif
+
+#ifdef Libisofs_with_aaip_projiD
+#ifdef FS_IOC_FSGETXATTR
+#ifdef FS_IOC_FSSETXATTR
+ if(flag & 8)
+   ret|= 8;
 #endif
 #endif
 #endif
@@ -283,6 +294,7 @@ static int get_single_attr(char *path, char *name, size_t *value_length,
                                (chattr)
                         bit7=  Without bit6: Ignore non-settable flags and do
                                not record "isofs.fa" if all flags are zero
+                        bit8=  do not obtain XFS-style project id
                         bit15= free memory of names, value_lengths, values
    @return              1  ok
                         (reserved for FreeBSD: 2 ok, no permission to inspect
@@ -315,6 +327,9 @@ int aaip_get_attr_list(char *path, size_t *num_attrs, char ***names,
  uint64_t lfa_flags;
  int max_bit, os_errno, lfa_length;
  unsigned char lfa_value[8];
+#endif
+#ifdef Libisofs_with_aaip_projiD
+ uint32_t projid;
 #endif
 
  if(flag & (1 << 15)) { /* Free memory */
@@ -385,6 +400,16 @@ ex:;
    num_names++;
 
 #endif
+
+#ifdef Libisofs_with_aaip_projiD
+
+ if(!(flag & 256)) {
+   ret= iso_local_get_projid(path, &projid, &os_errno, 0);
+   if(ret > 0 && projid != 0)
+     num_names++;
+ }
+
+#endif /* Libisofs_with_aaip_projiD */
 
  if(num_names == 0)
    {ret= 1; goto ex;}
@@ -463,7 +488,7 @@ try_lfa_flags:;
      ret= 4;
    }
    if(ret == 1 || ret == 2) {
-     ret= aaip_encode_lfa_flags(lfa_flags, lfa_value, &lfa_length, 0);
+     ret= aaip_encode_uint64(lfa_flags, lfa_value, &lfa_length, 0);
      if(ret > 0) {
        (*names)[*num_attrs]= strdup("isofs.fa");
        if((*names)[*num_attrs] == NULL)
@@ -479,6 +504,29 @@ try_lfa_flags:;
  }
 
 #endif /* Libisofs_with_aaip_lfa_flagS */
+
+#ifdef Libisofs_with_aaip_projiD
+
+ if(!(flag & 256)) {
+   ret= iso_local_get_projid(path,  &projid, &os_errno, 0);
+   if(ret > 0 && projid != 0) {
+     /* Encode as big-endian number with no trailing 0-bytes */
+     ret= aaip_encode_uint64((uint64_t) projid, lfa_value, &lfa_length, 0);
+     if(ret > 0) {
+       (*names)[*num_attrs]= strdup("isofs.pi");
+       if((*names)[*num_attrs] == NULL)
+         {ret= -1; goto ex;}
+       (*values)[*num_attrs]= calloc(lfa_length, 1);
+       if((*values)[*num_attrs] == NULL)
+         {ret= -1; goto ex;}
+       memcpy((*values)[*num_attrs], (char *) lfa_value, lfa_length);
+       (*value_lengths)[*num_attrs]= lfa_length;
+       (*num_attrs)++;
+     }
+   }
+ }
+
+#endif /* Libisofs_with_aaip_projiD */
 
  ret= 1;
 ex:;
@@ -530,6 +578,7 @@ ex:;
    @param lfa_flags     Will get filled with the FS_*_FL
    @param max_bit       Will tell the highest bit that is possibly set
                         (-1 = surely no bit is valid)
+   @param os_errno      Will get filled with errno in case of error.
    @param flag          Bitfield for control purposes.
                         bit0= consider ENOTTY from FS_IOC_GETFLAGS an error
                               (else return 4 on ENOTTY)
@@ -604,6 +653,64 @@ int aaip_get_lfa_flags(char *path, uint64_t *lfa_flags, int *max_bit,
 
  return(ret);
 }
+
+
+/* Obtain the project id for XFS-style quota management.
+   See man xfs_quota(8).
+   @param path          Path to the file.
+   @param projid        Will get filled with the project id.
+   @param os_errno      Will get filled with errno in case of error.
+   @param flag          Bitfield for control purposes.
+                        bit2= do not issue own error messages with operating
+                              system errors
+   @return              1= ok, *projid is valid
+                        0= local project id retrieval not enabled at compile 
+                           time
+                        <0 error with system calls:
+                        -1= error with open(2)
+                        -2= error with ioctl(2)
+*/
+int aaip_get_projid(char *path, uint32_t *projid, int *os_errno, int flag)
+{
+ int ret= 0;
+
+#ifdef Libisofs_with_aaip_projiD
+#ifdef FS_IOC_FSGETXATTR
+
+ int fd;
+ struct fsxattr ioctl_result;
+
+#endif
+#endif
+
+ *projid= 0;
+
+#ifdef Libisofs_with_aaip_projiD
+#ifdef FS_IOC_FSGETXATTR
+
+ fd= open(path, O_RDONLY | O_NDELAY);
+ if(fd == -1) {
+   aaip_local_error("open", path, errno, 0);
+   *os_errno= errno;
+   return(-1);
+ }
+ ret= ioctl(fd, FS_IOC_FSGETXATTR, &ioctl_result);
+ close(fd);
+ if(ret == -1) {
+   if(!(flag & 4))
+     aaip_local_error("ioctl(FS_IOC_FSGETXATTR)", path, errno, 0);
+   *os_errno= errno;
+   return(-2);
+ }
+ *projid= ioctl_result.fsx_projid;
+ ret= 1;
+
+#endif /* FS_IOC_FSGETXATTR */
+#endif /* Libisofs_with_aaip_lfa_flagS */
+
+ return(ret);
+}
+
 
 
 /* ------------------------------ Setters --------------------------------- */
@@ -955,6 +1062,64 @@ int aaip_set_lfa_flags(char *path, uint64_t lfa_flags, int max_bit,
  ret= 1;
    
 #endif /* FS_IOC_SETFLAGS */
+#endif /* Libisofs_with_aaip_lfa_flagS */
+
+ return(ret);
+}
+
+
+/* Set the project id for XFS-style quota management.
+   @param path          Path to the file.
+   @param projid        Contains the project id for the file.
+   @param os_errno      Will get filled with errno in case of error.
+   @param flag          Bitfield for control purposes.
+                        bit2= do not issue own error messages with operating
+                              system errors
+   @return              1= ok, projid was written
+                        0= local flags setting not enabled at compile time
+                        -1= error with open(2)
+                        -2= error with ioctl(FS_IOC_FSGETXATTR)
+                        -3= error with ioctl(FS_IOC_FSSETXATTR)
+*/
+int aaip_set_projid(char *path, uint32_t projid, int *os_errno, int flag)
+{
+ int ret= 0;
+
+#ifdef Libisofs_with_aaip_projiD
+#ifdef FS_IOC_FSGETXATTR
+#ifdef FS_IOC_FSSETXATTR
+
+ int fd;
+ struct fsxattr ioctl_arg;
+
+ fd= open(path, O_RDONLY | O_NDELAY);
+ if(fd == -1) {
+   if(!(flag & 4))
+     aaip_local_error("open", path, errno, 0);
+   *os_errno= errno;
+   return(-1);
+ }
+ ret= ioctl(fd, FS_IOC_FSGETXATTR, &ioctl_arg);
+ if(ret == -1) {
+   if(!(flag & 4))
+     aaip_local_error("ioctl(FS_IOC_FSGETXATTR)", path, errno, 0);
+   *os_errno= errno;
+   close(fd);
+   return(-2);
+ }
+ ioctl_arg.fsx_projid= projid;
+ ret= ioctl(fd, FS_IOC_FSSETXATTR, &ioctl_arg);
+ close(fd);
+ if(ret == -1) {
+   if(!(flag & 4))
+     aaip_local_error("ioctl(FS_IOC_FSSETXATTR)", path, errno, 0);
+   *os_errno= errno;
+   return(-3);
+ }
+ ret= 1;
+
+#endif /* FS_IOC_FSSETXATTR */
+#endif /* FS_IOC_FSGETXATTR */
 #endif /* Libisofs_with_aaip_lfa_flagS */
 
  return(ret);

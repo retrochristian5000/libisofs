@@ -302,6 +302,23 @@ else
 fi
 AC_SUBST(LFA_DEF)
 
+dnl ts C41009
+PROJID_DEF=
+AC_ARG_ENABLE(projid,
+[  --enable-projid      Enable processing of XFS-style project id, default=yes],
+               , enable_projid=yes)
+if test x"$enable_projid" = xyes; then
+    AC_CHECK_HEADER(linux/fs.h, PROJID_DEF="-DLibisofs_with_aaip_projiD",
+                    PROJID_DEF=)
+fi
+if test x"$PROJID_DEF" = x; then
+    echo "disabled XFS-style project id"
+else
+    echo "enabled  XFS-style project id"
+fi
+AC_SUBST(PROJID_DEF)
+
+
 dnl ts A90409
 AC_ARG_ENABLE(zlib,
 [  --enable-zlib           Enable use of zlib by libisofs, default=yes],

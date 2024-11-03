@@ -507,14 +507,14 @@ int lfs_get_aa_string(IsoFileSource *src, unsigned char **aa_string, int flag)
 
     *aa_string = NULL;
 
-    if ((flag & (2 | 4 | 16) ) == (2 | 4)) {
+    if ((flag & (2 | 4 | 16 | 64) ) == (2 | 4)) {
         /* Neither ACL nor xattr shall be read, lfa_flags are not wanted */
         ret = 1;
         goto ex;
     }
     /* Obtain EAs and ACLs ("access" and "default"). ACLs encoded according
        to AAIP ACL representation. Clean out st_mode ACL entries.
-       Obtain Linux style attribute flags.
+       Obtain Linux style attribute flags and XFS-style project id.
     */ 
     path = iso_file_source_get_path(src);
     if (path == NULL) {
@@ -524,7 +524,8 @@ int lfs_get_aa_string(IsoFileSource *src, unsigned char **aa_string, int flag)
     ret = aaip_get_attr_list(path, &num_attrs, &names,
                              &value_lengths, &values,
                              (!(flag & 2)) | 2 | (flag & 4) | (flag & 8) | 16 |
-                             ((!(flag & 16)) << 6) | ((!!(flag & 32)) << 7));
+                             ((!(flag & 16)) << 6) | ((!!(flag & 32)) << 7) |
+                             ((!(flag & 64)) << 8));
     if (ret <= 0) {
         if (ret == -2)
             ret = ISO_AAIP_NO_GET_LOCAL;
@@ -866,13 +867,14 @@ int iso_local_set_acl_text(char *disk_path, char *text, int flag)
 int iso_local_get_attrs(char *disk_path, size_t *num_attrs, char ***names,
                         size_t **value_lengths, char ***values, int flag)
 {
-    int ret, lfa;
+    int ret, lfa, prj;
 
     lfa = (flag & 64) ^ 64;
+    prj = (flag & (1 << 8)) ^ (1 << 8);
     ret = aaip_get_attr_list(disk_path,
                              num_attrs, names, value_lengths, values,
-                             (flag & (1 | 4 | 8 | 32 | (1 << 15))) |
-                             2 | 16 | lfa);
+                             (flag & (1 | 4 | 8 | 32 | 256 | (1 << 15))) |
+                             2 | 16 | lfa | prj);
     if (ret <= 0)
         return ISO_AAIP_NO_GET_LOCAL;
     return 1 + (ret == 2);
@@ -958,7 +960,6 @@ int iso_local_get_perms_wo_acl(char *disk_path, mode_t *st_mode, int flag)
  *      4= ok, file did not bear attribute flags. E.g. because not S_IFDIR or
  *             S_IFREG, or because unsuitable filesystem.
  *             lfa_flags is set to 0
- *      0= local flags retrieval not enabled at compile time
  *     <0= error with system calls
  */
 int iso_local_get_lfa_flags(char *disk_path, uint64_t *lfa_flags, int *max_bit,
@@ -976,7 +977,7 @@ int iso_local_get_lfa_flags(char *disk_path, uint64_t *lfa_flags, int *max_bit,
         ret = lstat(disk_path, &stbuf);
     if (ret == -1) {
         *os_errno = errno;
-        return -1;
+        return ISO_FILE_DOESNT_EXIST;
     }
     if ((stbuf.st_mode & S_IFMT) == S_IFLNK && !(flag & 32))
         return 3;
@@ -987,7 +988,7 @@ int iso_local_get_lfa_flags(char *disk_path, uint64_t *lfa_flags, int *max_bit,
     if(ret == -1)
         return ISO_LFA_NO_OPEN_LOCAL;
     if(ret < 0)
-        return ISO_LFA_NO_SET_LOCAL;
+        return ISO_LFA_NO_GET_LOCAL;
     return ret;
 }
 
@@ -997,7 +998,7 @@ int iso_local_get_lfa_flags(char *disk_path, uint64_t *lfa_flags, int *max_bit,
  *      bit0= do not try to change known superuser flags
  *      bit1= change only known chattr settable flags
  *      bit2= do not issue own error messages with operating system errors
- *      bit5= in case of symbolic link: inquire link target
+ *      bit5= in case of symbolic link: operate on link target
  * @return
  *      1 = ok, all lfa_flags bits were written
  *      2 = ok, but some FS_*_FL bits could not be mapped to local flags
@@ -1018,7 +1019,7 @@ int iso_local_set_lfa_flags(char *disk_path, uint64_t lfa_flags, int max_bit,
         ret = lstat(disk_path, &stbuf);
     if (ret == -1) {
         *os_errno = errno;
-        return -1;
+        return ISO_FILE_DOESNT_EXIST;
     }
     if ((stbuf.st_mode & S_IFMT) == S_IFLNK && !(flag & 32))
         return 3;
@@ -1046,6 +1047,80 @@ int iso_local_set_lfa_flags(char *disk_path, uint64_t lfa_flags, int max_bit,
         return ISO_LFA_NO_OPEN_LOCAL;
     if(ret < 0)
         return ISO_LFA_NO_SET_LOCAL;
+    return ret;
+}
+
+
+/*
+ * @param flag
+ *      Bitfield for control purposes
+ *      bit2= do not issue own error messages with operating system errors
+ *      bit5= in case of symbolic link: inquire link target
+ * @return
+ *      1= ok, projid is valid
+ *      3 = ok, symbolic link encountered, flag bit5 not set, projid set to 0
+ *     <0= error with system calls
+ */
+int iso_local_get_projid(char *disk_path, uint32_t *projid, int *os_errno,
+                         int flag)
+{
+    int ret;
+    struct stat stbuf;
+
+    *projid = 0;
+    *os_errno = 0;
+    if (flag & 32)
+        ret = stat(disk_path, &stbuf);
+    else
+        ret = lstat(disk_path, &stbuf);
+    if (ret == -1) {
+        *os_errno = errno;
+        return ISO_FILE_DOESNT_EXIST;
+    }
+    ret = aaip_get_projid(disk_path, projid, os_errno, flag & 4);
+    if(ret == 0)
+        return ISO_PROJID_NOT_ENABLED;
+    if(ret == -1)
+        return ISO_PROJID_NO_OPEN_LOCAL;
+    if(ret < 0)
+        return ISO_PROJID_NO_SET_LOCAL;
+    return ret;
+}
+
+
+/*
+ * @param flag          Bitfield for control purposes
+ *      bit2= do not issue own error messages with operating system errors
+ *      bit5= in case of symbolic link: manipulate link target
+ * @return
+ *      1 = ok, projid was written
+ *      3 = ok, symbolic link encountered, flag bit5 not set, nothing done
+ *     <0 = error
+ */
+int iso_local_set_projid(char *disk_path, uint32_t projid, int *os_errno,
+                         int flag)
+{
+    int ret;
+    struct stat stbuf;
+
+    *os_errno = 0;
+    if (flag & 32)
+        ret = stat(disk_path, &stbuf);
+    else
+        ret = lstat(disk_path, &stbuf);
+    if (ret == -1) {
+        *os_errno = errno;
+        return ISO_FILE_DOESNT_EXIST;
+    }
+    if ((stbuf.st_mode & S_IFMT) == S_IFLNK && !(flag & 32))
+        return 3;
+    ret = aaip_set_projid(disk_path, projid, os_errno, flag & 4);
+    if(ret == 0)
+        return ISO_PROJID_NOT_ENABLED;
+    if (ret == -1)
+        return ISO_PROJID_NO_OPEN_LOCAL;
+    if(ret < 0)
+        return ISO_PROJID_NO_SET_LOCAL;
     return ret;
 }
 

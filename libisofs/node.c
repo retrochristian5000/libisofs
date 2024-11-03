@@ -2058,6 +2058,7 @@ ex:;
 /* @param flag
         bit0= delete ACL, too
         bit1= delete file attribute flags (isofs.fa), too
+        bit2= delete XFS-style project id (isofs.pi), too
 */
 int iso_node_remove_fattr(IsoNode *node, int flag)
 {
@@ -2074,7 +2075,8 @@ int iso_node_remove_fattr(IsoNode *node, int flag)
     w = 0;
     for (i = 0; i < num_attrs; i++) {
         if (strncmp(names[i], "isofs.", 6) != 0 ||
-            ((flag & 2) && strcmp(names[i], "isofs.fa") == 0)) {
+            ((flag & 2) && strcmp(names[i], "isofs.fa") == 0) ||
+            ((flag & 4) && strcmp(names[i], "isofs.pi") == 0)) {
             free(names[i]);
             names[i] = NULL;
             free(values[i]);
@@ -2462,7 +2464,7 @@ int iso_node_set_lfa_flags(IsoNode *node, uint64_t lfa_flags, int flag)
     char *valuept;
     int ret, l;
 
-    ret = aaip_encode_lfa_flags(lfa_flags, value, &l, 0);
+    ret = aaip_encode_uint64(lfa_flags, value, &l, 0);
     if (ret < 0)
         return ret; 
     value_lengths[0] = l;
@@ -2497,6 +2499,57 @@ int iso_node_get_lfa_flags(IsoNode *node, uint64_t *lfa_flags, int *max_bit,
     for (i = 0; i < (int) value_len; i++)
         *lfa_flags = (*lfa_flags << 8) | ((unsigned char *) value)[i];
     *max_bit = value_len * 8 - 1;
+    return 1;
+}
+
+
+int iso_node_set_projid(IsoNode *node, uint32_t projid, int flag)
+{
+    static char *names = "isofs.pi";
+    static size_t value_lengths[1];
+    unsigned char value[8];
+    char *valuept = NULL;
+    int ret, l;
+
+    value_lengths[0] = 0;
+    if(projid == 0) {
+      /* Delete isofs.pi */
+      ret = iso_node_set_attrs(node, (size_t) 1, &names,
+                               value_lengths, &valuept, 2 | 4 | 8);
+      return ret; 
+    }
+    ret = aaip_encode_uint64((uint64_t) projid, value, &l, 0);
+    if (ret < 0)
+        return ret; 
+    value_lengths[0] = l;
+    valuept= (char *) value;
+    ret = iso_node_set_attrs(node, (size_t) 1,
+                             &names, value_lengths, &valuept, 2 | 8);
+    return ret;
+}
+
+
+int iso_node_get_projid(IsoNode *node, uint32_t *projid, int flag)
+{
+    int ret, i;
+    size_t value_len;
+    char *value = NULL;
+
+    *projid = 0;
+
+    ret = iso_node_lookup_attr(node, "isofs.pi", &value_len, &value, 0);
+    if (ret < 0)
+        return ret;
+    if (ret == 0)
+        return 1;
+    if (value_len <= 0)
+        return 1;
+    if (value_len > 4) {
+        value += value_len - 4;
+        value_len = 4;
+    }
+    for (i = 0; i < (int) value_len; i++)
+        *projid = (*projid << 8) | ((unsigned char *) value)[i];
     return 1;
 }
 

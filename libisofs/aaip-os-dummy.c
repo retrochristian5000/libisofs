@@ -47,7 +47,9 @@
         Bitfield corresponding to flag.
              bit0= ACL adapter is enabled
              bit1= xattr adapter is enabled
-             bit2 - bit7= Reserved for future types.
+             bit2= Linux-like file attribute flags (chattr) adapter is enabled
+             bit3= inquire availability of XFS-style project id
+             bit4 - bit7= Reserved for future types.
              bit8 and higher: reserved, do not interpret these
 */
 int aaip_local_attr_support(int flag)
@@ -90,6 +92,16 @@ int aaip_get_lfa_flags(char *path, uint64_t *lfa_flags, int *max_bit,
 {
  *lfa_flags= 0;
  *max_bit= -1;
+ *os_errno= 0;
+ return(0);
+}
+
+
+/* Obtain the project id for XFS-style quota management.
+*/
+int aaip_get_projid(char *path, uint32_t *projid, int *os_errno, int flag)
+{
+ *projid= 0;
  *os_errno= 0;
  return(0);
 }
@@ -149,6 +161,15 @@ int aaip_set_attr_list(char *path, size_t num_attrs, char **names,
 
 int aaip_set_lfa_flags(char *path, uint64_t lfa_flags, int max_bit,
                        int *os_errno, int flag)
+{
+ *os_errno= 0;
+ return(0);
+}
+
+
+/* Set the project id for XFS-style quota management.
+*/
+int aaip_set_projid(char *path, uint32_t projid, int *os_errno, int flag)
 {
  *os_errno= 0;
  return(0);

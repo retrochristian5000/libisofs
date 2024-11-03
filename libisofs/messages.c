@@ -585,6 +585,14 @@ const char *iso_error_to_msg(int errcode)
         return "Error with setting Linux-like file attributes of local file";
     case ISO_LFA_NO_OPEN_LOCAL:
         return "Failure to open local file for Linux-like file attributes";
+    case ISO_PROJID_NOT_ENABLED:
+        return "Local XFS-style file project id processing not enabled at compile time";
+    case ISO_PROJID_NO_GET_LOCAL:
+        return "Error with getting XFS-style project id of local file";
+    case ISO_PROJID_NO_SET_LOCAL:
+        return "Error with setting XFS-style project id of local file";
+    case ISO_PROJID_NO_OPEN_LOCAL:
+        return "Failure to open local file for XFS-style project id";
     default:
         return "Unknown error";
     }

@@ -1600,10 +1600,10 @@ try_again:
             }
         } else if (retry == 2) {
             if ((t->opts->max_ce_drop_attr & 15) >= 2) {
-                ret = iso_node_remove_fattr(n->node, 1 | 2);
+                ret = iso_node_remove_fattr(n->node, 1 | 2 | 4);
                 if (ret > 0) {
                     iso_msg_submit(t->image->id, ISO_CE_REMOVING_ATTR, 0,
-                                   "Removed ACL and attribute flags");
+                                   "Removed ACL, attribute flags, project id");
                     goto try_again;
                 }
             }

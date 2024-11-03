@@ -162,8 +162,8 @@ int aaip_add_acl_st_mode(char *acl_text, mode_t st_mode, int flag);
    @param length      Will return the number of filled-in value bytes
    @return            <0 failure
 */
-int aaip_encode_lfa_flags(uint64_t lfa_flags, unsigned char value[8],
-                          int *length, int flag);
+int aaip_encode_uint64(uint64_t lfa_flags, unsigned char value[8],
+                       int *length, int flag);
 
 
 /* ------ OS interface ------ */
@@ -174,7 +174,8 @@ int aaip_encode_lfa_flags(uint64_t lfa_flags, unsigned char value[8],
              bit0= inquire availability of ACL
              bit1= inquire availability of xattr
              bit2= inquire availability of Linux-like file attribute flags
-             bit3 - bit7= Reserved for future types.
+             bit3= inquire availability of XFS-style project id
+             bit4 - bit7= Reserved for future types.
                           It is permissibile to set them to 1 already now.
              bit8 and higher: reserved, submit 0
    @return
@@ -182,7 +183,8 @@ int aaip_encode_lfa_flags(uint64_t lfa_flags, unsigned char value[8],
              bit0= ACL adapter is enabled
              bit1= xattr adapter is enabled
              bit2= Linux-like file attribute flags adapter is enabled
-             bit3 - bit7= Reserved for future types.
+             bit3= XFS-style project id is enabled
+             bit4 - bit7= Reserved for future types.
                           It is permissibile to set them to 1 already now.
              bit8 and higher: reserved, do not interpret these
 */
@@ -227,6 +229,9 @@ int aaip_get_acl_text(char *path, char **text, int flag);
                         bit5=  in case of symbolic link: inquire link target
                         bit6=  do not obtain Linux style file attribute flags
                                (chattr)
+                        bit7=  Without bit6: Ignore non-settable flags and do
+                               not record "isofs.fa" if all flags are zero
+                        bit8=  do not obtain XFS-style project id
                         bit15= free memory of names, value_lengths, values
    @return              >0  ok
                         <=0 error
@@ -263,6 +268,24 @@ int aaip_get_attr_list(char *path, size_t *num_attrs, char ***names,
 */
 int aaip_get_lfa_flags(char *path, uint64_t *lfa_flags, int *max_bit,
                        int *os_errno, int flag);
+
+
+/* Obtain the project id for XFS-style quota management.
+   See man xfs_quota(8).
+   @param path          Path to the file.
+   @param projid        Will get filled with the project id.
+   @param os_errno      Will get filled with errno in case of error.
+   @param flag          Bitfield for control purposes.
+                        bit2= do not issue own error messages with operating
+                              system errors
+   @return              1= ok, *projid is valid
+                        0= local project id retrieval not enabled at compile
+                           time
+                        <0 error with system calls:
+                        -1= error with open(2)
+                        -2= error with ioctl(2)
+*/
+int aaip_get_projid(char *path, uint32_t *projid, int *os_errno, int flag);
 
 
 /* --------------------------------- Decoder ---------------------------- */
@@ -590,6 +613,21 @@ int aaip_set_attr_list(char *path, size_t num_attrs, char **names,
 int aaip_set_lfa_flags(char *path, uint64_t lfa_flags, int max_bit,
                        int *os_errno, int flag);
 
+
+/* Set the project id for XFS-style quota management.
+   @param path          Path to the file.
+   @param projid        Contains the project id for the file.
+   @param os_errno      Will get filled with errno in case of error.
+   @param flag          Bitfield for control purposes.
+                        bit2= do not issue own error messages with operating
+                              system errors
+   @return              1= ok, projid was written
+                        0= local flags setting not enabled at compile time
+                        -1= error with open(2)
+                        -2= error with ioctl(FS_IOC_FSGETXATTR)
+                        -3= error with ioctl(FS_IOC_FSSETXATTR)
+*/
+int aaip_set_projid(char *path, uint32_t projid, int *os_errno, int flag);
 
 #endif /* ! Aaip_h_is_includeD */
 

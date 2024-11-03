@@ -900,8 +900,8 @@ int aaip_add_acl_st_mode(char *acl_text, mode_t st_mode, int flag)
 }
 
 
-int aaip_encode_lfa_flags(uint64_t lfa_flags, unsigned char value[8],
-                          int *length, int flag)
+int aaip_encode_uint64(uint64_t lfa_flags, unsigned char value[8],
+                       int *length, int flag)
 {
  int i, l;
 

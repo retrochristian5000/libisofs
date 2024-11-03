@@ -26,8 +26,9 @@ libisofs_libisofs_la_LDFLAGS = \
 # ts A90409: Enabling use of zlib.
 # ts B00927: Enabling use of libjte (Jigdo Template Extraction)
 # ts C40713: Enabling system adapter for Linux chattr(1) flags
+# ts C41009: Enabling system adapter for project id of XFS-style quota
 libisofs_libisofs_la_CFLAGS = $(LIBACL_DEF) $(XATTR_DEF) $(LFA_DEF) \
-                              $(ZLIB_DEF) $(LIBJTE_DEF)
+                              $(PROJID_DEF) $(ZLIB_DEF) $(LIBJTE_DEF)
 
 # ts A90114 : added aaip_0_2.*
 

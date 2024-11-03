@@ -874,6 +874,8 @@ struct IsoFileSource_Iface
      *                         attribute flags and do not record "isofs.fa"
      *                         if the other flags are all zero
      *                         @since 1.5.8
+     *                   bit6= Try to get XFS-style project id as "isofs.pi"
+     *                         @since 1.5.8
      * @param aa_string  Returns a pointer to the AAIP string data. If no AAIP
      *                   string is available, *aa_string becomes NULL.
      *                   (See doc/susp_aaip_*_*.txt for the meaning of AAIP and
@@ -1327,6 +1329,10 @@ int iso_image_new(const char *name, IsoImage **image);
  *           @since 1.5.0
  *     bit5= with bit2: Ignore non-settable Linux-like file attribute flags
  *           and do not record "isofs.fa" if the other flags are all zero
+ *           @since 1.5.8
+ *     bit6= read XFS-style project from the file object id and record
+ *           "isofs.pi" if it is not 0.
+ *           (I.e. a do-not-ignore, because ignoring was default before)
  *           @since 1.5.8
  *     all other bits are reserved
  *
@@ -7296,6 +7302,8 @@ int iso_file_source_readlink(IsoFileSource *src, char *buf, size_t bufsiz);
  *                         attribute flags and do not record "isofs.fa"
  *                         if the other flags are all zero
  *                         @since 1.5.8
+ *                   bit6= Try to get XFS-style project id as "isofs.pi"
+ *                         @since 1.5.8
  * @return           1 means success (*aa_string == NULL is possible)
  *                  <0 means failure and must b a valid libisofs error code
  *                     (e.g. ISO_FILE_ERROR if no better one can be found).
@@ -7860,13 +7868,51 @@ int iso_node_get_lfa_flags(IsoNode *node, uint64_t *lfa_flags, int *max_bit,
 int iso_node_set_lfa_flags(IsoNode *node, uint64_t lfa_flags, int flag);
 
 
-/* ----- This is an interface to ACL and xattr of the local filesystem ----- */
+/**
+ * Obtain the XFS-style project id of the given node.
+ * The result is 0 if no project id information is associated with the node.
+ * 
+ * @param node
+ *      The node that is to be inquired.
+ * @param projid
+ *      Will get filled with the project id
+ * @param flag
+ *      Bitfield for control purposes. Submit 0.
+ * @return
+ *      1 = ok, projid is valid
+ *    < 0 = error
+ *
+ * @since 1.5.8
+ */
+int iso_node_get_projid(IsoNode *node, uint32_t *projid, int flag);
+
 
 /**
- * libisofs has an internal system dependent adapter to ACL and xattr
- * operations. For the sake of completeness and simplicity it exposes this
- * functionality to its applications which might want to get and set ACLs
- * from local files.
+ * Set the Linux-like XFS-style project id of the given node.
+ *
+ * @param node
+ *      The node that is to be manipulated.
+ * @param projid
+ *      The project id to be set.
+ * @param flag
+ *      Bitfield for control purposes. Submit 0.
+ * @return
+ *      1 = ok
+ *    < 0 = error
+ *
+ * @since 1.5.8
+ */
+int iso_node_set_projid(IsoNode *node, uint32_t projid, int flag);
+
+
+/* ---- This is an interface to file attributes of the local filesystem ---- */
+
+/**
+ * libisofs has an internal system dependent adapter to perform operations on
+ * ACL, xattr, Linux-like file attribute flags, and XFS-style project ids.
+ * For the sake of completeness and simplicity it exposes this functionality
+ * to its applications which might want to get and set such attributes from
+ * local files.
  */
 
 /**
@@ -7879,7 +7925,11 @@ int iso_node_set_lfa_flags(IsoNode *node, uint64_t lfa_flags, int flag);
  *      Bitfield for control purposes
  *           bit0= inquire availability of ACL
  *           bit1= inquire availability of xattr
- *           bit2 - bit7= Reserved for future types.
+ *           bit2= inquire availability of Linux-like file attribute flags
+ *                 @since 1.5.8
+ *           bit3= inquire availability of XFS-style project id
+ *                 @since 1.5.8
+ *           bit4 - bit7= Reserved for future types.
  *                        It is permissibile to set them to 1 already now.
  *           bit8 and higher: reserved, submit 0
  * @return
@@ -7888,13 +7938,16 @@ int iso_node_set_lfa_flags(IsoNode *node, uint64_t lfa_flags, int flag);
  *           bit1= xattr adapter is enabled
  *           bit2= Linux-like file attribute flags (chattr) adapter is enabled
  *                 @since 1.5.8
- *           bit3 - bit7= Reserved for future types.
+ *           bit3= XFS-style project ids are enabled
+ *                 @since 1.5.8
+ *           bit4 - bit7= Reserved for future types.
  *                        It is permissibile to set them to 1 already now.
  *           bit8 and higher: reserved, do not interpret these
  *
  * @since 1.1.6
  */
 int iso_local_attr_support(int flag);
+
 
 /**
  * Get an ACL of the given file in the local filesystem in long text form.
@@ -7971,8 +8024,9 @@ int iso_local_get_perms_wo_acl(char *disk_path, mode_t *st_mode, int flag);
 
 
 /**
- * Get xattr, non-trivial ACLs, and possible Linux-like file attribute flags
- * (chattr) of the given file in the local filesystem.
+ * Get xattr, non-trivial ACLs, possible Linux-like file attribute flags
+ * (chattr), and XFS-style project id of the given file in the local
+ * filesystem.
  * The resulting data has finally to be disposed by a call to this function
  * with flag bit15 set.
  *
@@ -7998,6 +8052,9 @@ int iso_local_get_perms_wo_acl(char *disk_path, mode_t *st_mode, int flag);
  *             I.e. those with a name which does not begin by "user."
  *      bit5=  in case of symbolic link: inquire link target
  *      bit6=  obtain Linux-like file attribute flags (chattr) as "isofs.fa"
+ *             @since 1.5.8
+ *      bit8=  obtain XFS-style non-zero project id as "isofs.pi"
+ *             @since 1.5.8
  *      bit15= free memory
  * @return
  *        1 ok
@@ -8238,6 +8295,55 @@ void iso_util_get_lfa_masks(uint64_t *user_settable, uint64_t *su_settable,
  */
 uint64_t iso_util_get_effective_lfa_mask(uint64_t change_mask, int flag);
 
+
+/**
+ * Obtain the XFS-style project id of the given file.
+ * 
+ * @param disk_path
+ *      Path to the file
+ * @param projid
+ *      Will get filled with the project id number.
+ * @param os_errno
+ *      Will get filled with errno if a system call fails.
+ *      Else it will be filled with 0.
+ * @param flag
+ *      Bitfield for control purposes
+ *      bit2= do not issue own error messages with operating system errors
+ *      bit5= in case of symbolic link: inquire link target
+ * @return
+ *      1 = ok, projid is valid
+ *      3 = ok, symbolic link encountered, flag bit5 not set, projid set to 0
+ *     <0 = error with system calls
+ *
+ * @since 1.5.8
+ */
+int iso_local_get_projid(char *disk_path, uint32_t *projid, int *os_errno,
+                         int flag);
+
+
+/**
+ * Bring the given XFS-style project id into effect with the given file.
+ *
+ * @param disk_path
+ *      Path to the file
+ * @param projid
+ *      Project id
+ * @param os_errno
+ *      Will get filled with errno if a system call fails.
+ *      Else it will be filled with 0.
+ * @param flag
+ *      Bitfield for control purposes
+ *      bit2= do not issue own error messages with system call errors
+ *      bit5= in case of symbolic link: operate on link target
+ * @return
+ *      1 = ok, projid was written
+ *      3 = ok, symbolic link encountered, flag bit5 not set, nothing done
+ *     <0 = error
+ *
+ * @since 1.5.8
+ */
+int iso_local_set_projid(char *disk_path, uint32_t projid, int *os_errno,
+                         int flag);
  
 
 /* Default in case that the compile environment has no macro PATH_MAX.
@@ -9742,9 +9848,25 @@ int iso_conv_name_chars(IsoWriteOpts *opts, char *name, size_t name_len,
                                                          (SORRY,HIGH, -434) */
 #define ISO_LFA_NO_SET_LOCAL        0xE030FE4E
 
-/** Failure to open local file for setting Linux-like file attributes
+/** Failure to open local file for Linux-like file attributes
                                                          (SORRY,HIGH, -435) */
 #define ISO_LFA_NO_OPEN_LOCAL       0xE030FE4D
+
+/** Local XFS-style file project id processing not enabled at compile time 
+                                                         (SORRY,HIGH, -436) */
+#define ISO_PROJID_NOT_ENABLED      0xE030FE4C
+
+/** Error with getting XFS-style project id of local file
+                                                         (SORRY,HIGH, -437) */
+#define ISO_PROJID_NO_GET_LOCAL     0xE030FE4B
+
+/** Error with setting XFS-style project id of local file
+                                                         (SORRY,HIGH, -438) */
+#define ISO_PROJID_NO_SET_LOCAL     0xE030FE4A
+
+/** Failure to open local file for XFS-style project id
+                                                         (SORRY,HIGH, -439) */
+#define ISO_PROJID_NO_OPEN_LOCAL    0xE030FE49
 
 
 

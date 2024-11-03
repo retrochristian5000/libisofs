@@ -176,6 +176,7 @@ Format of Value:
 Example:
       (FS_SECRM_FL|FS_APPEND_FL|FS_NOCOMP_FL) = 0x421
       {   4 ,  33 }
+
 Registered:
       12 Jul 2024 by Thomas Schmitt for libisofs.
 
@@ -247,6 +248,27 @@ Example:
 
 Registered:
       24 Sep 2015 by Thomas Schmitt for libisofs.
+
+-------------------------------------------------------------------------------
+
+Name:
+      isofs.pi
+
+Purpose:
+      Records the project id for XFS-style quota management.
+      See man xfs_quota(8).
+      Missing isofs.pi is defaulted to project id 0.
+
+Format of Value:
+      A byte string which begins with the most significant byte.
+      Up to four bytes are permissible.
+
+Example:
+      Project id 258
+      { 1, 2 }
+
+Registered:
+      09 Oct 2024 by Thomas Schmitt for libisofs.
 
 -------------------------------------------------------------------------------
 
