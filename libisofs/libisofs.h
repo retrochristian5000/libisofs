@@ -2846,6 +2846,41 @@ int iso_write_opts_set_part_type_guid(IsoWriteOpts *opts, int partition_number,
                                       uint8_t guid[16], int valid);
 
 /**
+ * Control whether the GPT partition table is allowed to leave some parts of
+ * the emerging ISO image uncovered, whether the partition entries in the
+ * GPT get sorted by their start block addresses, and whether partition 1
+ * gets created to represent the ISO 9660 filesystem.
+ * Default is that the partition entries get sorted and all gaps get filled
+ * by additional GPT partition entries. Partition 1 is by default created for
+ * the ISO filesystem if partition offset is 16, no partition 1 was created for
+ * other reasons, and no other partition overlaps with the range from LBA 16 to
+ * the end of the ISO 9660 filesystem.
+ *
+ * Note that GPT for ISOLINUX isohybrid does not get gaps filled, anyways.
+ *
+ * @param opts
+ *        The option set to be manipulated.
+ * @param with_gaps
+ *        If 0, fill gaps.
+ *        If 1, do not fill gaps.
+ * @param with_gaps_no_sort
+ *        In case that with_gaps is 1:
+ *        If 0, sort partitions by start block addresses.
+ *        If 1, do not sort partitions.
+ * @param with_gaps_no_iso
+ *        In case that with_gaps is 1:
+ *        If 0, create partition 1 for the ISO filesystem if possible.
+ *        If 1, do not create partition for the ISO filesystem if not already
+ *        created for other reasons.
+ * @return
+ *        ISO_SUCCESS or error
+ * 
+ * @since 1.5.8
+ */
+int iso_write_opts_set_gpt_with_gaps(IsoWriteOpts *opts, int with_gaps,
+                                  int with_gaps_no_sort, int with_gaps_no_iso);
+
+/**
  * Control whether partitions created by iso_write_opts_set_partition_img()
  * are to be represented in Apple Partition Map.
  * 

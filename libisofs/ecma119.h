@@ -515,6 +515,9 @@ struct iso_write_opts {
      */
     uint8_t iso_gpt_type_guid[16];
     /* bit0= iso_gpt_type_guid is valid
+       bit1= gaps in the image coverage are allowed
+       bit2= with bit1: do not sort GPT partition array by start block
+       bit3= with bit1: do not create partition 1 for ISO filesystem
     */
     int iso_gpt_flag;
 

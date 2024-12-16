@@ -398,5 +398,6 @@ iso_util_decode_lfa_flags;
 iso_util_encode_lfa_flags;
 iso_util_get_effective_lfa_mask;
 iso_util_get_lfa_masks;
+iso_write_opts_set_gpt_with_gaps;
 } LIBISOFS6;
 

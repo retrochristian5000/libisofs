@@ -1757,16 +1757,67 @@ static int iso_write_gpt(Ecma119Image *t, uint32_t img_blocks, uint8_t *buf)
     ret = iso_copy_apmhfs_to_gpt(t, 0);
     if (ret <= 0)
         return ret;
-    
+
+    if (t->opts->partition_offset == 16 && (t->opts->iso_gpt_flag & 2) &&
+        !(t->opts->iso_gpt_flag & 8)) {
+        /* If there is no appended partition number 1, the space between
+           t->opts->partition_offset and t->vol_space_size is uncovered,
+           and t->opts->partition_offset == 16:
+           Create ISO9660 partitition (see below)
+        */
+        for (i = 0; i < t->gpt_req_count; i++) {
+            if (t->gpt_req[i]->desired_slot == 1)
+        break;
+            if (t->gpt_req[i]->start_block < t->vol_space_size * (uint64_t) 4
+                &&
+                t->gpt_req[i]->start_block + t->gpt_req[i - 1]->block_count >
+                t->opts->partition_offset * (uint64_t) 4)
+        break;
+        }
+        if (i >= t->gpt_req_count) {
+            /* Create ISO 9660 partition */
+            memset(gpt_name, 0, 72);
+            type_guid = basic_data_uuid;
+            eff_gpt_flags= gpt_flags;
+            sprintf((char *) gpt_name, "ISO9660");
+            type_guid = basic_data_uuid;
+            if (t->opts->iso_gpt_flag & 1)
+                type_guid = t->opts->iso_gpt_type_guid;
+            if (t->system_area_options & (1 << 16))
+                eff_gpt_flags|= 4; /* Legacy BIOS bootable */
+            if (t->system_area_options & (1 << 17))
+                eff_gpt_flags&= ~(((uint64_t) 1) << 60);/* Not read-only */
+            iso_ascii_utf_16le(gpt_name);
+            ret = iso_quick_gpt_entry(t->gpt_req, &(t->gpt_req_count),
+                                    t->opts->partition_offset * (uint64_t) 4,
+                                    (t->vol_space_size -
+                                     t->opts->partition_offset) * (uint64_t) 4,
+                                    type_guid, zero_uuid,
+                                    eff_gpt_flags, gpt_name);
+            if (ret < 0)
+                return ret;
+            t->gpt_req[t->gpt_req_count - 1]->desired_slot = 1;
+            /* Make new partition the first one */
+            req= t->gpt_req[t->gpt_req_count - 1];
+            for (i = t->gpt_req_count - 2; i >= 0; i--)
+                t->gpt_req[i + 1]= t->gpt_req[i];
+            t->gpt_req[0]= req;
+        }
+    }
+
     /* Sort and fill gaps */
-    qsort(t->gpt_req, t->gpt_req_count,
-        sizeof(struct iso_gpt_partition_request *), cmp_partition_request);
+
+    /* Sort if not gap filling is disabled or not sorting is disabled */
+    if (!((t->opts->iso_gpt_flag & 2) && (t->opts->iso_gpt_flag & 4))) {
+        qsort(t->gpt_req, t->gpt_req_count,
+            sizeof(struct iso_gpt_partition_request *), cmp_partition_request);
+    }
     /* t->gpt_req_count will grow during the loop */
     up_to = t->gpt_req_count + 1;
     goal = 0;
     part_end = 0;
 
-    if (t->opts->part_like_isohybrid)
+    if (t->opts->part_like_isohybrid || t->opts->iso_gpt_flag & 2)
         up_to = 0; /* No gap filling */
 
     for (i = 0; i < up_to; i++) {
@@ -1822,9 +1873,11 @@ static int iso_write_gpt(Ecma119Image *t, uint32_t img_blocks, uint8_t *buf)
             t->gpt_req[t->gpt_req_count - 1]->req_status |= 1;
         }
     }
-    /* Merge list of gap partitions with list of already sorted entries */
-    qsort(t->gpt_req, t->gpt_req_count,
-        sizeof(struct iso_gpt_partition_request *), cmp_partition_request);
+    if (!((t->opts->iso_gpt_flag & 2) && (t->opts->iso_gpt_flag & 4))) {
+        /* Merge list of gap partitions with list of already sorted entries */
+        qsort(t->gpt_req, t->gpt_req_count,
+            sizeof(struct iso_gpt_partition_request *), cmp_partition_request);
+    }
  
     if ((int) t->gpt_max_entries < t->gpt_req_count)
         return ISO_BOOT_TOO_MANY_GPT;

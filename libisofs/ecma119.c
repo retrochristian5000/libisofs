@@ -4416,6 +4416,16 @@ int iso_write_opts_set_iso_type_guid(IsoWriteOpts *opts, uint8_t guid[16],
     return ISO_SUCCESS;
 }
 
+int iso_write_opts_set_gpt_with_gaps(IsoWriteOpts *opts, int with_gaps,
+                                  int with_gaps_no_sort, int with_gaps_no_iso)
+{
+    opts->iso_gpt_flag &= ~(2 | 4 | 8);
+    opts->iso_gpt_flag |= (!!with_gaps) << 1;
+    opts->iso_gpt_flag |= (!!with_gaps_no_sort) << 2;
+    opts->iso_gpt_flag |= (!!with_gaps_no_iso) << 3;
+    return ISO_SUCCESS;
+}
+
 int iso_write_opts_set_disc_label(IsoWriteOpts *opts, char *label)
 {
     strncpy(opts->ascii_disc_label, label, ISO_DISC_LABEL_SIZE - 1);
