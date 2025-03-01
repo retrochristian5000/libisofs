@@ -4,7 +4,7 @@
 
 /*
  * Copyright (c) 2007-2008 Vreixo Formoso, Mario Danic
- * Copyright (c) 2009-2024 Thomas Schmitt
+ * Copyright (c) 2009-2025 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -8933,7 +8933,7 @@ int iso_image_get_session_md5(IsoImage *image, uint32_t *start_lba,
                               uint32_t *end_lba, char md5[16], int flag);
 
 /**
- * Obtain the recorded MD5 checksum of a data file from the loaded * ISO image.
+ * Obtain the recorded MD5 checksum of a data file from the loaded ISO image.
  * Such a checksum may be stored with others in a contiguous array at the end
  * of the loaded session. The data file then has an xattr "isofs.cx" which
  * gives the index in that array.
@@ -9903,6 +9903,12 @@ int iso_conv_name_chars(IsoWriteOpts *opts, char *name, size_t name_len,
                                                          (SORRY,HIGH, -439) */
 #define ISO_PROJID_NO_OPEN_LOCAL    0xE030FE49
 
+/** Size calculation mismatch with directory record or continuation area
+                                                       (WARNING,HIGH, -440) */
+#define ISO_DIR_REC_SIZE_MISMATCH   0xD030FE48
+
+/** More than 4294967295 bytes of Continuation area    (WARNING,HIGH, -441) */
+#define ISO_INSANE_CE_SIZE          0xD030FE47
 
 
 /* Internal developer note: 

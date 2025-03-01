@@ -76,6 +76,11 @@ struct susp_info
     /* Marks the start index in ce_susp_fields of the current node */
     size_t current_ce_start;
 
+    /* Tells the really written number of Continuation Area payload bytes
+       after rrip_write_ce_fields() wrote them to the output stream.
+    */
+    uint64_t ce_written_len;
+
 };
 
 /* Step to increase allocated size of susp_info.ce_susp_fields */
@@ -235,8 +240,9 @@ int rrip_get_susp_fields(Ecma119Image *t, Ecma119Node *n, int type,
  * If info does not contain any SUSP entry this function just return. 
  * After written, the info susp_fields array will be freed, and the counters
  * updated properly.
+ * @return the number of written bytes
  */
-void rrip_write_susp_fields(Ecma119Image *t, struct susp_info *info,
+int rrip_write_susp_fields(Ecma119Image *t, struct susp_info *info,
                             uint8_t *buf);
 
 /**

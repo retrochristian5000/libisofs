@@ -27,8 +27,10 @@ libisofs_libisofs_la_LDFLAGS = \
 # ts B00927: Enabling use of libjte (Jigdo Template Extraction)
 # ts C40713: Enabling system adapter for Linux chattr(1) flags
 # ts C41009: Enabling system adapter for project id of XFS-style quota
+# Also enabling zlib, libjte, and directory size prediction check.
 libisofs_libisofs_la_CFLAGS = $(LIBACL_DEF) $(XATTR_DEF) $(LFA_DEF) \
-                              $(PROJID_DEF) $(ZLIB_DEF) $(LIBJTE_DEF)
+                              $(PROJID_DEF) $(ZLIB_DEF) $(LIBJTE_DEF) \
+                              $(DIR_REC_SIZE_CHECK)
 
 # ts A90114 : added aaip_0_2.*
 

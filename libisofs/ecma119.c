@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
  * Copyright (c) 2007 Mario Danic
- * Copyright (c) 2009 - 2023 Thomas Schmitt
+ * Copyright (c) 2009 - 2025 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -58,15 +58,262 @@
 #endif /* ! Xorriso_standalonE */
 
 
-int iso_write_opts_clone(IsoWriteOpts *in, IsoWriteOpts **out, int flag);
-
-
 /*
  * TODO #00011 : guard against bad path table usage with more than 65535 dirs
  * image with more than 65535 directories have path_table related problems
  * due to 16 bits parent id. Note that this problem only affects to folders
  * that are parent of another folder.
  */
+
+
+int iso_write_opts_clone(IsoWriteOpts *in, IsoWriteOpts **out, int flag);
+
+
+#ifdef Libisofs_dir_rec_size_checK
+
+static
+char *ecma119_path_not_threadsafe(Ecma119Node *dir, Ecma119Node *node)
+{
+    int loop_count, len = 0, pos;
+    Ecma119Node *parent;
+    static char path[1024];
+
+    if (node->iso_name == NULL) {
+        strcpy(path, "/");
+        return path;
+    }
+
+    /* Determine path length */
+    /* Slash, leafname, zero byte */
+    len = 1 + strlen(node->iso_name) + 1;
+    parent = dir;
+    for (loop_count = 0; loop_count < 512; loop_count++) {
+        if (parent == NULL)
+    break;
+        if (parent->iso_name == NULL)
+    break;
+        /* Slash, name */
+        len += 1 + strlen(parent->iso_name);
+        parent = parent->parent;
+    }
+    if (len >= 1024 || loop_count >= 512) {
+        strcpy(path, "_oversized_path_/");
+        strcat(path, node->iso_name);
+        return path;
+    }
+
+    /* Compose path */
+    pos= len - 1;
+    path[pos] = 0;
+    pos -= strlen(node->iso_name);
+    memcpy(path + pos, node->iso_name, strlen(node->iso_name));
+    pos--;
+    path[pos] = '/';
+    parent = dir;
+    for (loop_count = 0; loop_count < 512; loop_count++) {
+        if (parent == NULL)
+    break;
+        if (parent->iso_name == NULL)
+    break;
+        pos -= strlen(parent->iso_name);
+        memcpy(path + pos, parent->iso_name, strlen(parent->iso_name));
+        pos--;
+        path[pos] = '/';
+        parent = parent->parent;
+    }
+
+    if (pos > 0) {
+        /* Should not happen */
+        for (; pos >= 0; pos--)
+            path[pos] = ' ';
+    }
+
+    return path;
+}
+
+
+/*
+   Record the size predictions about directory records and continuation areas
+   during the calculation stage or compare the written sizes with the
+   recorded predictions.
+
+   @param mode  0= initialize
+                1= record directory record size
+                2= compare and complain directory record size
+                3= report both mismatch counts if non-zero
+                4= return dir_rec mismatch count but do not report
+                5= free allocated memory
+                6= record continuation area size
+                7= compare and complain continuation area size
+                8= return continuation area mismatch count but do not report
+   @return     with modes 0, 1, 2, 6, 7:
+               -1= out of memory
+                0= comparison yielded mismatch or list not yet initialized
+                1= successful operation or comparison yielded match
+                2= list overflow
+               with mode 3, 4, 8:
+                the number of mismatches (3 returns the sum of 4 and 8)
+               with mode 5
+                1
+*/
+static
+int dir_rec_size_check(Ecma119Image *t, Ecma119Node *dir, Ecma119Node *node,
+                       off_t byte_adr, uint32_t rec_size, int mode)
+{
+    static uint32_t *rec_size_list = NULL, *ce_size_list = NULL;
+    static int list_size = 1000, write_idx = 0, read_idx = 0;
+    static int ce_list_size = 1000, ce_write_idx = 0, ce_read_idx = 0;
+    static int mismatch_count= 0, ce_mismatch_count, max_complaints= 10;
+    static int permanent_overflow = 0;
+
+    void *newpt;
+    off_t block;
+
+    if (mode == 0) {
+        /* Initialize */
+        write_idx = 0;
+        read_idx = 0;
+        mismatch_count = 0;
+        ce_write_idx = 0;
+        ce_read_idx = 0;
+        ce_mismatch_count = 0;
+        permanent_overflow = 0;
+        if (rec_size_list == NULL) {
+            rec_size_list= calloc(list_size, sizeof(uint32_t));
+            if (rec_size_list == NULL)
+                return -1;
+        }
+        if (ce_size_list == NULL) {
+            ce_size_list= calloc(ce_list_size, sizeof(uint32_t));
+            if (ce_size_list == NULL)
+                return -1;
+        }
+
+    } else if (mode == 1) {
+        /* Record */
+        if (rec_size_list == NULL)
+            return 0;
+        if (write_idx >= list_size) {
+            if (permanent_overflow)
+                return 2;
+            newpt = realloc(rec_size_list, list_size * 2 * sizeof(uint32_t));
+            if (newpt == NULL) {
+                permanent_overflow = 1;
+                return 2;
+            }
+            rec_size_list= newpt;
+            list_size *= 2;
+            if (write_idx >= list_size) {
+                permanent_overflow = 1;
+                return 2;
+            }
+        }
+        rec_size_list[write_idx] = rec_size;
+        write_idx++;
+
+    } else if (mode == 2) {
+        /* Compare and complain */
+        if (rec_size_list == NULL)
+            return 0;
+        if (read_idx >= list_size)
+            return 2;
+        read_idx++;
+        if (rec_size_list[read_idx - 1] != rec_size) {
+           mismatch_count++;
+           if (mismatch_count <= max_complaints) {
+               iso_msg_submit(-1, ISO_DIR_REC_SIZE_MISMATCH, 0,
+       "Directory record size calculation mismatch: LBA %lu '%s' : %lu -> %lu",
+                              (unsigned long) t->curblock,
+                              ecma119_path_not_threadsafe(dir, node),
+                              (unsigned long) rec_size_list[read_idx - 1],
+                              (unsigned long) rec_size);
+           }
+           return 0;
+        }
+
+    } else if (mode == 3) {
+        /* Report mismatch count */
+        if (mismatch_count > 0) {
+             iso_msg_submit(-1, ISO_DIR_REC_SIZE_MISMATCH, 0,
+                 "Number of directory record size calculation mismatches: %lu",
+                            (unsigned long) mismatch_count);
+        }
+        if (ce_mismatch_count > 0) {
+             iso_msg_submit(-1, ISO_DIR_REC_SIZE_MISMATCH, 0,
+                "Number of continuation area size calculation mismatches: %lu",
+                            (unsigned long) ce_mismatch_count);
+        }
+        return mismatch_count + ce_mismatch_count;
+
+    } else if (mode == 4) {
+        return mismatch_count;
+
+    } else if (mode == 5) {
+        /* Free allocated memory */
+        if (rec_size_list != NULL) {
+            free(rec_size_list);
+            rec_size_list = NULL;
+        }
+        if (ce_size_list != NULL) {
+            free(ce_size_list);
+            ce_size_list = NULL;
+        }
+
+    } else if (mode == 6) {
+        /* Record continuation area size */
+        if (ce_size_list == NULL)
+            return 0;
+        if (ce_write_idx >= ce_list_size) {
+            if (permanent_overflow)
+                return 2;
+            newpt = realloc(ce_size_list, ce_list_size * 2 * sizeof(uint32_t));
+            if (newpt == NULL) {
+                permanent_overflow = 1;
+                return 2;
+            }
+            ce_size_list= newpt;
+            ce_list_size *= 2;
+            if (ce_write_idx >= ce_list_size) {
+                permanent_overflow = 1;
+                return 2;
+            }
+        }
+        ce_size_list[ce_write_idx] = rec_size;
+        ce_write_idx++;
+
+    } else if (mode == 7) {
+        /* Compare and complain continuation area size*/
+        if (ce_size_list == NULL)
+            return 0;
+        if (ce_read_idx >= ce_list_size)
+            return 2;
+        ce_read_idx++;
+        if (ce_size_list[ce_read_idx - 1] != rec_size) {
+           ce_mismatch_count++;
+           if (ce_mismatch_count <= max_complaints) {
+               if (byte_adr < 0)
+                   byte_adr = t->bytes_written +
+                              t->opts->ms_block * BLOCK_SIZE - rec_size;
+               block = byte_adr / BLOCK_SIZE;
+               iso_msg_submit(-1, ISO_DIR_REC_SIZE_MISMATCH, 0,
+ "Continuation area size calculation mismatch: LBA %lu+%lu '%s' : %lu -> %lu",
+                              (unsigned long) block,
+                              (unsigned long) (byte_adr - block * BLOCK_SIZE),
+                              ecma119_path_not_threadsafe(dir, node),
+                              (unsigned long) ce_size_list[ce_read_idx - 1],
+                              (unsigned long) rec_size);
+           }
+           return 0;
+        }
+
+    } else if (mode == 8) {
+        return ce_mismatch_count;
+    }
+    return 1;
+}
+
+#endif /* Libisofs_dir_rec_size_checK */
+
 
 static
 void ecma119_image_free(Ecma119Image *t)
@@ -211,21 +458,44 @@ ssize_t calc_dir_size(Ecma119Image *t, Ecma119Node *dir, size_t *ce)
     size_t i, len;
     ssize_t ret;
     size_t ce_len = 0;
+    size_t dirent_len;
 
+    len = 0;
     /* size of "." and ".." entries */
-    len = 34 + 34;
+    dirent_len = 34;
     if (t->opts->rockridge) {
         ret = rrip_calc_len(t, dir, 1, 34, &ce_len, *ce);
         if (ret < 0) 
             return ret;
-        len += ret;
+        dirent_len += ret;
         *ce += ce_len;
+    }
+
+#ifdef Libisofs_dir_rec_size_checK
+
+    /* Record calculated size */
+    dir_rec_size_check(t, NULL, NULL, (off_t) -1, (uint32_t) dirent_len, 1);
+
+#endif /* Libisofs_dir_rec_size_checK */
+
+    len += dirent_len;
+
+    dirent_len = 34;
+    if (t->opts->rockridge) {
         ret = rrip_calc_len(t, dir, 2, 34, &ce_len, *ce);
         if (ret < 0) 
             return ret;
-        len += ret;
+        dirent_len += ret;
         *ce += ce_len;
     }
+
+#ifdef Libisofs_dir_rec_size_checK
+
+    dir_rec_size_check(t, NULL, NULL, (off_t) -1, (uint32_t) dirent_len, 1);
+
+#endif /* Libisofs_dir_rec_size_checK */
+
+    len += dirent_len;
 
     for (i = 0; i < dir->info.dir->nchildren; ++i) {
         size_t remaining;
@@ -234,7 +504,7 @@ ssize_t calc_dir_size(Ecma119Image *t, Ecma119Node *dir, size_t *ce)
 
         nsections = (child->type == ECMA119_FILE) ? child->info.file->nsections : 1;
         for (section = 0; section < nsections; ++section) {
-            size_t dirent_len = calc_dirent_len(t, child);
+            dirent_len = calc_dirent_len(t, child);
             if (t->opts->rockridge) {
                 ret = rrip_calc_len(t, child, 0, dirent_len, &ce_len, *ce);
                 if (ret < 0) 
@@ -249,6 +519,14 @@ ssize_t calc_dir_size(Ecma119Image *t, Ecma119Node *dir, size_t *ce)
             } else {
                 len += dirent_len;
             }
+
+#ifdef Libisofs_dir_rec_size_checK
+
+            dir_rec_size_check(t, dir, child, (off_t) -1,
+                               (uint32_t) dirent_len, 1);
+
+#endif /* Libisofs_dir_rec_size_checK */
+
         }
     }
 
@@ -280,6 +558,22 @@ int calc_dir_pos(Ecma119Image *t, Ecma119Node *dir)
     t->curblock += DIV_UP(len, BLOCK_SIZE);
     if (t->opts->rockridge) {
         t->curblock += DIV_UP(ce_len, BLOCK_SIZE);
+
+#ifdef Libisofs_dir_rec_size_checK
+
+        /* Record ce_len */
+        if (ce_len > 0xffffffff) {
+            iso_msg_submit(-1, ISO_INSANE_CE_SIZE, 0,
+            "Continuation area size of 4 GiB or more predicted : LBA %lu '%s'",
+                           (unsigned long) t->curblock,
+                           ecma119_path_not_threadsafe(dir->parent, dir));
+            ce_len= 0xffffffff;
+        }
+        dir_rec_size_check(t, dir->parent, dir, (off_t) -1, (uint32_t) ce_len,
+                           6);
+
+#endif /* Libisofs_dir_rec_size_checK */
+
     }
     for (i = 0; i < dir->info.dir->nchildren; i++) {
         Ecma119Node *child = dir->info.dir->children[i];
@@ -329,6 +623,13 @@ int ecma119_writer_compute_data_blocks(IsoImageWriter *writer)
     }
 
     target = writer->target;
+
+#ifdef Libisofs_dir_rec_size_checK
+
+    /* Initialize directory size check facility */
+    dir_rec_size_check(target, NULL, NULL, (off_t) -1, (uint32_t) 0, 0);
+
+#endif /* Libisofs_dir_rec_size_checK */
 
     /* compute position of directories */
     iso_msg_debug(target->image->id, "Computing position of dir structure");
@@ -395,16 +696,22 @@ int ecma119_writer_compute_data_blocks(IsoImageWriter *writer)
  *     SUSP entries for the given directory record. It will be NULL for the
  *     root directory record in the PVD (ECMA-119, 8.4.18) (in order to
  *     distinguish it from the "." entry in the root directory)
+ * @param extent
+ *     Number of the extent in the file described by this record
+ * @param flag
+ *     bit0= This is a root directory entry in a volume descriptor.
+ *           Do not compare by dir_rec_size_check.
  */
 static
-void write_one_dir_record(Ecma119Image *t, Ecma119Node *node, int file_id,
-                          uint8_t *buf, size_t len_fi, struct susp_info *info,
-                          int extent)
+void write_one_dir_record(Ecma119Image *t, Ecma119Node *dir, Ecma119Node *node,
+                          int file_id, uint8_t *buf, size_t len_fi,
+                          struct susp_info *info, int extent, int flag)
 {
     uint32_t len;
     uint32_t block;
     uint8_t len_dr; /*< size of dir entry without SUSP fields */
-    int multi_extend = 0;
+    uint32_t written_size = 0;
+    int multi_extend = 0, ret;
     uint8_t *name = (file_id >= 0) ? (uint8_t*)&file_id
             : (uint8_t*)node->iso_name;
 
@@ -461,13 +768,31 @@ void write_one_dir_record(Ecma119Image *t, Ecma119Node *node, int file_id,
     rec->flags[0] = ((node->type == ECMA119_DIR) ? 2 : 0) | (multi_extend ? 0x80 : 0);
     iso_bb(rec->vol_seq_number, (uint32_t) 1, 2);
     rec->len_fi[0] = len_fi;
+    written_size = len_dr;
 
     /*
      * and finally write the SUSP fields.
      */
     if (info != NULL) {
-        rrip_write_susp_fields(t, info, buf + len_dr);
+        ret= rrip_write_susp_fields(t, info, buf + len_dr);
+        if (ret < 0) {
+
+            /* >>> ??? how to react on failure of susp_update_CE_sizes ? */;
+
+        } else {
+            written_size += ret;
+        }
     }
+
+#ifdef Libisofs_dir_rec_size_checK
+
+    /* Check written record size against calculated size */
+    written_size += (written_size % 2);
+    if (!(flag & 1))
+        dir_rec_size_check(t, dir, node, (off_t) -1, written_size, 2);
+
+#endif /* Libisofs_dir_rec_size_checK */
+
 }
 
 static
@@ -612,12 +937,13 @@ int ecma119_writer_write_vol_desc(IsoImageWriter *writer)
                 t->partition_l_table_pos - t->eff_partition_offset, 4);
         iso_msb(vol.m_path_table_pos,
                 t->partition_m_table_pos - t->eff_partition_offset, 4);
-        write_one_dir_record(t, t->partition_root, 0,
-                             vol.root_dir_record, 1, NULL, 0);
+        write_one_dir_record(t, NULL, t->partition_root, 0,
+                             vol.root_dir_record, 1, NULL, 0, 1);
     } else {
         iso_lsb(vol.l_path_table_pos, t->l_path_table_pos, 4);
         iso_msb(vol.m_path_table_pos, t->m_path_table_pos, 4);
-        write_one_dir_record(t, t->root, 0, vol.root_dir_record, 1, NULL, 0);
+        write_one_dir_record(t, NULL, t->root, 0, vol.root_dir_record, 1, NULL,
+                             0, 1);
     }
 
     strncpy_pad((char*)vol.vol_set_id, volset_id, 128);
@@ -657,6 +983,10 @@ int write_one_dir(Ecma119Image *t, Ecma119Node *dir, Ecma119Node *parent)
     size_t fi_len, len;
     struct susp_info info;
 
+#ifdef Libisofs_dir_rec_size_checK
+    off_t bw_mem;
+#endif /* Libisofs_dir_rec_size_checK */
+
     /* buf will point to current write position on buffer */
     uint8_t *buf;
 
@@ -683,7 +1013,7 @@ int write_one_dir(Ecma119Image *t, Ecma119Node *dir, Ecma119Node *parent)
         }
     }
     len = 34 + info.suf_len;
-    write_one_dir_record(t, dir, 0, buf, 1, &info, 0);
+    write_one_dir_record(t, parent, dir, 0, buf, 1, &info, 0, 0);
     buf += len;
 
     if (t->opts->rockridge) {
@@ -693,7 +1023,8 @@ int write_one_dir(Ecma119Image *t, Ecma119Node *dir, Ecma119Node *parent)
         }
     }
     len = 34 + info.suf_len;
-    write_one_dir_record(t, parent, 1, buf, 1, &info, 0);
+    write_one_dir_record(t, (parent != NULL ? parent->parent : NULL), parent,
+                         1, buf, 1, &info, 0, 0);
     buf += len;
 
     for (i = 0; i < dir->info.dir->nchildren; i++) {
@@ -730,7 +1061,8 @@ int write_one_dir(Ecma119Image *t, Ecma119Node *dir, Ecma119Node *parent)
                 buf = buffer;
             }
             /* write the directory entry in any case */
-            write_one_dir_record(t, child, -1, buf, fi_len, &info, section);
+            write_one_dir_record(t, dir, child, -1, buf, fi_len, &info,
+                                 section, 0);
             buf += len;
         }
     }
@@ -742,9 +1074,27 @@ int write_one_dir(Ecma119Image *t, Ecma119Node *dir, Ecma119Node *parent)
     }
 
     /* write the Continuation Area if needed */
-    if (info.ce_len > 0) {
+
+#ifdef Libisofs_dir_rec_size_checK
+    bw_mem = t->bytes_written + t->opts->ms_block * BLOCK_SIZE;
+#endif /* Libisofs_dir_rec_size_checK */
+
+    if (info.ce_len > 0)
         ret = rrip_write_ce_fields(t, &info);
+
+#ifdef Libisofs_dir_rec_size_checK
+
+    if (info.ce_written_len > 0xffffffff) {
+        iso_msg_submit(-1, ISO_INSANE_CE_SIZE, 0,
+            "Continuation area size of 4 GiB or more written : LBA %lu '%s'",
+                       (unsigned long) bw_mem / BLOCK_SIZE,
+                       ecma119_path_not_threadsafe(dir->parent, dir));
+        info.ce_written_len= 0xffffffff;
     }
+    dir_rec_size_check(t, dir->parent, dir, bw_mem,
+                       (uint32_t) info.ce_written_len, 7);
+
+#endif /* Libisofs_dir_rec_size_checK */
 
 ex:;
     LIBISO_FREE_MEM(buffer);
@@ -958,7 +1308,7 @@ static
 int ecma119_writer_write_data(IsoImageWriter *writer)
 {
     int ret;
-    Ecma119Image *t;
+    Ecma119Image *t = NULL;
     uint32_t curblock;
     char *msg = NULL;
 
@@ -992,6 +1342,18 @@ int ecma119_writer_write_data(IsoImageWriter *writer)
     }
     ret = ISO_SUCCESS;
 ex:;
+
+#ifdef Libisofs_dir_rec_size_checK
+
+    if (t != NULL) {
+        /* Report number of mismatches */
+        dir_rec_size_check(t, NULL, NULL, (off_t) -1, (uint32_t) 0, 3);
+        /* Free allocated memory */
+        dir_rec_size_check(t, NULL, NULL, (off_t) -1, (uint32_t) 0, 5);
+    }
+
+#endif /* Libisofs_dir_rec_size_checK */
+
     LIBISO_FREE_MEM(msg);
     return ret;
 }

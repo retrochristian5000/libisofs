@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
  * Copyright (c) 2007 Mario Danic
- * Copyright (c) 2009 - 2024 Thomas Schmitt
+ * Copyright (c) 2009 - 2025 Thomas Schmitt
  * 
  * This file is part of the libisofs project; you can redistribute it and/or 
  * modify it under the terms of the GNU General Public License version 2 
@@ -2259,21 +2259,23 @@ int susp_update_CE_sizes(Ecma119Image *t, struct susp_info *info, int flag)
  * If info does not contain any SUSP entry this function just return. 
  * After written, the info susp_fields array will be freed, and the counters
  * updated properly.
+ * @return <0  error
+ *         >=0 number of written bytes
  */
-void rrip_write_susp_fields(Ecma119Image *t, struct susp_info *info,
-                            uint8_t *buf)
+int rrip_write_susp_fields(Ecma119Image *t, struct susp_info *info,
+                           uint8_t *buf)
 {
     size_t i;
     size_t pos = 0;
     int ret;
 
     if (info->n_susp_fields == 0) {
-        return;
+        return 0;
     }
 
     ret = susp_update_CE_sizes(t, info, 0);
     if (ret < 0)
-        return;
+        return -1;
 
     for (i = 0; i < info->n_susp_fields; i++) {
         memcpy(buf + pos, info->susp_fields[i], info->susp_fields[i][2]);
@@ -2288,6 +2290,8 @@ void rrip_write_susp_fields(Ecma119Image *t, struct susp_info *info,
     info->susp_fields = NULL;
     info->n_susp_fields = 0;
     info->suf_len = 0;
+
+    return (int) pos;
 }
 
 /**
@@ -2327,6 +2331,9 @@ int rrip_write_ce_fields(Ecma119Image *t, struct susp_info *info)
         }
         written += info->ce_susp_fields[i][2];
     }
+
+    /* Memorize the really written payload before padding */
+    info->ce_written_len = written;
 
     /* pad continuation area until block size */
     i = BLOCK_SIZE - (info->ce_len % BLOCK_SIZE);

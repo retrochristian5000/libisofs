@@ -348,6 +348,21 @@ else
 fi
 AC_SUBST(LIBJTE_DEF)
 
+
+dnl ts C50224
+AC_ARG_ENABLE(dir-rec-size-check,
+[  --enable-dir-rec-size-check     Detailed check of directory size prediction, default=no],
+               , dir_rec_size_check=no)
+if test x$enable_dir_rec_size_check = xyes; then
+    DIR_REC_SIZE_CHECK="-DLibisofs_dir_rec_size_checK"
+    echo "enabled  detailed check of directory size prediction"
+else
+    DIR_REC_SIZE_CHECK=
+    echo "disabled detailed check of directory size prediction"
+fi
+AC_SUBST(DIR_REC_SIZE_CHECK)
+
+
 # Library versioning normally serves a complex purpose.
 # Since libisofs obeys strict ABI backward compatibility, it needs only the
 # simple feature to declare function names "global:" or "local:". Only the

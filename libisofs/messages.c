@@ -593,6 +593,10 @@ const char *iso_error_to_msg(int errcode)
         return "Error with setting XFS-style project id of local file";
     case ISO_PROJID_NO_OPEN_LOCAL:
         return "Failure to open local file for XFS-style project id";
+    case ISO_DIR_REC_SIZE_MISMATCH:
+        return "Size calculation mismatch with directory record or continuation area";
+    case ISO_INSANE_CE_SIZE:
+        return "More than 4294967295 bytes of Continuation area";
     default:
         return "Unknown error";
     }
