@@ -1999,7 +1999,10 @@ int rrip_get_susp_fields(Ecma119Image *t, Ecma119Node *n, int type,
                 cur = strchr(prev, '/');
             }
 
-            if (cew) {
+            if (!cew) {
+                /* the whole SL fits into the SUA */
+                sua_free -= sl_len;
+            } else {
                 ce_len += sl_len;
             }
         }
