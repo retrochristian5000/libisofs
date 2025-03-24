@@ -96,7 +96,9 @@ AC_SUBST(LIBTOOL_DEPS)
 
 AC_PROG_INSTALL
 
-AC_CHECK_HEADERS()
+dnl GNU libtool checks them by default/unconditionally, but slibtool does not.
+dnl So accept the ugly double check and -DHAVE_*_H arguments with GNU libtool.
+AC_CHECK_HEADERS(stdint.h inttypes.h stdlib.h)
 
 dnl Use GNU extensions if available
 AC_DEFINE(_GNU_SOURCE, 1)
