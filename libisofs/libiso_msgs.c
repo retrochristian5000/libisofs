@@ -2,7 +2,12 @@
 /* libiso_msgs   (generated from libdax_msgs : Fri Feb 22 19:42:52 CET 2008)
    Message handling facility of libisofs.
    Copyright (C) 2006 - 2016 Thomas Schmitt <scdbackup@gmx.net>,
-   provided under GPL version 2 or later
+
+   This file is part of the libisofs project; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License version 2
+   or later as published by the Free Software Foundation.
+   See COPYING file for details.
+
 */
 
 #ifdef HAVE_CONFIG_H
