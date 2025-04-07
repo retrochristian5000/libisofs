@@ -1858,6 +1858,7 @@ int rrip_get_susp_fields(Ecma119Image *t, Ecma119Node *n, int type,
             char *cur, *prev;
             size_t sl_len = 5;
             int cew = (nm_type == 1); /* are we writing to CE? */
+            int first_comp = 1;
 
             dest = get_rr_fname(t, ((IsoSymlink*)n->node)->dest);
             if (dest == NULL)
@@ -1879,10 +1880,11 @@ int rrip_get_susp_fields(Ecma119Image *t, Ecma119Node *n, int type,
                     clen = strlen(prev);
                 }
 
-                if (clen == 0) {
-                    /* this refers to the roor directory, '/' */
+                if (clen == 0 && first_comp) {
+                    /* Mark as root directory of absolute link target path */
                     cflag = 1 << 3;
                 }
+                first_comp = 0;
                 if (clen == 1 && prev[0] == '.') {
                     clen = 0;
                     cflag = 1 << 1;
