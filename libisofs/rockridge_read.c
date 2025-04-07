@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2009 - 2023 Thomas Schmitt
+ * Copyright (c) 2009 - 2025 Thomas Schmitt
  * 
  * This file is part of the libisofs project; you can redistribute it and/or 
  * modify it under the terms of the GNU General Public License version 2 
@@ -385,7 +385,7 @@ int read_rr_NM(struct susp_sys_user_entry *nm, char **name, int *cont)
  */
 int read_rr_SL(struct susp_sys_user_entry *sl, char **dest, int *cont)
 {
-    int pos;
+    int pos, real_root_flag = 0, in_root = 0;
     
     if (sl == NULL || dest == NULL) {
         return ISO_NULL_POINTER;
@@ -399,7 +399,10 @@ int read_rr_SL(struct susp_sys_user_entry *sl, char **dest, int *cont)
         char *comp;
         uint8_t len;
         uint8_t flags = sl->data.SL.comps[pos];
-        
+
+        in_root = real_root_flag;
+        real_root_flag = 0;
+
         if (flags & 0x2) {
             /* current directory */
             len = 1;
@@ -409,9 +412,26 @@ int read_rr_SL(struct susp_sys_user_entry *sl, char **dest, int *cont)
             len = 2;
             comp = "..";
         } else if (flags & 0x8) {
-            /* root directory */
-            len = 1;
+            /* Alleged root directory.
+               Normally only the first component should have this bit set.
+               But genisoimage and older libisofs both set bit 3 with
+               any empty component which represents an add-on slash.
+            */
             comp = "/";
+            if (pos == 0 || in_root) {
+                /* Real root directory or add-on slash of root slash */
+                len = 1;
+                real_root_flag = 1;
+            } else if (pos + 2 + sl->data.SL.comps[pos + 1] + 5 >=
+                       sl->len_sue[0]) {
+                /* A final component with bit 3 traditionally leads to a
+                   double slash in Linux and in older libisofs.
+                */
+                len = 1;
+            } else {
+                /* Just a mislead component in the inner of the path */
+                len = 0;
+            }
         } else if (flags & ~0x01) {
             /* unsupported flag component */
             return ISO_UNSUPPORTED_RR;
@@ -423,18 +443,13 @@ int read_rr_SL(struct susp_sys_user_entry *sl, char **dest, int *cont)
         if (*cont == 1) {
             /* new component */
             size_t size = strlen(*dest);
-            int has_slash;
 
             *dest = realloc(*dest, strlen(*dest) + len + 2);
             if (*dest == NULL) {
                 return ISO_OUT_OF_MEM;
             }
-            /* it is a new compoenent, add the '/' */
-            has_slash = 0;
-            if (size > 0)
-                if ((*dest)[size - 1] == '/')
-                    has_slash = 1;
-            if (!has_slash) {
+            /* it is a new component, add the '/' */
+            if (!(pos == 0 || in_root)) {
                 (*dest)[size] = '/';
                 (*dest)[size+1] = '\0';
             }
@@ -448,6 +463,7 @@ int read_rr_SL(struct susp_sys_user_entry *sl, char **dest, int *cont)
             /* we don't have to add the '/' */
             strncat(*dest, comp, len);
         } else {
+            /* The first component begins */
             *dest = iso_util_strcopy(comp, len);
         }
         if (*dest == NULL) {
