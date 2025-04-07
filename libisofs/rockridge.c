@@ -1301,10 +1301,9 @@ int susp_calc_nm_sl_al(Ecma119Image *t, Ecma119Node *n, size_t space,
                 }
             }
 
-            if (!cur || cur[1] == '\0') {
-                /* cur[1] can be \0 if dest ends with '/' */
+            if (cur == NULL)
                 break;
-            }
+
             prev = cur + 1;
             cur = strchr(prev, '/');
         }
@@ -1993,10 +1992,9 @@ int rrip_get_susp_fields(Ecma119Image *t, Ecma119Node *n, int type,
                     }
                 }
 
-                if (!cur || cur[1] == '\0') {
-                    /* cur[1] can be \0 if dest ends with '/' */
+                if (cur == NULL)
                     break;
-                }
+
                 prev = cur + 1;
                 cur = strchr(prev, '/');
             }
