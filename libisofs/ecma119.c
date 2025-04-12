@@ -42,6 +42,7 @@
 #include <langinfo.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <sys/types.h>
 
 #ifdef Xorriso_standalonE
 

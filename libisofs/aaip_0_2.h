@@ -23,6 +23,7 @@
 
 /* For ssize_t */
 #include <unistd.h>
+#include <sys/types.h>
 
 
 /* --------------------------------- Encoder ---------------------------- */

@@ -27,6 +27,8 @@
 #include <time.h>
 #include <limits.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
 
 
 struct dir_iter_data

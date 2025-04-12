@@ -42,6 +42,9 @@
 #include "ecma119.h"
 
 /* For ssize_t */
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 #include <unistd.h>
 
 

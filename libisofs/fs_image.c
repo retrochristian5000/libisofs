@@ -37,6 +37,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <sys/types.h>
 
 
 /* Enable this and write the correct absolute path into the include statement

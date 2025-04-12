@@ -23,6 +23,7 @@
 #include <limits.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <sys/types.h>
 
 
 #ifndef PATH_MAX
