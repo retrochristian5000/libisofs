@@ -386,6 +386,7 @@ local: *;
 };
 
 LIBISOFS6_1.5.8 {
+iso_local_create_dev;
 iso_local_get_lfa_flags;
 iso_local_get_projid;
 iso_local_set_lfa_flags;

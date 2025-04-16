@@ -8379,7 +8379,43 @@ int iso_local_get_projid(char *disk_path, uint32_t *projid, int *os_errno,
  */
 int iso_local_set_projid(char *disk_path, uint32_t projid, int *os_errno,
                          int flag);
+
+
+/* -------- API for creating device files in the local filesystem --------- */
+
+/**
+ * Create a device file in the local filesystem.
+ * Equivalent of non-portable and possibly obsolete mknod(2).
+ * Whether this makes sense on modern systems is very questionable. But as
+ * libisofs records device files, it should try to restore them where
+ * device creation might be supported.
+ *
+ * @param disk_path
+ *      Path in the local filesystem where to create the file.
+ * @param st_mode
+ *      File type and permission bits as of man stat(2) field st_mode.
+ *      Possibly supported file types are: S_IFCHR , S_IFBLK
+ * @param dev
+ *      System specific parameters for the new device file. It should have
+ *      been originally obtained by a stat(2) call on a system with compatible
+ *      device parameters.
+ * @param os_errno
+ *      Will get filled with errno if a system call fails.
+ *      Else it will be filled with 0.
+ * @param flag
+ *      Bitfield for control purposes.
+ *      bit0= do not issue error messages
+ * @return
+ *      ISO_SUCCESS or <0 to indicate error.
+ *
+ * @since 1.5.8
+ */
+int iso_local_create_dev(char *disk_path, mode_t st_mode, dev_t dev,
+                         int *os_errno, int flag);
+
  
+/* ------------------------------------------------------------------------- */
+
 
 /* Default in case that the compile environment has no macro PATH_MAX.
 */
@@ -9909,6 +9945,13 @@ int iso_conv_name_chars(IsoWriteOpts *opts, char *name, size_t name_len,
 
 /** More than 4294967295 bytes of Continuation area    (WARNING,HIGH, -441) */
 #define ISO_INSANE_CE_SIZE          0xD030FE47
+
+/** Creation of device file in local filesystem failed (FAILURE,HIGH, -442) */
+#define ISO_DEV_NOT_CREATED         0xE830FE46
+
+/** Creation of device file type in local filesystem is not enabled
+                                                       (FAILURE,HIGH, -443) */
+#define ISO_DEV_NO_CREATION         0xE830FE45
 
 
 /* Internal developer note: 

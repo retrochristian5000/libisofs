@@ -11,7 +11,7 @@
 
  To be included by aaip_0_2.c
 
- Copyright (c) 2009 - 2024 Thomas Schmitt
+ Copyright (c) 2009 - 2025 Thomas Schmitt
 
  This file is part of the libisofs project; you can redistribute it and/or
  modify it under the terms of the GNU General Public License version 2
@@ -175,4 +175,27 @@ int aaip_set_projid(char *path, uint32_t projid, int *os_errno, int flag)
  return(0);
 }
 
+
+
+/* -------- API for creating device files in the local filesystem --------- */
+
+
+/* API */
+/* @param flag  bit0= do not issue error messages
+*/
+int iso_local_create_dev(char *disk_path, mode_t st_mode, dev_t dev,
+                         int *os_errno, int flag)
+{
+ /* From man mknod:
+    POSIX.1-2001 says: "The only portable use of mknod()  is  to  create  a
+    FIFO-special  file.  If mode is not S_IFIFO or dev is not 0, the behav‐
+    ior of mknod() is unspecified."
+ */
+ *os_errno= 0;
+ if(!(flag & 1))
+   iso_msg_submit(-1, ISO_DEV_NO_CREATION, 0,
+   "File \"%s\" cannot be created because device file creation is not enabled",
+                  disk_path);
+ return ISO_DEV_NO_CREATION;
+}
 

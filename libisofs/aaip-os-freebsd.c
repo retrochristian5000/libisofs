@@ -7,7 +7,7 @@
 
  To be included by aaip_0_2.c for FreeBSD, NetBSD, and OpenBSD
 
- Copyright (c) 2009 - 2024 Thomas Schmitt
+ Copyright (c) 2009 - 2025 Thomas Schmitt
 
  This file is part of the libisofs project; you can redistribute it and/or
  modify it under the terms of the GNU General Public License version 2
@@ -1144,5 +1144,46 @@ int aaip_set_projid(char *path, uint32_t projid, int *os_errno, int flag)
  *os_errno= 0;
  return(0);
 }
+
+
+/* -------- API for creating device files in the local filesystem --------- */
+
+
+/* API */
+/* @param flag  bit0= do not issue error messages
+*/
+int iso_local_create_dev(char *disk_path, mode_t st_mode, dev_t dev,
+                         int *os_errno, int flag)
+{
+ int ret;
+
+ *os_errno= 0;
+ if((st_mode & S_IFMT) != S_IFBLK && (st_mode & S_IFMT) != S_IFCHR) {
+   if(!(flag & 1))
+     iso_msg_submit(-1, ISO_DEV_NO_CREATION, 0,
+"Device file \"%s\" cannot be created because not of type S_IFBLK or S_IFCHR",
+                    disk_path);
+   return ISO_DEV_NO_CREATION;
+ }
+ st_mode&= (S_IFMT | 07777);
+ ret= mknod(disk_path, st_mode, dev);
+ if(ret == -1) {
+   *os_errno= errno;
+   if(!(flag & 1)) {
+     if(errno > 0) {
+       iso_msg_submit(-1, ISO_DEV_NOT_CREATED, 0,
+                      "Creation of device file \"%s\" failed with %d '%s'",
+                      disk_path, errno, strerror(errno));
+     } else {
+       iso_msg_submit(-1, ISO_DEV_NOT_CREATED, 0,
+                    "Creation of device file \"%s\" failed without error code",
+                      disk_path);
+     }
+   }
+   return ISO_DEV_NOT_CREATED;
+ }
+ return(ISO_SUCCESS);
+}
+
 
 

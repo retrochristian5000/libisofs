@@ -597,6 +597,10 @@ const char *iso_error_to_msg(int errcode)
         return "Size calculation mismatch with directory record or continuation area";
     case ISO_INSANE_CE_SIZE:
         return "More than 4294967295 bytes of Continuation area";
+    case ISO_DEV_NOT_CREATED:
+        return "Creation of device file in local filesystem failed";
+    case ISO_DEV_NO_CREATION:
+        return "Creation of device file type in local filesystem not enabled";
     default:
         return "Unknown error";
     }
