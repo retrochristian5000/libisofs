@@ -729,6 +729,12 @@ void write_one_dir_record(Ecma119Image *t, Ecma119Node *dir, Ecma119Node *node,
         rec->file_id[len_fi++] = '1';
     }
 
+    /*
+     * For ".." entry we need to write the parent info!
+     */
+    if (file_id == 1 && node->parent)
+        node = node->parent;
+
     if (node->type == ECMA119_DIR) {
         /* use the cached length */
         len = node->info.dir->len;
@@ -748,12 +754,6 @@ void write_one_dir_record(Ecma119Image *t, Ecma119Node *dir, Ecma119Node *node,
         else
             block = 0;
     }
-
-    /*
-     * For ".." entry we need to write the parent info!
-     */
-    if (file_id == 1 && node->parent)
-        node = node->parent;
 
     rec->len_dr[0] = len_dr + (info != NULL ? info->suf_len : 0);
     iso_bb(rec->block, block - t->eff_partition_offset, 4);
@@ -1024,8 +1024,11 @@ int write_one_dir(Ecma119Image *t, Ecma119Node *dir, Ecma119Node *parent)
         }
     }
     len = 34 + info.suf_len;
-    write_one_dir_record(t, (parent != NULL ? parent->parent : NULL), parent,
-                         1, buf, 1, &info, 0, 0);
+
+    /* (The third argument will be changed in write_one_dir_record()
+        to dir->parent because of type==1)
+    */
+    write_one_dir_record(t, dir, dir, 1, buf, 1, &info, 0, 0);
     buf += len;
 
     for (i = 0; i < dir->info.dir->nchildren; i++) {
