@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2009 - 2023 Thomas Schmitt
+ * Copyright (c) 2009 - 2025 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -214,6 +214,12 @@ struct iso_write_opts {
      * Write field PX with file serial number even with RRIP-1.10
      */
     unsigned int rrip_1_10_px_ino :1;
+
+    /**
+     * Write field TF with timestamps of long form with 17 bytes instead
+     * of 7-byte timestamps
+     */
+    unsigned int rrip_tf_long :1;
 
     /**
      * See iso_write_opts_set_hardlinks()

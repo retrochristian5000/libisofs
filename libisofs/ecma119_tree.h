@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- *               2012 - 2014 Thomas Schmitt
+ *               2012 - 2025 Thomas Schmitt
  * 
  * This file is part of the libisofs project; you can redistribute it and/or 
  * modify it under the terms of the GNU General Public License version 2 
@@ -77,6 +77,9 @@ struct ecma119_node
         /** this field points to the relocated directory. */
         Ecma119Node *real_me;
     } info;
+
+    /* If set to 1, use 17-byte time format in RRIP field TF */
+    unsigned int rrip_tf_long :1;
 };
 
 

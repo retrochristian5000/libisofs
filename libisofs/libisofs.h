@@ -1878,6 +1878,19 @@ int iso_write_opts_set_rrip_version_1_10(IsoWriteOpts *opts, int oldvers);
 int iso_write_opts_set_rrip_1_10_px_ino(IsoWriteOpts *opts, int enable);
 
 /**
+ * Force writing of RRIP field TF with LONG FORM timestamps of 17 bytes
+ * instead of 7-byte timestamps. Without this call or with enable==0, the
+ * long form is used only with IsoNode objects which bear a timestamp after
+ * 01 Jan 2150 UTC.
+ * (Future programmers may widen ISO_RR_SHORT_FORM_TIME_LIMIT in rockridge.h
+ * to the end of year 2155. The six years inbetween shall serve as chance
+ * to fix problems.)
+ *
+ * @since 1.5.8
+ */
+int iso_write_opts_set_rrip_tf_long(IsoWriteOpts *opts, int enable);
+
+/**
  * Write AAIP as extension according to SUSP 1.10 rather than SUSP 1.12.
  * I.e. without announcing it by an ER field and thus without the need
  * to precede the RRIP fields and the AAIP field by ES fields.

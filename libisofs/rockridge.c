@@ -35,6 +35,7 @@
 #endif
 
 #define ISO_CE_ENTRY_SIZE  28
+#define ISO_TF_LONG_SIZE   56
 
 
 static
@@ -43,6 +44,10 @@ int susp_add_ES(Ecma119Image *t, struct susp_info *susp, int to_ce, int seqno);
 static
 int susp_make_CE(Ecma119Image *t, uint8_t **CE,
                  uint32_t block_offset, uint32_t byte_offset, uint32_t size);
+
+static
+int add_tf_long(Ecma119Image *t, Ecma119Node *n, struct susp_info *info,
+                size_t *sua_free, size_t *ce_len, size_t base_ce, int flag);
 
 
 static
@@ -207,28 +212,56 @@ int rrip_add_PX(Ecma119Image *t, Ecma119Node *n, struct susp_info *susp)
  * time stamps related to the file (RRIP, 4.1.6).
  */
 static
-int rrip_add_TF(Ecma119Image *t, Ecma119Node *n, struct susp_info *susp)
+int rrip_add_TF(Ecma119Image *t, Ecma119Node *n, struct susp_info *susp,
+                int to_ca)
 {
     IsoNode *iso;
-    uint8_t *TF = malloc(5 + 3 * 7);
+    uint8_t *TF;
+    int len;
+
+    if (n->rrip_tf_long) {
+        len = ISO_TF_LONG_SIZE;
+    } else {
+        len = 5 + 3 * 7;
+    }
+    TF = malloc(len);
     if (TF == NULL) {
         return ISO_OUT_OF_MEM;
     }
 
     TF[0] = 'T';
     TF[1] = 'F';
-    TF[2] = 5 + 3 * 7;
+    TF[2] = len;
     TF[3] = 1;
-    TF[4] = (1 << 1) | (1 << 2) | (1 << 3);
-    
+    TF[4] = (1 << 1) | (1 << 2) | (1 << 3) | ((!!n->rrip_tf_long) << 7);
+
     iso = n->node;
-    iso_datetime_7(&TF[5], t->replace_timestamps ? t->timestamp : iso->mtime,
-                   t->opts->always_gmt);
-    iso_datetime_7(&TF[12], t->replace_timestamps ? t->timestamp : iso->atime,
-                   t->opts->always_gmt);
-    iso_datetime_7(&TF[19], t->replace_timestamps ? t->timestamp : iso->ctime,
-                   t->opts->always_gmt);
-    return susp_append(t, susp, TF);
+    if (n->rrip_tf_long) {
+        iso_datetime_17(&TF[5],
+                       t->replace_timestamps ? t->timestamp : iso->mtime,
+                       t->opts->always_gmt);
+        iso_datetime_17(&TF[5 + 17],
+                       t->replace_timestamps ? t->timestamp : iso->atime,
+                       t->opts->always_gmt);
+        iso_datetime_17(&TF[5 + 2 * 17],
+                       t->replace_timestamps ? t->timestamp : iso->ctime,
+                       t->opts->always_gmt);
+    } else {
+        iso_datetime_7(&TF[5],
+                       t->replace_timestamps ? t->timestamp : iso->mtime,
+                       t->opts->always_gmt);
+        iso_datetime_7(&TF[12],
+                       t->replace_timestamps ? t->timestamp : iso->atime,
+                       t->opts->always_gmt);
+        iso_datetime_7(&TF[19],
+                       t->replace_timestamps ? t->timestamp : iso->ctime,
+                       t->opts->always_gmt);
+    }
+    if (to_ca) {
+        return susp_append_ce(t, susp, TF);
+    } else {
+        return susp_append(t, susp, TF);
+    }
 }
 
 /**
@@ -1348,6 +1381,15 @@ int susp_calc_nm_sl_al(Ecma119Image *t, Ecma119Node *n, size_t space,
             goto unannounced_ca;
     }
 
+    if (n->rrip_tf_long) {
+        /* Long TF entry (short TF would be put into SUA unconditionally) */
+        sua_free = space - *su_size;
+        add_tf_long(t, n, NULL, &sua_free, ce, base_ce, 1 | (flag & 2));
+        *su_size = space - sua_free;
+        if (*ce > 0 && !(flag & 1))
+            goto unannounced_ca;
+    }
+
 #ifdef Libisofs_ce_calc_debug_filetraP
 
     if (n->node->name != NULL)
@@ -1432,6 +1474,34 @@ int add_aa_string(Ecma119Image *t, Ecma119Node *n, struct susp_info *info,
     return 1;
 }
 
+/*
+   @param flag bit0= only account sizes in sua_free resp. ce_len.
+                     Parameter susp may be NULL in this case
+               bit1= account for crossing block boundaries
+                     (implied by bit0 == 0)
+   @param ce_len counts the freshly added CA size of the current node
+   @param ce_mem tells the CA size of previous nodes in the same directory
+*/
+static
+int add_tf_long(Ecma119Image *t, Ecma119Node *n, struct susp_info *info,
+                size_t *sua_free, size_t *ce_len, size_t base_ce, int flag)
+{
+    int ret;
+
+    if (!(flag & 1))
+        flag |= 2;
+    if (*sua_free < ISO_TF_LONG_SIZE || *ce_len > 0) {
+        susp_calc_add_to_ce(t, ce_len, base_ce, ISO_TF_LONG_SIZE, flag & 2);
+    } else {
+        *sua_free -= ISO_TF_LONG_SIZE;
+    }
+
+    if (flag & 1)
+        return ISO_SUCCESS;
+
+    ret = rrip_add_TF(t, n, info, (*ce_len > 0)); 
+    return ret;
+}
 
 static
 void iso_msg_too_many_ce(Ecma119Image *t, Ecma119Node *n, int err)
@@ -1447,6 +1517,37 @@ void iso_msg_too_many_ce(Ecma119Image *t, Ecma119Node *n, int err)
     }
 }
 
+
+
+/**
+ * Mark node for 17-byte TF if requested by t->opts->rrip_tf_long
+ * or if needed to represent the timestamps.
+ */
+static
+void iso_decide_rrip_tf_form(Ecma119Image *t, Ecma119Node *n)
+{
+    IsoNode *iso_node;
+
+    /* The decision for long form cannot be revoked */
+    if (n->rrip_tf_long)
+        return;
+
+    if (t->opts->rrip_tf_long) {
+        n->rrip_tf_long = 1;
+    } else {
+        iso_node= n->node;
+        if (sizeof(iso_node->atime) > 4) {
+            /* Check [acm]time for (nearly) year 2156 or later */
+            if (iso_node->atime > ISO_RR_SHORT_FORM_TIME_LIMIT) {
+                n->rrip_tf_long = 1;
+            } else if (iso_node->ctime > ISO_RR_SHORT_FORM_TIME_LIMIT) {
+                n->rrip_tf_long = 1;
+            } else if (iso_node->mtime > ISO_RR_SHORT_FORM_TIME_LIMIT) {
+                n->rrip_tf_long = 1;
+            }
+        }
+    }
+}
 
 /**
  * Compute the length needed for write all RR and SUSP entries for a given
@@ -1470,6 +1571,8 @@ ssize_t rrip_calc_len(Ecma119Image *t, Ecma119Node *n, int type, size_t used_up,
     size_t su_size, space;
     int ret, retry = 0;
     size_t aaip_sua_free= 0, aaip_len= 0;
+
+    iso_decide_rrip_tf_form(t, n);
 
 try_again:
 
@@ -1496,11 +1599,14 @@ try_again:
     su_size += 5;
 #endif
 
-    /* PX and TF, we are sure they always fit in SUA */
+    /* PX and possibly short form TF, we are sure they always fit in SUA */
     if (t->opts->rrip_1_10_px_ino || !t->opts->rrip_version_1_10) {
-        su_size += 44 + 26;
+        su_size += 44;
     } else {
-        su_size += 36 + 26;
+        su_size += 36;
+    }
+    if (!n->rrip_tf_long) {
+        su_size += 26;
     }
 
     if (n->type == ECMA119_DIR) {
@@ -1561,7 +1667,7 @@ try_again:
              * we need to write SP and ER entries. The first fits in SUA,
              * ER needs a Continuation Area, thus we also need a CE entry
              */
-            su_size += 7 + 28; /* SP + CE */
+            su_size += 7 + ISO_CE_ENTRY_SIZE; /* SP + CE */
             t->curr_ce_entries++;
             /* ER of RRIP */
             if (t->opts->rrip_version_1_10) {
@@ -1582,6 +1688,21 @@ try_again:
             if (ret < 0)
                return ret;
             *ce += aaip_len;
+
+            if (n->rrip_tf_long) {
+                /* Long form TF */
+                *ce += ISO_TF_LONG_SIZE;
+            }
+
+        } else {
+            /* Not the /. directory */
+
+            if (n->rrip_tf_long) {
+                /* Long TF surely fits into SUA:
+                 * Record + ER + RR + PX + PL + TF = 156
+                 */
+                su_size += ISO_TF_LONG_SIZE;
+            }
         }
     }
 
@@ -1676,7 +1797,7 @@ int rrip_get_susp_fields(Ecma119Image *t, Ecma119Node *n, int type,
     size_t rrip_er_len= 182;
     size_t su_size_pd, ce_len_pd; /* predicted sizes of SUA and CA */
     int ce_is_predicted = 0;
-    size_t aaip_sua_free= 0, aaip_len= 0, ce_mem;
+    size_t aaip_sua_free = 0, aaip_len = 0, ce_mem, tf_len = 0;
     int space;
 
     if (t == NULL || n == NULL || info == NULL) {
@@ -1736,14 +1857,21 @@ int rrip_get_susp_fields(Ecma119Image *t, Ecma119Node *n, int type,
     }
 #endif /* Libisofs_with_rrip_rR */
 
-    /* PX and TF, we are sure they always fit in SUA */
+    /* PX and short TF, we are sure they always fit in SUA */
     ret = rrip_add_PX(t, node, info);
     if (ret < 0) {
         goto add_susp_cleanup;
     }
-    ret = rrip_add_TF(t, node, info);
-    if (ret < 0) {
-        goto add_susp_cleanup;
+
+    /* Omit TF here if 17-byte time form is requested.
+     * In case of omission, TF will be written after NM and others,
+     * possibly into Continuation Area.
+     */
+    if (!n->rrip_tf_long) {
+        ret = rrip_add_TF(t, node, info, 0);
+        if (ret < 0) {
+            goto add_susp_cleanup;
+        }
     }
 
     if (n->type == ECMA119_DIR) {
@@ -1816,7 +1944,7 @@ int rrip_get_susp_fields(Ecma119Image *t, Ecma119Node *n, int type,
         namelen = strlen(name);
         sua_free = space - info->suf_len;
 
-        /* Try whether NM, SL, AL will fit into SUA */
+        /* Try whether NM, SL, AL and possibly long TF will fit into SUA */
         su_size_pd = info->suf_len;
         ce_len_pd = ce_len;
         ret = susp_calc_nm_sl_al(t, n, (size_t) space,
@@ -2075,18 +2203,24 @@ int rrip_get_susp_fields(Ecma119Image *t, Ecma119Node *n, int type,
             }
         }
 
-        /* Eventually write zisofs ZF field */
+        /* Possibly write zisofs ZF field */
         ret = add_zf_field(t, n, info, &sua_free, &ce_len, ce_mem, 0);
         if (ret < 0)
             goto add_susp_cleanup;
 
-        /* Eventually obtain AAIP field string from node
+        /* Possibly obtain AAIP field string from node
            and write it to directory entry or CE area.
         */
         ret = add_aa_string(t, n, info, &sua_free, &ce_len, ce_mem, 0);
         if (ret < 0)
             goto add_susp_cleanup;
 
+        /* In case of short form the TF field was already written above */
+        if (n->rrip_tf_long) {
+            ret = add_tf_long(t, n, info, &sua_free, &ce_len, ce_mem, 0);
+            if (ret < 0) 
+                goto add_susp_cleanup;
+        }
 
     } else {
 
@@ -2151,8 +2285,12 @@ int rrip_get_susp_fields(Ecma119Image *t, Ecma119Node *n, int type,
             if (ret < 0)
                 goto add_susp_cleanup;
 
+            if (n->rrip_tf_long)
+                tf_len = ISO_TF_LONG_SIZE;
+
             /* Allocate the necessary CE space */
-            ret = susp_add_CE(t, rrip_er_len + aaip_er_len + aaip_len, info);
+            ret = susp_add_CE(t, rrip_er_len + aaip_er_len + aaip_len + tf_len,
+                              info);
             if (ret < 0) {
                 goto add_susp_cleanup;
             }
@@ -2173,6 +2311,21 @@ int rrip_get_susp_fields(Ecma119Image *t, Ecma119Node *n, int type,
             if (ret < 0)
                 goto add_susp_cleanup;
 
+            if (n->rrip_tf_long) {
+                ret = rrip_add_TF(t, n, info, 1);
+                if (ret < 0)
+                    goto add_susp_cleanup;
+            }
+
+        } else {
+            /* Not the /. directory */
+
+            if (n->rrip_tf_long) {
+                /* Long TF surely fits into SUA  */
+                ret = rrip_add_TF(t, node, info, 0);
+                if (ret < 0)
+                    goto add_susp_cleanup;
+            }
         }
     }
 
@@ -2267,7 +2420,7 @@ int rrip_write_susp_fields(Ecma119Image *t, struct susp_info *info,
                            uint8_t *buf)
 {
     size_t i;
-    size_t pos = 0;
+    ssize_t pos = 0;
     int ret;
 
     if (info->n_susp_fields == 0) {
@@ -2275,14 +2428,17 @@ int rrip_write_susp_fields(Ecma119Image *t, struct susp_info *info,
     }
 
     ret = susp_update_CE_sizes(t, info, 0);
-    if (ret < 0)
-        return -1;
+    if (ret < 0) {
+        pos= -1;
+        goto cleanup;
+    }
 
     for (i = 0; i < info->n_susp_fields; i++) {
         memcpy(buf + pos, info->susp_fields[i], info->susp_fields[i][2]);
         pos += info->susp_fields[i][2];
     }
 
+cleanup:
     /* free susp_fields */
     for (i = 0; i < info->n_susp_fields; ++i) {
         free(info->susp_fields[i]);

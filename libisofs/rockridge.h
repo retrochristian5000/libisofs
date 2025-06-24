@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
  * Copyright (c) 2007 Mario Danic
- * Copyright (c) 2009 - 2023 Thomas Schmitt
+ * Copyright (c) 2009 - 2025 Thomas Schmitt
  * 
  * This file is part of the libisofs project; you can redistribute it and/or 
  * modify it under the terms of the GNU General Public License version 2 
@@ -86,6 +86,14 @@ struct susp_info
 
 /* Step to increase allocated size of susp_info.ce_susp_fields */
 #define ISO_SUSP_CE_ALLOC_STEP 16
+
+/* Upper limit for use of 7-byte time form: 01 Jan 2150 00:00:00 UTC
+   That is six years before the end of the 7-byte form capacity, just to
+   allow future software archeologists to widen this time limit to end of
+   year 2155 so that any problems with the longer TF can be sorted out
+   before it is too late.
+*/
+#define ISO_RR_SHORT_FORM_TIME_LIMIT 5680281600
 
 
 /* SUSP 5.1 */
