@@ -755,7 +755,8 @@ int ecma119_writer_compute_data_blocks(IsoImageWriter *writer)
  *           Do not compare by dir_rec_size_check.
  */
 static
-void write_one_dir_record(Ecma119Image *t, Ecma119Node *dir, Ecma119Node *node,
+void write_one_dir_record(Ecma119Image *t, Ecma119Node *check_dir,
+                          Ecma119Node *node,
                           int file_id, uint8_t *buf, size_t len_fi,
                           struct susp_info *info, int extent, int flag)
 {
@@ -763,8 +764,7 @@ void write_one_dir_record(Ecma119Image *t, Ecma119Node *dir, Ecma119Node *node,
     uint32_t block;
     uint8_t len_dr; /*< size of dir entry without SUSP fields */
     int multi_extend = 0, ret;
-    uint8_t *name = (file_id >= 0) ? (uint8_t*)&file_id
-            : (uint8_t*)node->iso_name;
+    uint8_t *name, uint8_file_id;
 
 #ifdef Libisofs_dir_rec_size_checK
     uint32_t written_size = 0;
@@ -772,6 +772,14 @@ void write_one_dir_record(Ecma119Image *t, Ecma119Node *dir, Ecma119Node *node,
 
     struct ecma119_dir_record *rec = (struct ecma119_dir_record*)buf;
     IsoNode *iso;
+
+    if (file_id >= 0) {
+        uint8_file_id = (file_id & 255);
+        name = &uint8_file_id;
+        len_fi = 1;
+    } else {
+        name = (uint8_t*) node->iso_name;
+    }
 
     len_dr = 33 + len_fi + ((len_fi % 2) ? 0 : 1);
 
