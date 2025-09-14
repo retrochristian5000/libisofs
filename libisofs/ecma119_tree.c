@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2009 - 2016 Thomas Schmitt
+ * Copyright (c) 2009 - 2025 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -1212,7 +1212,7 @@ int match_hardlinks(Ecma119Image *img, Ecma119Node *dir, int flag)
     if (ret < 0)
         return ret;
     nodes_size = node_count;
-    nodes = (Ecma119Node **) calloc(sizeof(Ecma119Node *), nodes_size);
+    nodes = (Ecma119Node **) calloc(nodes_size, sizeof(Ecma119Node *));
     if (nodes == NULL)
         return ISO_OUT_OF_MEM;
     ret = make_node_array(img, dir, nodes, nodes_size, &node_count, 0);

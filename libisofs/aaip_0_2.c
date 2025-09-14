@@ -7,7 +7,7 @@
  See libisofs/aaip_0_2.h
      http://libburnia-project.org/wiki/AAIP
 
- Copyright (c) 2009 - 2024 Thomas Schmitt
+ Copyright (c) 2009 - 2025 Thomas Schmitt
 
  This file is part of the libisofs project; you can redistribute it and/or
  modify it under the terms of the GNU General Public License version 2
@@ -1851,9 +1851,9 @@ int aaip_decode_attrs(struct aaip_state **handle,
    if(aaip->list_mem_used + new_mem >= memory_limit)
      return(3);
    aaip->list_mem_used+= new_mem;
-   aaip->list_names= calloc(sizeof(char *), aaip->list_size);
-   aaip->list_value_lengths= calloc(sizeof(size_t), aaip->list_size);
-   aaip->list_values= calloc(sizeof(char *), aaip->list_size);
+   aaip->list_names= calloc(aaip->list_size, sizeof(char *));
+   aaip->list_value_lengths= calloc(aaip->list_size, sizeof(size_t));
+   aaip->list_values= calloc(aaip->list_size, sizeof(char *));
    if(aaip->list_names == NULL || aaip->list_value_lengths == NULL ||
       aaip->list_values == NULL)
      return(-1);

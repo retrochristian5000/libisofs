@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2011-2024 Thomas Schmitt
+ * Copyright (c) 2011-2025 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -115,7 +115,7 @@ int create_node(Ecma119Image *t, IsoNode *iso, Iso1999Node **node)
         }
         n->info.dir->children = NULL;
         if (dir->nchildren > 0) {
-            n->info.dir->children = calloc(sizeof(void*), dir->nchildren);
+            n->info.dir->children = calloc(dir->nchildren, sizeof(void*));
             if (n->info.dir->children == NULL) {
                 free(n->info.dir);
                 free(n);

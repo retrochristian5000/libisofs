@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2011 Thomas Schmitt
+ * Copyright (c) 2009 - 2025 Thomas Schmitt
  * 
  * This file is part of the libisofs project; you can redistribute it and/or 
  * modify it under the terms of the GNU General Public License version 2 
@@ -99,7 +99,7 @@ int gzip_running_new(GzipFilterRuntime **running, int flag)
 {
     GzipFilterRuntime *o;
 
-    *running = o = calloc(sizeof(GzipFilterRuntime), 1);
+    *running = o = calloc(1, sizeof(GzipFilterRuntime));
     if (o == NULL) {
         return ISO_OUT_OF_MEM;
     }
@@ -674,11 +674,11 @@ int gzip_filter_get_filter(FilterContext *filter, IsoStream *original,
         return ISO_NULL_POINTER;
     }
 
-    str = calloc(sizeof(IsoStream), 1);
+    str = calloc(1, sizeof(IsoStream));
     if (str == NULL) {
         return ISO_OUT_OF_MEM;
     }
-    data = calloc(sizeof(GzipFilterStreamData), 1);
+    data = calloc(1, sizeof(GzipFilterStreamData));
     if (data == NULL) {
         free(str);
         return ISO_OUT_OF_MEM;

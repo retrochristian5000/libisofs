@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2011 Thomas Schmitt
+ * Copyright (c) 2009 - 2025 Thomas Schmitt
  * 
  * This file is part of the libisofs project; you can redistribute it and/or 
  * modify it under the terms of the GNU General Public License version 2 
@@ -64,7 +64,7 @@ int extf_running_new(ExternalFilterRuntime **running, int send_fd, int recv_fd,
                      pid_t child_pid, int flag)
 {
     ExternalFilterRuntime *o;
-    *running = o = calloc(sizeof(ExternalFilterRuntime), 1);
+    *running = o = calloc(1, sizeof(ExternalFilterRuntime));
     if (o == NULL) {
         return ISO_OUT_OF_MEM;
     }

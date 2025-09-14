@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020 Thomas Schmitt
+ * Copyright (c) 2009 - 2025 Thomas Schmitt
  * 
  * This file is part of the libisofs project; you can redistribute it and/or 
  * modify it under the terms of the GNU General Public License version 2 
@@ -217,7 +217,7 @@ int ziso_running_new(ZisofsFilterRuntime **running, off_t orig_size,
                      int flag)
 {
     ZisofsFilterRuntime *o;
-    *running = o = calloc(sizeof(ZisofsFilterRuntime), 1);
+    *running = o = calloc(1, sizeof(ZisofsFilterRuntime));
     if (o == NULL) {
         return ISO_OUT_OF_MEM;
     }
@@ -1381,15 +1381,15 @@ int ziso_filter_get_filter(FilterContext *filter, IsoStream *original,
         return ISO_NULL_POINTER;
     }
 
-    str = calloc(sizeof(IsoStream), 1);
+    str = calloc(1, sizeof(IsoStream));
     if (str == NULL) {
         return ISO_OUT_OF_MEM;
     }
     if (flag & 2) {
-        unstd = calloc(sizeof(ZisofsUncomprStreamData), 1);
+        unstd = calloc(1, sizeof(ZisofsUncomprStreamData));
         data = (ZisofsFilterStreamData *) unstd;
     } else {
-        cnstd = calloc(sizeof(ZisofsComprStreamData), 1);
+        cnstd = calloc(1, sizeof(ZisofsComprStreamData));
         data = (ZisofsFilterStreamData *) cnstd;
     }
     if (data == NULL) {

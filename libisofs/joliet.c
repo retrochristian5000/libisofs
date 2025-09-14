@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
  * Copyright (c) 2007 Mario Danic
- * Copyright (c) 2011-2018 Thomas Schmitt
+ * Copyright (c) 2011-2025 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -160,7 +160,7 @@ int create_node(Ecma119Image *t, IsoNode *iso, JolietNode **node)
         }
         joliet->info.dir->children = NULL;
         if (dir->nchildren > 0) {
-            joliet->info.dir->children = calloc(sizeof(void*), dir->nchildren);
+            joliet->info.dir->children = calloc(dir->nchildren, sizeof(void*));
             if (joliet->info.dir->children == NULL) {
                 free(joliet->info.dir);
                 free(joliet);
