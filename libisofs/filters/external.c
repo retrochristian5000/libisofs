@@ -637,7 +637,7 @@ int extf_cmp_ino(IsoStream *s1, IsoStream *s2);
 
 IsoStreamIface extf_stream_class = {
     4,
-    "extf",
+    {'e', 'x', 't', 'f'},
     extf_stream_open,
     extf_stream_close,
     extf_stream_get_size,

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2009 - 2022 Thomas Schmitt
+ * Copyright (c) 2009 - 2025 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -210,7 +210,7 @@ int fsrc_clone_stream(IsoStream *old_stream, IsoStream **new_stream,
 static
 IsoStreamIface fsrc_stream_class = {
     4, /* version */
-    "fsrc",
+    {'f', 's', 'r', 'c'},
     fsrc_open,
     fsrc_close,
     fsrc_get_size,
@@ -498,7 +498,7 @@ int cut_out_clone_stream(IsoStream *old_stream, IsoStream **new_stream,
 static
 IsoStreamIface cut_out_stream_class = {
     4, /* version */
-    "cout",
+    {'c', 'o', 'u', 't'},
     cut_out_open,
     cut_out_close,
     cut_out_get_size,
@@ -742,7 +742,7 @@ int mem_clone_stream(IsoStream *old_stream, IsoStream **new_stream,
 static
 IsoStreamIface mem_stream_class = {
     4, /* version */
-    "mem ",
+    {'m', 'e', 'm', ' '},
     mem_open,
     mem_close,
     mem_get_size,

@@ -579,7 +579,7 @@ int gzip_uncompress_cmp_ino(IsoStream *s1, IsoStream *s2);
 
 IsoStreamIface gzip_stream_compress_class = {
     4,
-    "gzip",
+    {'g', 'z', 'i', 'p'},
     gzip_stream_open,
     gzip_stream_close,
     gzip_stream_get_size,
@@ -596,7 +596,7 @@ IsoStreamIface gzip_stream_compress_class = {
 
 IsoStreamIface gzip_stream_uncompress_class = {
     4,
-    "pizg",
+    {'p', 'i', 'z', 'g'},
     gzip_stream_open,
     gzip_stream_close,
     gzip_stream_get_size,

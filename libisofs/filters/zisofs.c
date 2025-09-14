@@ -1282,7 +1282,7 @@ int ziso_uncompress_cmp_ino(IsoStream *s1, IsoStream *s2);
 
 IsoStreamIface ziso_stream_compress_class = {
     4,
-    "ziso",
+    {'z', 'i', 's', 'o'},
     ziso_stream_open,
     ziso_stream_close,
     ziso_stream_get_size,
@@ -1299,7 +1299,7 @@ IsoStreamIface ziso_stream_compress_class = {
 
 IsoStreamIface ziso_stream_uncompress_class = {
     4,
-    "osiz",
+    {'o', 's', 'i', 'z'},
     ziso_stream_open,
     ziso_stream_close,
     ziso_stream_get_size,

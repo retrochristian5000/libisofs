@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2010 - 2024 Thomas Schmitt
+ * Copyright (c) 2010 - 2025 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -1149,7 +1149,7 @@ void catalog_free(IsoStream *stream)
 
 IsoStreamIface catalog_stream_class = {
     0,
-    "boot",
+    {'b', 'o', 'o', 't'},
     catalog_open,
     catalog_close,
     catalog_get_size,
