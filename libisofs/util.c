@@ -1674,8 +1674,8 @@ void iso_datetime_17(unsigned char *buf, time_t t, int always_gmt)
         tzoffset = 0;
     }
 
-    if (tm.tm_year <= -1900) {
-        strcpy((char *) buf, "00010101000000");
+    if (tm.tm_year < -1900) {
+        strcpy((char *) buf, "00000101000000");
     } else if (tm.tm_year >= 8100) {
         strcpy((char *) buf, "99991231235959");
     } else {

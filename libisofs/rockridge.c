@@ -218,6 +218,7 @@ int rrip_add_TF(Ecma119Image *t, Ecma119Node *n, struct susp_info *susp,
     IsoNode *iso;
     uint8_t *TF;
     int len;
+    time_t node_time;
 
     if (n->rrip_tf_long) {
         len = ISO_TF_LONG_SIZE;
@@ -237,15 +238,27 @@ int rrip_add_TF(Ecma119Image *t, Ecma119Node *n, struct susp_info *susp,
 
     iso = n->node;
     if (n->rrip_tf_long) {
+        node_time= iso->mtime;
+        if ((!t->opts->rrip_tf_year0) &&
+            node_time < ISO_RR_SHORT_FORM_TIME_START)
+            node_time= ISO_RR_SHORT_FORM_TIME_START;
         iso_datetime_17(&TF[5],
-                       t->replace_timestamps ? t->timestamp : iso->mtime,
-                       t->opts->always_gmt);
+                        t->replace_timestamps ? t->timestamp : node_time,
+                        t->opts->always_gmt);
+        node_time= iso->atime;
+        if ((!t->opts->rrip_tf_year0) &&
+            node_time < ISO_RR_SHORT_FORM_TIME_START)
+            node_time= ISO_RR_SHORT_FORM_TIME_START;
         iso_datetime_17(&TF[5 + 17],
-                       t->replace_timestamps ? t->timestamp : iso->atime,
-                       t->opts->always_gmt);
+                        t->replace_timestamps ? t->timestamp : node_time,
+                        t->opts->always_gmt);
+        node_time= iso->ctime;
+        if ((!t->opts->rrip_tf_year0) &&
+            node_time < ISO_RR_SHORT_FORM_TIME_START)
+            node_time= ISO_RR_SHORT_FORM_TIME_START;
         iso_datetime_17(&TF[5 + 2 * 17],
-                       t->replace_timestamps ? t->timestamp : iso->ctime,
-                       t->opts->always_gmt);
+                        t->replace_timestamps ? t->timestamp : node_time,
+                        t->opts->always_gmt);
     } else {
         iso_datetime_7(&TF[5],
                        t->replace_timestamps ? t->timestamp : iso->mtime,
@@ -1537,12 +1550,18 @@ void iso_decide_rrip_tf_form(Ecma119Image *t, Ecma119Node *n)
     } else {
         iso_node= n->node;
         if (sizeof(iso_node->atime) > 4) {
-            /* Check [acm]time for (nearly) year 2156 or later */
-            if (iso_node->atime > ISO_RR_SHORT_FORM_TIME_LIMIT) {
+            /* Check [acm]time for year 1900 and (nearly) year 2156 */
+            if (iso_node->atime > ISO_RR_SHORT_FORM_TIME_LIMIT ||
+                (iso_node->atime < ISO_RR_SHORT_FORM_TIME_START &&
+                 t->opts->rrip_tf_year0)) {
                 n->rrip_tf_long = 1;
-            } else if (iso_node->ctime > ISO_RR_SHORT_FORM_TIME_LIMIT) {
+            } else if (iso_node->ctime > ISO_RR_SHORT_FORM_TIME_LIMIT ||
+                       (iso_node->ctime < ISO_RR_SHORT_FORM_TIME_START &&
+                        t->opts->rrip_tf_year0)) {
                 n->rrip_tf_long = 1;
-            } else if (iso_node->mtime > ISO_RR_SHORT_FORM_TIME_LIMIT) {
+            } else if (iso_node->mtime > ISO_RR_SHORT_FORM_TIME_LIMIT ||
+                       (iso_node->mtime < ISO_RR_SHORT_FORM_TIME_START &&
+                        t->opts->rrip_tf_year0)) {
                 n->rrip_tf_long = 1;
             }
         }

@@ -95,6 +95,9 @@ struct susp_info
 */
 #define ISO_RR_SHORT_FORM_TIME_LIMIT 5680281600
 
+/* Lower limit for use of 7-byte time form: 01 Jan 1900 00:00:00 UTC
+*/
+#define ISO_RR_SHORT_FORM_TIME_START -2208988800
 
 /* SUSP 5.1 */
 struct susp_CE {

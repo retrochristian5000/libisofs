@@ -4428,6 +4428,15 @@ int iso_write_opts_set_rrip_tf_long(IsoWriteOpts *opts, int enable)
     return ISO_SUCCESS;
 }
 
+int iso_write_opts_set_rrip_tf_year0(IsoWriteOpts *opts, int enable)
+{
+    if (opts == NULL) {
+        return ISO_NULL_POINTER;
+    }
+    opts->rrip_tf_year0 = enable ? 1 : 0;
+    return ISO_SUCCESS;
+}
+
 int iso_write_opts_set_aaip_susp_1_10(IsoWriteOpts *opts, int oldvers)
 {
     if (opts == NULL) {

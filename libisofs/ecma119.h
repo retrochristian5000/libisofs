@@ -222,6 +222,13 @@ struct iso_write_opts {
     unsigned int rrip_tf_long :1;
 
     /**
+     * Enable writing of time values before year 1900 AD in RRIP field TF.
+     * If enabled, then dates down to the begin of year 0 (= 1 BC) can be
+     * written into the Rock Ridge data.
+     */
+    unsigned int rrip_tf_year0 :1;
+
+    /**
      * See iso_write_opts_set_hardlinks()
      */
     unsigned int hardlinks:1;
