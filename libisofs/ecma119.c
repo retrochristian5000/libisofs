@@ -4428,12 +4428,12 @@ int iso_write_opts_set_rrip_tf_long(IsoWriteOpts *opts, int enable)
     return ISO_SUCCESS;
 }
 
-int iso_write_opts_set_rrip_tf_year0(IsoWriteOpts *opts, int enable)
+int iso_write_opts_set_rrip_tf_y1900(IsoWriteOpts *opts, int enable)
 {
     if (opts == NULL) {
         return ISO_NULL_POINTER;
     }
-    opts->rrip_tf_year0 = enable ? 1 : 0;
+    opts->rrip_tf_y1900 = enable ? 1 : 0;
     return ISO_SUCCESS;
 }
 

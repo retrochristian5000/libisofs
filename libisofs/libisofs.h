@@ -1891,16 +1891,16 @@ int iso_write_opts_set_rrip_1_10_px_ino(IsoWriteOpts *opts, int enable);
 int iso_write_opts_set_rrip_tf_long(IsoWriteOpts *opts, int enable);
 
 /**
- * Enable writing of time values before year 1900 AD in RRIP field TF.
- * Without this call or with enable==0, such values will be defaulted to
- * Jan 1 1900 UTC because Linux up to at least version 6.16 misrepresents times
+ * Enable curbing of of time values before year 1900 AD in RRIP field TF.
+ * This call with enable==1 will default years before 1900 AD to Jan 1 1900 UTC
+ * because Linux up to at least version 6.16 misrepresents times
  * before year 1900 as Jan 1 1970 00:00:00 UTC.
- * If enabled, then dates down to the begin of year 0 (= 1 BC) can be written
- * into the Rock Ridge data.
+ * If the curb is disabled, then dates down to the begin of year 0 (= 1 BC)
+ * can be written into the Rock Ridge data.
  * 
  * @since 1.5.8
  */
-int iso_write_opts_set_rrip_tf_year0(IsoWriteOpts *opts, int enable);
+int iso_write_opts_set_rrip_tf_y1900(IsoWriteOpts *opts, int enable);
 
 /**
  * Write AAIP as extension according to SUSP 1.10 rather than SUSP 1.12.

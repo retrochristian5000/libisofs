@@ -239,22 +239,19 @@ int rrip_add_TF(Ecma119Image *t, Ecma119Node *n, struct susp_info *susp,
     iso = n->node;
     if (n->rrip_tf_long) {
         node_time= iso->mtime;
-        if ((!t->opts->rrip_tf_year0) &&
-            node_time < ISO_RR_SHORT_FORM_TIME_START)
+        if (t->opts->rrip_tf_y1900 && node_time < ISO_RR_SHORT_FORM_TIME_START)
             node_time= ISO_RR_SHORT_FORM_TIME_START;
         iso_datetime_17(&TF[5],
                         t->replace_timestamps ? t->timestamp : node_time,
                         t->opts->always_gmt);
         node_time= iso->atime;
-        if ((!t->opts->rrip_tf_year0) &&
-            node_time < ISO_RR_SHORT_FORM_TIME_START)
+        if (t->opts->rrip_tf_y1900 && node_time < ISO_RR_SHORT_FORM_TIME_START)
             node_time= ISO_RR_SHORT_FORM_TIME_START;
         iso_datetime_17(&TF[5 + 17],
                         t->replace_timestamps ? t->timestamp : node_time,
                         t->opts->always_gmt);
         node_time= iso->ctime;
-        if ((!t->opts->rrip_tf_year0) &&
-            node_time < ISO_RR_SHORT_FORM_TIME_START)
+        if (t->opts->rrip_tf_y1900 && node_time < ISO_RR_SHORT_FORM_TIME_START)
             node_time= ISO_RR_SHORT_FORM_TIME_START;
         iso_datetime_17(&TF[5 + 2 * 17],
                         t->replace_timestamps ? t->timestamp : node_time,
@@ -1553,15 +1550,15 @@ void iso_decide_rrip_tf_form(Ecma119Image *t, Ecma119Node *n)
             /* Check [acm]time for year 1900 and (nearly) year 2156 */
             if (iso_node->atime > ISO_RR_SHORT_FORM_TIME_LIMIT ||
                 (iso_node->atime < ISO_RR_SHORT_FORM_TIME_START &&
-                 t->opts->rrip_tf_year0)) {
+                 !t->opts->rrip_tf_y1900)) {
                 n->rrip_tf_long = 1;
             } else if (iso_node->ctime > ISO_RR_SHORT_FORM_TIME_LIMIT ||
                        (iso_node->ctime < ISO_RR_SHORT_FORM_TIME_START &&
-                        t->opts->rrip_tf_year0)) {
+                        !t->opts->rrip_tf_y1900)) {
                 n->rrip_tf_long = 1;
             } else if (iso_node->mtime > ISO_RR_SHORT_FORM_TIME_LIMIT ||
                        (iso_node->mtime < ISO_RR_SHORT_FORM_TIME_START &&
-                        t->opts->rrip_tf_year0)) {
+                        !t->opts->rrip_tf_y1900)) {
                 n->rrip_tf_long = 1;
             }
         }
