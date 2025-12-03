@@ -3054,12 +3054,18 @@ int iso_image_filesystem_new(IsoDataSource *src, struct iso_read_opts *opts,
 
     /* read Volume Descriptors and ensure it is a valid image */
     if (data->md5_load == 1) {
-        /* From opts->block on : check for superblock and tree tags */;
+        /* From opts->block on : check for superblock and tree tags */
         ret = iso_src_check_sb_tree(src, opts->block, 0);
         if (ret < 0) {
-            iso_msgs_submit(0,
+            if (ret == (int) ISO_MD5_TAG_MISMATCH) {
+                iso_msgs_submit(0,
                 "Image loading aborted due to MD5 mismatch of image meta data",
-                            0, "FAILURE", 0);
+                                0, "FAILURE", 0);
+            } else {
+                iso_msgs_submit(0,
+                       "Image loading aborted due to invalid MD5 checksum tag",
+                                0, "FAILURE", 0);
+            }
             iso_msgs_submit(0,
                      "You may override this refusal by disabling MD5 checking",
                             0, "HINT", 0);
