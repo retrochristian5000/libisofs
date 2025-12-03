@@ -424,7 +424,7 @@ const char *iso_error_to_msg(int errcode)
     case ISO_MD5_TAG_UNEXPECTED:
         return "Unexpected checksum tag type encountered";
     case ISO_MD5_TAG_MISPLACED:
-        return "Misplaced checksum tag type encountered";
+        return "Misplaced checksum tag encountered";
     case ISO_MD5_TAG_OTHER_RANGE:
         return "Checksum tag with unexpected address range encountered";
     case ISO_MD5_STREAM_CHANGE:
