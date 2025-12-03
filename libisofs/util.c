@@ -2241,6 +2241,9 @@ int iso_util_eval_md5_tag(char *block, int desired, uint32_t lba,
     uint32_t pos, range_start, range_size;
     void *cloned_ctx = NULL;
 
+    static char *tag_names[5]= {"", "Session : ", "Superblock : ",
+                               "Directory tree : ", "Relocated superblock : "};
+
     *tag_type = 0;
     decode_ret = iso_util_decode_md5_tag(block, tag_type, &pos,
                                   &range_start, &range_size, next_tag, md5, 0);
@@ -2288,8 +2291,14 @@ unexpected_type:;
     }
     ret = 1;
 ex:;
-    if (ret < 0)
+    if ((ret == (int) ISO_MD5_AREA_CORRUPTED ||
+         ret == (int) ISO_MD5_TAG_MISMATCH) &&
+        *tag_type >= 1 && *tag_type <= 4) {
+        iso_msg_submit(-1, ret, 0, "%s%s",
+                       tag_names[*tag_type], iso_error_to_msg(ret));
+    } else if (ret < 0) {
         iso_msg_submit(-1, ret, 0, NULL);
+    }
     return ret;
 }
 

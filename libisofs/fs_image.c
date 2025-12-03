@@ -2936,7 +2936,9 @@ int iso_src_check_sb_tree(IsoDataSource *src, uint32_t start_lba, int flag)
         if (next_tag < 32) {
             /* Non plausible session_start address */
             ret = ISO_SB_TREE_CORRUPTED;
-            iso_msg_submit(-1, ret, 0, NULL);
+            iso_msg_submit(-1, ret, 0,
+                "Relocated superblock : Unplausible session_start address %lu",
+                           (unsigned long int) next_tag);
             goto ex;
         }
         /* Check real session */
@@ -3056,7 +3058,7 @@ int iso_image_filesystem_new(IsoDataSource *src, struct iso_read_opts *opts,
         ret = iso_src_check_sb_tree(src, opts->block, 0);
         if (ret < 0) {
             iso_msgs_submit(0,
-                "Image loading aborted due to MD5 mismatch of image tree data",
+                "Image loading aborted due to MD5 mismatch of image meta data",
                             0, "FAILURE", 0);
             iso_msgs_submit(0,
                      "You may override this refusal by disabling MD5 checking",
