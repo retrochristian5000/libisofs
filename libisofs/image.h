@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2009 - 2024 Thomas Schmitt
+ * Copyright (c) 2009 - 2025 Thomas Schmitt
  * 
  * This file is part of the libisofs project; you can redistribute it and/or 
  * modify it under the terms of the GNU General Public License version 2 
@@ -44,7 +44,10 @@ struct Iso_Image
 
     char *volset_id;
 
-    char *volume_id; /**< Volume identifier. */
+    char *volume_id_pvd;     /**< Volume identifier for PVD */
+    char *volume_id_joliet;  /**< Volume identifier for Joliet */
+    char *volume_id_1999;    /**< Volume identifier for ISO 9660:1999 */
+    char *volume_id_hfsplus; /**< Volume identifier for HFS+ */
     char *publisher_id; /**< Volume publisher. */
     char *data_preparer_id; /**< Volume data preparer. */
     char *system_id; /**< Volume system identifier. */

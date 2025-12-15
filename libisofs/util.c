@@ -1922,21 +1922,37 @@ char *iso_util_strcopy(const char *buf, size_t len)
     return str;
 }
 
+/* Remove any trailing blanks from str.
+ * If len_in is < 0, then use strlen(str) instead.  
+ */
+void iso_util_untail(char *str, int len_in)
+{
+    int len;
+
+    if (len_in < 0) {
+        len = strlen(str) - 1;
+    } else {
+        len = len_in - 1;
+    }
+    for (; len >= 0; --len) {
+        if (str[len] != ' ')
+    break;
+        str[len] = 0;
+    }
+    return;
+}
+
 char *iso_util_strcopy_untail(const char *buf, size_t len_in)
 {
     char *str;
-    int len;
     
     str = iso_util_strcopy(buf, len_in);
     if (str == NULL) {
         return NULL;
     }
     /* remove trailing spaces */
-    for (len = len_in - 1; len >= 0; --len) {
-        if (str[len] != ' ')
-    break;
-        str[len] = 0; 
-    }
+    if (len_in > 0)
+        iso_util_untail(str, (int) len_in);
     return str;
 }
 
@@ -2342,7 +2358,7 @@ void iso_handle_split_utf16(uint16_t *utf_word)
 }
 
 
-int iso_clone_mem(char *in, char **out, size_t size)
+int iso_clone_mem(const char *in, char **out, size_t size)
 {
     if (in == NULL) {
         *out = NULL;
@@ -2358,7 +2374,7 @@ int iso_clone_mem(char *in, char **out, size_t size)
 }
     
 
-int iso_clone_mgtd_mem(char *in, char **out, size_t size)
+int iso_clone_mgtd_mem(const char *in, char **out, size_t size)
 {
     if (*out != NULL)
         free(*out);

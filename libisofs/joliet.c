@@ -967,7 +967,7 @@ int joliet_writer_write_vol_desc(IsoImageWriter *writer)
 
     memset(&vol, 0, sizeof(struct ecma119_sup_vol_desc));
 
-    str2ucs(t->input_charset, image->volume_id, &vol_id);
+    str2ucs(t->input_charset, image->volume_id_joliet, &vol_id);
     str2ucs(t->input_charset, image->publisher_id, &pub_id);
     str2ucs(t->input_charset, image->data_preparer_id, &data_id);
     str2ucs(t->input_charset, image->volset_id, &volset_id);

@@ -796,7 +796,7 @@ int iso1999_writer_write_vol_desc(IsoImageWriter *writer)
 
     memset(&vol, 0, sizeof(struct ecma119_sup_vol_desc));
 
-    get_iso1999_name(t, image->volume_id, &vol_id);
+    get_iso1999_name(t, image->volume_id_1999, &vol_id);
     str2a_char(t->input_charset, image->publisher_id, &pub_id);
     str2a_char(t->input_charset, image->data_preparer_id, &data_id);
     get_iso1999_name(t, image->volset_id, &volset_id);

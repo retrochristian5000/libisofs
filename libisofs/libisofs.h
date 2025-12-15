@@ -3712,20 +3712,66 @@ void iso_image_set_volset_id(IsoImage *image, const char *volset_id);
 const char *iso_image_get_volset_id(const IsoImage *image);
 
 /**
- * Fill in the volume identifier for a image.
+ * Fill in the volume identifier for all filesystem superblocks in an image.
+ * This call is like iso_image_set_volume_id_v2(image, 0xf, volume_id).
  *
  * @since 0.6.2
  */
 void iso_image_set_volume_id(IsoImage *image, const char *volume_id);
 
 /**
- * Get the volume identifier.
+ * Fill in the volume identifier for one or more filesystem superblocks in
+ * an image. 
+ *
+ * @param img
+ *      The image which shall be manipulated.
+ * @param fs_type_mask
+ *      A bit field which choses the filesystem superblocks for which volume_id
+ *      shall be used:
+ *        bit0= ISO 9660 and Rock Ridge
+ *        bit1= Joliet
+ *        bit2= ISO 9660:1999
+ *        bit3= HFS+
+ * @param volume_id
+ *      The text which shall be used as volume identifier.
+ * @return
+ *      ISO_SUCCESS, ISO_OUT_OF_MEM
+ *
+ * @since 1.5.8
+ */
+int iso_image_set_volume_id_v2(IsoImage *image, int fs_type_mask,
+                               const char *volume_id);
+
+/**
+ * Get the volume identifier of an image for ISO 9660 and Rock Ridge.
  * The returned string is owned by the image and must not be freed nor
  * changed.
+ * This call is like iso_image_get_volume_id_v2(image, 0, volume_id).
  *
  * @since 0.6.2
  */
 const char *iso_image_get_volume_id(const IsoImage *image);
+
+/**
+ * Get the current volume identifier of an image for a particular filesystem
+ * superblock.
+ *
+ * @param image
+ *      The image which shall be inquired.
+ * @param fs_type
+ *      Chooses the filesystem superblock type for which the volume id is set.
+ *        0= ISO 9660 and Rock Ridge
+ *        1= Joliet
+ *        2= ISO 9660:1999
+ *        3= HFS+
+ * @return
+ *      The currently registered volume id for the given fs_type
+ *      The returned string is owned by the image and must not be freed nor
+ *      changed.
+ *
+ * @since 1.5.8
+ */
+const char *iso_image_get_volume_id_v2(const IsoImage *image, int fs_type);
 
 /**
  * Fill in the publisher for a image.
@@ -7436,6 +7482,28 @@ const char *iso_image_fs_get_volset_id(IsoImageFilesystem *fs);
  * @since 0.6.2
  */
 const char *iso_image_fs_get_volume_id(IsoImageFilesystem *fs);
+
+/**
+ * Get the volume identifier of a loaded image from a particular filesystem
+ * superblock.
+ *
+ * @param fs
+ *      The loaded filesystem shall be inquired.
+ * @param fs_type
+ *      Chooses the filesystem superblock type from which the volume id was
+ *      read.
+ *        0= ISO 9660 and Rock Ridge
+ *        1= Joliet
+ *        2= ISO 9660:1999
+ *        3= HFS+
+ * @return
+ *      The currently registered volume id for the given fs_type
+ *      The returned string is owned by the loaded filesystem and must not be
+ *      freed nor changed.
+ *
+ * @since 1.5.8
+ */
+const char *iso_image_fs_get_volume_id_v2(IsoImageFilesystem *fs, int fs_type);
 
 /**
  * Get the publisher identifier for an existent image. The returned string

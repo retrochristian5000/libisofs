@@ -386,6 +386,9 @@ local: *;
 };
 
 LIBISOFS6_1.5.8 {
+iso_image_fs_get_volume_id_v2;
+iso_image_get_volume_id_v2;
+iso_image_set_volume_id_v2;
 iso_local_create_dev;
 iso_local_get_lfa_flags;
 iso_local_get_projid;

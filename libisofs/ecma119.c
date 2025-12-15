@@ -974,10 +974,10 @@ int ecma119_writer_write_vol_desc(IsoImageWriter *writer)
     memset(&vol, 0, sizeof(struct ecma119_pri_vol_desc));
 
     if (t->opts->relaxed_vol_atts) {
-        vol_id = get_relaxed_vol_id(t, image->volume_id);
+        vol_id = get_relaxed_vol_id(t, image->volume_id_pvd);
         volset_id = get_relaxed_vol_id(t, image->volset_id);
     } else {
-        str2d_char(t->input_charset, image->volume_id, &vol_id);
+        str2d_char(t->input_charset, image->volume_id_pvd, &vol_id);
         str2d_char(t->input_charset, image->volset_id, &volset_id);
     }
     str2a_char(t->input_charset, image->publisher_id, &pub_id);

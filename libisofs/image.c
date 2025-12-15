@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2009 - 2024 Thomas Schmitt
+ * Copyright (c) 2009 - 2025 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -182,7 +182,10 @@ int iso_image_new(const char *name, IsoImage **image)
 
     if (name != NULL) {
         img->volset_id = strdup(name);
-        img->volume_id = strdup(name);
+        img->volume_id_pvd = strdup(name);
+        img->volume_id_joliet = strdup(name);
+        img->volume_id_1999 = strdup(name);
+        img->volume_id_hfsplus = strdup(name);
     }
     memset(img->application_use, 0, 512);
     img->system_area_data = NULL;
@@ -272,7 +275,10 @@ void iso_image_unref(IsoImage *image)
         if (image->import_src != NULL)
             iso_data_source_unref(image->import_src);
         free(image->volset_id);
-        free(image->volume_id);
+        free(image->volume_id_pvd);
+        free(image->volume_id_joliet);
+        free(image->volume_id_1999);
+        free(image->volume_id_hfsplus);
         free(image->publisher_id);
         free(image->data_preparer_id);
         free(image->system_id);
@@ -370,17 +376,64 @@ const char *iso_image_get_volset_id(const IsoImage *image)
     return image->volset_id;
 }
 
+int iso_image_set_volume_id_v2(IsoImage *image, int fs_type_mask,
+                               const char *volume_id)
+{
+    int ret;
+
+    if (fs_type_mask & 1) {
+        ret = iso_clone_mgtd_mem(volume_id, &(image->volume_id_pvd), 0);
+        if (ret != ISO_SUCCESS)
+            return ret;
+    }
+    if (fs_type_mask & 2) {
+        ret = iso_clone_mgtd_mem(volume_id, &(image->volume_id_joliet), 0);
+        if (ret != ISO_SUCCESS)
+            return ret;
+    }
+    if (fs_type_mask & 4) {
+        ret = iso_clone_mgtd_mem(volume_id, &(image->volume_id_1999), 0);
+        if (ret != ISO_SUCCESS)
+            return ret;
+    }
+    if (fs_type_mask & 8) {
+        ret = iso_clone_mgtd_mem(volume_id, &(image->volume_id_hfsplus), 0);
+        if (ret != ISO_SUCCESS)
+            return ret;
+    }
+    return ISO_SUCCESS;
+}
+
 void iso_image_set_volume_id(IsoImage *image, const char *volume_id)
 {
-    free(image->volume_id);
-    image->volume_id = strdup(volume_id);
+    iso_image_set_volume_id_v2(image, 0xf, volume_id);
+}
+
+const char *iso_image_get_volume_id_v2(const IsoImage *image, int fs_type)
+{
+    char *volidpt;
+
+    if (fs_type == 0) {
+        volidpt = image->volume_id_pvd;
+    } else if (fs_type == 1) {
+        volidpt = image->volume_id_joliet;
+    } else if (fs_type == 2) {
+        volidpt = image->volume_id_1999;
+    } else if (fs_type == 3) {
+        volidpt = image->volume_id_hfsplus;
+    } else {
+        volidpt = NULL;
+    }
+    if (volidpt == NULL)
+        return "";
+    return volidpt;
 }
 
 const char *iso_image_get_volume_id(const IsoImage *image)
 {
-    if (image->volume_id == NULL)
+    if (image->volume_id_pvd == NULL)
         return "";
-    return image->volume_id;
+    return image->volume_id_pvd;
 }
 
 void iso_image_set_publisher_id(IsoImage *image, const char *publisher_id)

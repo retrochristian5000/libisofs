@@ -331,6 +331,12 @@ char *iso_util_strcopy(const char *buf, size_t len);
 char *iso_util_strcopy_untail(const char *buf, size_t len);
 
 /**
+ * Remove any trailing blanks from str.
+ * If len_in is < 0, then use strlen(str) instead.
+ */
+void iso_util_untail(char *str, int len_in);
+
+/**
  * Copy up to \p max characters from \p src to \p dest. If \p src has less than
  * \p max characters, we pad dest with " " characters.
  */
@@ -642,11 +648,11 @@ void *iso_alloc_mem(size_t size, size_t count, int flag);
    @param size  Number of bytes to copy. 0 means strlen(in)+1 if not NULL.
    @return      1 or ISO_OUT_OF_MEM
 */
-int iso_clone_mem(char *in, char **out, size_t size);
+int iso_clone_mem(const char *in, char **out, size_t size);
 
 /* Like iso_clone_mem but first freeing *out if not NULL
 */
-int iso_clone_mgtd_mem(char *in, char **out, size_t size);
+int iso_clone_mgtd_mem(const char *in, char **out, size_t size);
 
 /** Convert a text into a number of type double and multiply it by unit code
     [kmgt] (2^10 to 2^40) or [s] (2048) or [d] (512).

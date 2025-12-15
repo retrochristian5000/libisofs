@@ -1636,7 +1636,7 @@ int hfsplus_writer_create(Ecma119Image *target)
         ret = ISO_OUT_OF_MEM;
         goto ex;
     }
-    ret = set_hfsplus_name (target, target->image->volume_id,
+    ret = set_hfsplus_name (target, target->image->volume_id_hfsplus,
                             &target->hfsp_leafs[target->hfsp_curleaf]);
     if (ret < 0)
         goto ex;

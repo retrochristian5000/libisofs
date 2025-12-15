@@ -368,7 +368,11 @@ typedef struct
 
     /* Volume attributes */
     char *volset_id;
-    char *volume_id; /**< Volume identifier. */
+    char *volume_id_pvd;     /**< Volume identifier for PVD */
+    char *volume_id_joliet;  /**< Volume identifier for Joliet */
+    char *volume_id_1999;    /**< Volume identifier for ISO 9660:1999 */
+    int  volume_id_1999_converted;  /* 0= still in input charset */
+    char *volume_id_hfsplus; /**< Volume identifier for HFS+ */
     char *publisher_id; /**< Volume publisher. */
     char *data_preparer_id; /**< Volume data preparer. */
     char *system_id; /**< Volume system identifier. */
@@ -2468,7 +2472,10 @@ void ifs_fs_free(IsoFilesystem *fs)
 
     /* free volume atts */
     free(data->volset_id);
-    free(data->volume_id);
+    free(data->volume_id_pvd);
+    free(data->volume_id_joliet);
+    free(data->volume_id_1999);
+    free(data->volume_id_hfsplus);
     free(data->publisher_id);
     free(data->data_preparer_id);
     free(data->system_id);
@@ -2702,9 +2709,15 @@ int read_pvm(_ImageFsData *data, uint32_t block)
     pvm = (struct ecma119_pri_vol_desc *)buffer;
 
     /* fill volume attributes  */
-    /* TODO take care of input charset */
+
+    /* >>> These strings need to be converted from ASCII to local charset */;
+
     data->volset_id = iso_util_strcopy_untail((char*)pvm->vol_set_id, 128);
-    data->volume_id = iso_util_strcopy_untail((char*)pvm->volume_id, 32);
+    data->volume_id_pvd = iso_util_strcopy_untail((char*)pvm->volume_id, 32);
+    data->volume_id_joliet = strdup(data->volume_id_pvd);
+    data->volume_id_1999 = strdup(data->volume_id_pvd);
+    data->volume_id_1999_converted = 1;
+    data->volume_id_hfsplus = strdup(data->volume_id_pvd);
     data->publisher_id =
                iso_util_strcopy_untail((char*)pvm->publisher_id, 128);
     data->data_preparer_id =
@@ -3124,8 +3137,12 @@ int iso_image_filesystem_new(IsoDataSource *src, struct iso_read_opts *opts,
             {
                 struct ecma119_sup_vol_desc *sup;
                 struct ecma119_dir_record *root;
+                char volid[34], *volid_local = NULL;
 
                 sup = (struct ecma119_sup_vol_desc*)buffer;
+                memcpy(volid, sup->volume_id, 32);
+                volid[32] = volid[33] = 0;
+
                 if (sup->esc_sequences[0] == 0x25 &&
                     sup->esc_sequences[1] == 0x2F &&
                     (sup->esc_sequences[2] == 0x40 ||
@@ -3135,6 +3152,25 @@ int iso_image_filesystem_new(IsoDataSource *src, struct iso_read_opts *opts,
                     /* it's a Joliet Sup. Vol. Desc. */
                     iso_msg_debug(data->msgid, "Found Joliet extensions");
                     data->joliet = 1;
+
+                    /* Read local representation of data->volume_id_joliet */
+                    ret = strnconv(volid, "UCS-2BE", data->local_charset,
+                                   32, &volid_local);
+                    if (ret == 1) {
+                        free(data->volume_id_joliet);
+                        data->volume_id_joliet =
+                                  iso_util_strcopy_untail(volid_local,
+                                                          strlen(volid_local));
+                    } else {
+                        iso_msgs_submit(0,
+                         "Could not convert Joliet Volume Id to local charset",
+                                        0, "WARNING", 0);
+                    }
+                    if (volid_local != NULL) {
+                        free(volid_local);
+                        volid_local = NULL;
+                    }
+
                     root = (struct ecma119_dir_record*)sup->root_dir_record;
                     data->svd_root_block = iso_read_bb(root->block, 4, NULL) +
                                            root->len_xa[0];
@@ -3147,6 +3183,13 @@ int iso_image_filesystem_new(IsoDataSource *src, struct iso_read_opts *opts,
                      */
                     iso_msg_debug(data->msgid, "Found ISO 9660:1999");
                     data->iso1999 = 1;
+
+                    free(data->volume_id_1999);
+                    data->volume_id_1999 = calloc(34, 1);
+                    memcpy(data->volume_id_1999, volid, 32);
+                    data->volume_id_1999[32] = data->volume_id_1999[33] = 0;
+                    data->volume_id_1999_converted = 0;
+
                     root = (struct ecma119_dir_record*)sup->root_dir_record;
                     data->evd_root_block = iso_read_bb(root->block, 4, NULL) + 
                                            root->len_xa[0];
@@ -6280,9 +6323,9 @@ int iso_is_valid_id(char *name, char cset, int with_separators,
 static
 int iso_image_has_relaxed_vol_atts(IsoImage *image)
 {
-    if (!iso_is_valid_id(image->volset_id, 'c', 0, 0, 0))
+    if (!iso_is_valid_id(image->volset_id, 'd', 0, 0, 0))
         return 1;
-    if (!iso_is_valid_id(image->volume_id, 'c', 0, 0, 0))
+    if (!iso_is_valid_id(image->volume_id_pvd, 'd', 0, 0, 0))
         return 1;
     if (!iso_is_valid_id(image->publisher_id, 'a', 0, 0, 0))
         return 1;
@@ -6537,6 +6580,7 @@ int iso_image_import(IsoImage *image, IsoDataSource *src,
     static char *tree_loaded_names[3]= {"ISO9660", "Joliet", "ISO9660:1999"};
     int root_has_aaip = 0, rrip_version_1_10;
     unsigned long img_size;
+    char volid[34], *volid_local = NULL;
 
     if (image == NULL || src == NULL || opts == NULL) {
         return ISO_NULL_POINTER;
@@ -6907,7 +6951,38 @@ int iso_image_import(IsoImage *image, IsoDataSource *src,
 
     /* set volume attributes */
     iso_image_set_volset_id(image, data->volset_id);
-    iso_image_set_volume_id(image, data->volume_id);
+    iso_image_set_volume_id_v2(image, 0x1, data->volume_id_pvd);
+    iso_image_set_volume_id_v2(image, 0x2, data->volume_id_joliet);
+    if(data->volume_id_1999_converted) {
+        strcpy(volid, data->volume_id_1999);
+    } else {
+        memcpy(volid, data->volume_id_1999, 34);
+        if (data->input_charset != NULL) {
+            if (strcmp(data->input_charset, data->local_charset) != 0) {
+                ret = strnconv(volid, data->input_charset, data->local_charset,
+                               32, &volid_local);
+                if (ret == 1) {
+                    strncpy(volid, volid_local, 32);
+                    volid[32] = volid[33] = 0;
+                } else {
+                    goto no_1999_convert;
+                }
+            }
+        } else {
+no_1999_convert:;
+            iso_msgs_submit(0,
+                  "Could not convert ISO 9660:1999 Volume Id to local charset",
+                            0, "WARNING", 0);
+            strcpy(volid, data->volume_id_pvd);
+        }
+        if (volid_local != NULL) {
+            free(volid_local);
+            volid_local = NULL;
+        }
+    }
+    iso_util_untail(volid, -1);
+    iso_image_set_volume_id_v2(image, 0x4, volid);
+    iso_image_set_volume_id_v2(image, 0x8, data->volume_id_hfsplus);
     iso_image_set_publisher_id(image, data->publisher_id);
     iso_image_set_data_preparer_id(image, data->data_preparer_id);
     iso_image_set_system_id(image, data->system_id);
@@ -7184,10 +7259,32 @@ const char *iso_image_fs_get_volset_id(IsoImageFilesystem *fs)
     return data->volset_id;
 }
 
+const char *iso_image_fs_get_volume_id_v2(IsoImageFilesystem *fs, int fs_type)
+{
+    char *volidpt;
+    _ImageFsData *data = (_ImageFsData*) fs->data;
+
+    if (fs_type == 0) {
+        volidpt = data->volume_id_pvd;
+    } else if (fs_type == 1) {
+        volidpt = data->volume_id_joliet;
+    } else if (fs_type == 2) {
+        volidpt = data->volume_id_pvd;
+    } else if (fs_type == 3) {
+        volidpt = data->volume_id_hfsplus;
+    } else {
+        volidpt = NULL;
+    }
+    if (volidpt == NULL)
+        return "";
+    return volidpt;
+}
+
+
 const char *iso_image_fs_get_volume_id(IsoImageFilesystem *fs)
 {
     _ImageFsData *data = (_ImageFsData*) fs->data;
-    return data->volume_id;
+    return data->volume_id_pvd;
 }
 
 const char *iso_image_fs_get_publisher_id(IsoImageFilesystem *fs)
