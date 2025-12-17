@@ -256,11 +256,13 @@ uint16_t *ucsncpy(uint16_t *dest, const uint16_t *src, size_t n);
 void iso_handle_split_utf16(uint16_t *utf_word);
 
 /**
- * Convert a given input string to d-chars.
+ * Convert a given input string to d-characters, d-characters+separators, or
+ * a-characters.
  * @return
  *      1 on success, < 0 error, 0 if input was null (output is set to null)
  */
 int str2d_char(const char *icharset, const char *input, char **output);
+int str2d_sep_char(const char *icharset, const char *input, char **output);
 int str2a_char(const char *icharset, const char *input, char **output);
 
 /* Check for membership in the d-, a-, or j-character set */

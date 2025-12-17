@@ -995,15 +995,12 @@ int ecma119_writer_write_vol_desc(IsoImageWriter *writer)
         str2a_char(t->input_charset, image->data_preparer_id, &data_id);
         str2a_char(t->input_charset, image->system_id, &system_id);
         str2a_char(t->input_charset, image->application_id, &application_id);
-
-        /* >>> The file ids are allowed to have SEPARATOR 1,2: 2E '.' , 3B ';'
-        */
-
-        str2d_char(t->input_charset, image->copyright_file_id,
-                   &copyright_file_id);
-        str2d_char(t->input_charset, image->abstract_file_id,
-                   &abstract_file_id);
-        str2d_char(t->input_charset, image->biblio_file_id, &biblio_file_id);
+        str2d_sep_char(t->input_charset, image->copyright_file_id,
+                       &copyright_file_id);
+        str2d_sep_char(t->input_charset, image->abstract_file_id,
+                       &abstract_file_id);
+        str2d_sep_char(t->input_charset, image->biblio_file_id,
+                       &biblio_file_id);
     }
     vol.vol_desc_type[0] = 1;
     memcpy(vol.std_identifier, "CD001", 5);

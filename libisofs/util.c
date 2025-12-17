@@ -1414,7 +1414,7 @@ int str2d_char(const char *icharset, const char *input, char **output)
     size_t len, i;
 
     if (output == NULL) {
-        return ISO_OUT_OF_MEM;
+        return ISO_NULL_POINTER;
     }
 
     /** allow NULL input */
@@ -1438,6 +1438,51 @@ int str2d_char(const char *icharset, const char *input, char **output)
     }
 
     *output = ascii;
+    return ISO_SUCCESS;
+}
+
+/* For Copyright File, Abstract File, Biblio File
+ */
+int str2d_sep_char(const char *icharset, const char *input, char **output)
+{
+    int ret;
+    char *ascii, *dot_pt, *sem_pt;
+    size_t len, i;
+
+    if (output == NULL) {
+        return ISO_NULL_POINTER;
+    }
+    *output = NULL;
+
+    /** allow NULL input */
+    if (input == NULL) 
+        return 0;
+
+    /* this checks for NULL parameters */
+    ret = str2ascii(icharset, input, &ascii);
+    if (ret < 0)
+        return ret;
+    *output = ascii;
+    len = strlen(ascii);
+
+    /* Preserve last dot and last semicolon if not before last dot */
+    dot_pt = strrchr(ascii, '.');
+    if (dot_pt != NULL) {
+        sem_pt = strrchr(dot_pt + 1, ';');
+    } else {
+        sem_pt = strrchr(ascii, ';');
+    }
+    /* Enforce d-characters */
+    for (i = 0; i < len; ++i) {
+        char c= toupper(ascii[i]);
+        ascii[i] = valid_d_char(c) ? c : '_';
+    }
+    /* Reinstate last dot and semicolon */
+    if (dot_pt != NULL)
+        *dot_pt = '.';
+    if (sem_pt != NULL)
+        *sem_pt = ';';
+
     return ISO_SUCCESS;
 }
 
