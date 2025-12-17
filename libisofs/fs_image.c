@@ -6261,6 +6261,8 @@ int iso_read_image_features_text(IsoReadImageFeatures *f, int with_values,
 
 /* @param cset which charset to test for: d or a
    @param with_separators   0=no separators 1=accept "." and ";"
+   @param main_length  valid if >0
+   @param suffix_length  valid if >0
 */
 static
 int iso_is_valid_id(char *name, char cset, int with_separators,
@@ -6276,21 +6278,25 @@ int iso_is_valid_id(char *name, char cset, int with_separators,
         valid = valid_d_char;
     for(cpt = name; *cpt != 0; cpt++) {
         if (*cpt == '.') {
-            if (!with_separators)
+            if (cset == 'd') {
+                if (with_separators)
+                    return 0;
+                if (ml >= 0)
+                    return 0; /* more than one . */
+            }
+            if (main_length > 0 && ml < 0 && l > main_length)
                 return 0;
-            if (ml >= 0)
-                return 0; /* more than one . */
             ml = l;
             l = 0;
-            if (main_length > 0 && ml > main_length)
-                return 0;
     continue;
         } else if (*cpt == ';') {
-            if (!with_separators)
-                return 0;
-            if (sep2_count > 0 || ml < 0)
-                return 0;  /* multiple ; or ; before . */
-            sep2_count++;
+            if (cset == 'd') {
+                if (!with_separators)
+                    return 0;
+                if (sep2_count > 0 || ml < 0)
+                    return 0;  /* multiple ; or ; before . */
+                sep2_count++;
+            }
     continue;
         }
         if (!(*valid)(*cpt))
@@ -6321,28 +6327,30 @@ int iso_is_valid_id(char *name, char cset, int with_separators,
 */
 
 static
-int iso_image_has_relaxed_vol_atts(IsoImage *image)
+int iso_image_has_relaxed_pvd_atts(IsoImage *image)
 {
-    if (!iso_is_valid_id(image->volset_id, 'd', 0, 0, 0))
-        return 1;
-    if (!iso_is_valid_id(image->volume_id_pvd, 'd', 0, 0, 0))
-        return 1;
-    if (!iso_is_valid_id(image->publisher_id, 'a', 0, 0, 0))
-        return 1;
-    if (!iso_is_valid_id(image->data_preparer_id, 'a', 0, 0, 0))
-        return 1;
-    if (!iso_is_valid_id(image->system_id, 'a', 0, 0, 0))
-        return 1;
-    if (!iso_is_valid_id(image->application_id, 'a', 0, 0, 0))
-        return 1;
-    if (!iso_is_valid_id(image->copyright_file_id, 'd', 1, 0, 0))
-        return 1;
-    if (!iso_is_valid_id(image->abstract_file_id, 'd', 1, 0, 0))
-        return 1;
-    if (!iso_is_valid_id(image->biblio_file_id, 'd', 1, 0, 0))
-        return 1;
+    int relaxed = 0;
 
-    return 0;
+    if (!iso_is_valid_id(image->volset_id, 'd', 0, 0, 0))
+        relaxed |= 1;
+    if (!iso_is_valid_id(image->volume_id_pvd, 'd', 0, 0, 0))
+        relaxed |= 1;
+    if (!iso_is_valid_id(image->publisher_id, 'a', 0, 0, 0))
+        relaxed |= 2;
+    if (!iso_is_valid_id(image->data_preparer_id, 'a', 0, 0, 0))
+        relaxed |= 2;
+    if (!iso_is_valid_id(image->system_id, 'a', 0, 0, 0))
+        relaxed |= 2;
+    if (!iso_is_valid_id(image->application_id, 'a', 0, 0, 0))
+        relaxed |= 2;
+    if (!iso_is_valid_id(image->copyright_file_id, 'd', 1, 0, 0))
+        relaxed |= 2;
+    if (!iso_is_valid_id(image->abstract_file_id, 'd', 1, 0, 0))
+        relaxed |= 2;
+    if (!iso_is_valid_id(image->biblio_file_id, 'd', 1, 0, 0))
+        relaxed |= 2;
+
+    return relaxed;
 }
 
 
@@ -6578,7 +6586,7 @@ int iso_image_import(IsoImage *image, IsoDataSource *src,
     ElToritoBootImage *boot_image = NULL;
     int features_allocated = 0;
     static char *tree_loaded_names[3]= {"ISO9660", "Joliet", "ISO9660:1999"};
-    int root_has_aaip = 0, rrip_version_1_10;
+    int root_has_aaip = 0, rrip_version_1_10, relaxed;
     unsigned long img_size;
     char volid[34], *volid_local = NULL;
 
@@ -7049,12 +7057,16 @@ no_1999_convert:;
         if ((ret = iso_img_features_set_named((*features), "size",
                                      (int64_t) ((*features)->size), NULL)) < 0)
             goto import_revert;
+        relaxed = iso_image_has_relaxed_pvd_atts(image);
         if ((ret = iso_img_features_set_named((*features), "relaxed_vol_atts",
-                   (int64_t) iso_image_has_relaxed_vol_atts(image), NULL)) < 0)
+                                           (int64_t) (relaxed & 3), NULL)) < 0)
             goto import_revert;
-        if (image->tree_compliance != NULL)
+        if (image->tree_compliance != NULL) {
             iso_write_opts_set_relaxed_vol_atts(image->tree_compliance,
-                                      !!iso_image_has_relaxed_vol_atts(image));
+                                                (relaxed & 1));
+            iso_write_opts_set_relaxed_nonvol_atts(image->tree_compliance,
+                                                   !!(relaxed & 2));
+        }
     }
     if (*features != NULL) {
         (*features)->tree_loaded = image->tree_loaded;

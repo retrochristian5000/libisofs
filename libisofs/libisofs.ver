@@ -403,6 +403,7 @@ iso_util_encode_lfa_flags;
 iso_util_get_effective_lfa_mask;
 iso_util_get_lfa_masks;
 iso_write_opts_set_gpt_with_gaps;
+iso_write_opts_set_relaxed_nonvol_atts;
 iso_write_opts_set_rrip_tf_long;
 iso_write_opts_set_rrip_tf_y1900;
 } LIBISOFS6;

@@ -189,6 +189,13 @@ struct iso_write_opts {
     unsigned int relaxed_vol_atts :1;
 
     /**
+     * Like .relaxed_vol_atts but for all other text attributes in the PVD
+     * for which the specs demand a-characters or d-characters.
+     * This breaks ISO-9660 constraints.
+     */
+    unsigned int relaxed_nonvol_atts :1;
+
+    /**
      * Allow paths in the Joliet tree to have more than 240 characters.
      */
     unsigned int joliet_longer_paths :1;

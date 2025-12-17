@@ -1822,12 +1822,48 @@ int iso_write_opts_set_allow_7bit_ascii(IsoWriteOpts *opts, int allow);
 
 /**
  * Allow all characters to be part of Volume and Volset identifiers on
- * the Primary Volume Descriptor. This breaks ISO-9660 constraints, but
- * should work on modern systems.
+ * the Primary Volume Descriptor which can be set by:
+ *   iso_image_set_volset_id()
+ *   iso_image_set_volume_id()
+ *   iso_image_set_volume_id_v2()
+ * This breaks ISO-9660 constraints, but should work on modern systems.
+ * Allowed by the specs are characters out of [0-9A-Z_] ("d-characters").
  *
  * @since 0.6.2
  */
 int iso_write_opts_set_relaxed_vol_atts(IsoWriteOpts *opts, int allow);
+
+/**
+ * Like iso_write_opts_set_relaxed_vol_atts() but for all other text
+ * attributes in the Primary Volume Descriptor which can be set by:
+ *   iso_image_set_publisher_id()
+ *   iso_image_set_data_preparer_id()
+ *   iso_image_set_system_id()
+ *   iso_image_set_application_id()
+ *   iso_image_set_copyright_file_id()
+ *   iso_image_set_abstract_file_id()
+ *   iso_image_set_biblio_file_id()
+ * This breaks ISO-9660 constraints.
+ * Allowed for copyright_file_id, abstract_file_id, and biblio_file_id
+ * are [0-9A-Z_] plus at most one '.' and at most one ';' which must not
+ * come before the dot. Allowed for the others are additionally ' ', '!', '"',
+ * and the ASCII characters between '%' and '?' ("a-characters"), without
+ * restriction on number and position of '.' or ';'.
+ *
+ * @param opts    
+ *      The option set to be manipulated.
+ * @param allow
+ *      0= Strictly obey the the specs in regard to allowed characters.
+ *         Non-compliant characters get mapped to allowed ones.
+ *      1= Allow all characters which can be expressed in the output
+ *         character set.
+ * @return
+ *      ISO_SUCCESS or ISO_NULL_POINTER if opts is NULL.
+ *
+ * @since 1.5.8
+ */
+int iso_write_opts_set_relaxed_nonvol_atts(IsoWriteOpts *opts, int allow);
+
 
 /**
  * Allow paths in the Joliet tree to have more than 240 characters.
@@ -3494,7 +3530,8 @@ int iso_read_image_features_rr_loaded(IsoReadImageFeatures *f);
  *   no_force_dots            See iso_write_opts_set_no_force_dots()
  *   allow_lowercase          See iso_write_opts_set_allow_lowercase()
  *   allow_full_ascii         See iso_write_opts_set_allow_full_ascii()
- *   relaxed_vol_atts         See iso_write_opts_set_relaxed_vol_atts()
+ *   relaxed_vol_atts         bit0 see iso_write_opts_set_relaxed_vol_atts()
+ *                            bit1 see iso_write_opts_set_relaxed_nonvol_atts()
  *   joliet_longer_paths      See iso_write_opts_set_joliet_longer_paths()
  *   joliet_long_names        See iso_write_opts_set_joliet_long_names()
  *   joliet_utf16             See iso_write_opts_set_joliet_utf16()

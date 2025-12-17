@@ -868,6 +868,8 @@ void write_one_dir_record(Ecma119Image *t, Ecma119Node *check_dir,
 
 }
 
+/* (Actually this can produce any relaxed PVD attribute)
+*/
 static
 char *get_relaxed_vol_id(Ecma119Image *t, const char *name)
 {
@@ -980,14 +982,29 @@ int ecma119_writer_write_vol_desc(IsoImageWriter *writer)
         str2d_char(t->input_charset, image->volume_id_pvd, &vol_id);
         str2d_char(t->input_charset, image->volset_id, &volset_id);
     }
-    str2a_char(t->input_charset, image->publisher_id, &pub_id);
-    str2a_char(t->input_charset, image->data_preparer_id, &data_id);
-    str2a_char(t->input_charset, image->system_id, &system_id);
-    str2a_char(t->input_charset, image->application_id, &application_id);
-    str2d_char(t->input_charset, image->copyright_file_id, &copyright_file_id);
-    str2d_char(t->input_charset, image->abstract_file_id, &abstract_file_id);
-    str2d_char(t->input_charset, image->biblio_file_id, &biblio_file_id);
+    if (t->opts->relaxed_nonvol_atts) {
+        pub_id = get_relaxed_vol_id(t, image->publisher_id);
+        data_id = get_relaxed_vol_id(t, image->data_preparer_id);
+        system_id = get_relaxed_vol_id(t, image->system_id);
+        application_id = get_relaxed_vol_id(t, image->application_id);
+        copyright_file_id = get_relaxed_vol_id(t, image->copyright_file_id);
+        abstract_file_id = get_relaxed_vol_id(t, image->abstract_file_id);
+        biblio_file_id = get_relaxed_vol_id(t, image->biblio_file_id);
+    } else {
+        str2a_char(t->input_charset, image->publisher_id, &pub_id);
+        str2a_char(t->input_charset, image->data_preparer_id, &data_id);
+        str2a_char(t->input_charset, image->system_id, &system_id);
+        str2a_char(t->input_charset, image->application_id, &application_id);
 
+        /* >>> The file ids are allowed to have SEPARATOR 1,2: 2E '.' , 3B ';'
+        */
+
+        str2d_char(t->input_charset, image->copyright_file_id,
+                   &copyright_file_id);
+        str2d_char(t->input_charset, image->abstract_file_id,
+                   &abstract_file_id);
+        str2d_char(t->input_charset, image->biblio_file_id, &biblio_file_id);
+    }
     vol.vol_desc_type[0] = 1;
     memcpy(vol.std_identifier, "CD001", 5);
     vol.vol_desc_version[0] = 1;
@@ -4364,13 +4381,21 @@ int iso_write_opts_set_allow_7bit_ascii(IsoWriteOpts *opts, int allow)
     return ISO_SUCCESS;
 }
 
-
 int iso_write_opts_set_relaxed_vol_atts(IsoWriteOpts *opts, int allow)
 {
     if (opts == NULL) {
         return ISO_NULL_POINTER;
     }
     opts->relaxed_vol_atts = allow ? 1 : 0;
+    return ISO_SUCCESS;
+}
+
+int iso_write_opts_set_relaxed_nonvol_atts(IsoWriteOpts *opts, int allow)
+{
+    if (opts == NULL) {
+        return ISO_NULL_POINTER;
+    }
+    opts->relaxed_nonvol_atts = allow ? 1 : 0;
     return ISO_SUCCESS;
 }
 
