@@ -34,7 +34,7 @@ struct libiso_msgs_item {
  int priority;
 
  /* Apply for your developer's error code range at
-      libburn-hackers@pykix.org
+      pkg-libburnia-devel@alioth-lists.debian.net
     Report introduced codes in the list below. */
  int error_code;
 
