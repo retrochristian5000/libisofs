@@ -1405,6 +1405,12 @@ int try_mangle(Ecma119Image *target, uint32_t idx, uint32_t prev_idx,
             goto no_success;
         }
 
+        /* gcc-15 complains about up to 264 bytes being sprintf'ed here.
+           This is not possible due to the test for
+             strlen(prefix) + 1 + strlen(number) > LIBISO_HFSPLUS_NAME_MAX
+           above.
+           Using snprintf(..., LIBISO_HFSPLUS_NAME_MAX + 1 ,...) does not help.
+        */
         /* "-" would sort lower than capital letters ,
            traditional "_" causes longer rotations
          */
