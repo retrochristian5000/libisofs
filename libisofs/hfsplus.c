@@ -1405,16 +1405,19 @@ int try_mangle(Ecma119Image *target, uint32_t idx, uint32_t prev_idx,
             goto no_success;
         }
 
-        /* gcc-15 complains about up to 264 bytes being sprintf'ed here.
-           This is not possible due to the test for
-             strlen(prefix) + 1 + strlen(number) > LIBISO_HFSPLUS_NAME_MAX
-           above.
-           Using snprintf(..., LIBISO_HFSPLUS_NAME_MAX + 1 ,...) does not help.
-        */
         /* "-" would sort lower than capital letters ,
            traditional "_" causes longer rotations
          */
-        sprintf(new_name, "%s_%s", prefix, number);
+        /* gcc-15 complained about up to 264 bytes being sprintf'ed here:
+             sprintf(new_name, "%s_%s", prefix, number);
+           This is not possible due to the test for
+             strlen(prefix) + 1 + strlen(number) > LIBISO_HFSPLUS_NAME_MAX
+           above.
+           Whatever, strcpy and strcat are now used to work around.
+        */
+        strcpy(new_name, prefix);
+        strcat(new_name, "_");
+        strcat(new_name, number);
 
         /* The original name is kept until the end of the try */
         if (target->hfsp_leafs[idx].name != old_name)
