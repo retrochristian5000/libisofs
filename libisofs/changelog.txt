@@ -961,33 +961,494 @@ configure.ac
 libisofs/libisofs.h
 Version leap to 1.5.7
 
-  [master: ][branch 1.5.6.pl01: ]
+09 Jun 2023  [09ec2fa]
 libisofs/rockridge.h
 ChangeLog
 libisofs/changelog.txt
 Bug fix: On non-GNU/Linux systems ssize_t was not defined in rockridge.h .
-         Report and fix proposal by Rui Chen
+         Report and fix proposal by Rui Chen.
          
-------------------------------- release - libisofs-1.5.6.pl01 - 09 Jun 2023
-* Bug fix: On non-GNU/Linux systems ssize_t was not defined in rockridge.h .
-           Report and fix proposal by Rui Chen
-
-  []
+09 Jun 2023  [8a4f1f8]
 libisofs/ecma119.c
 libisofs/fs_image.c
+libisofs/rockridge.h
 libisofs/rockridge.c
 libisofs/stream.c
+Explicitely included unistd.h in all source file which use ssize_t
 
-  []
+09 Jun 2023  [9ec998f]
 README
 Updated copyright year in README
 
+12 Jun 2023  [branch-1.5.6.pl01: fa3da9b]
+libisofs/rockridge.h
+ChangeLog
+libisofs/changelog.txt
+Bug fix: On non-GNU/Linux systems ssize_t was not defined in rockridge.h .
+         Report and fix proposal by Rui Chen.
+         
+------------------------------- release - libisofs-1.5.6.pl01 - 12 Jun 2023
+* Bug fix: On non-GNU/Linux systems ssize_t was not defined in rockridge.h .
+           Report and fix proposal by Rui Chen.
 
 
------------------------------------- release - libisofs-1.5.8 -
+20 Nov 2023  [8a84397]
+libisofs/libisofs.h
+Clarified in the description of iso_image_set_boot_image() the meaning of
+pseudo-path parameters "start" and "size"
+
+20 Nov 2023  [405f0f0]
+libisofs/fs_image.c
+Improved size estimation and property assessment of El Torito hidden boot images
+
+10 May 2024  [8ed27c6]
+libisofs/ecma119.c
+libisofs/system_area.h
+libisofs/system_area.c
+Enabled up to 8 appended GPT partitions and improved their number mapping
+
+12 May 2024  [d9c548d]
+libisofs/libisofs.h
+libisofs/image.h
+libisofs/image.c
+libisofs/fs_image.c
+libisofs/eltorito.h
+libisofs/eltorito.c
+libisofs/system_area.h
+libisofs/system_area.c
+Bug fix: File path of imported BIOS boot image was forgotten when it gets
+         overwritten by a file of the same name. Thanks Brian C. Lane.
+
+12 May 2024  [8ffd3b3]
+libisofs/libisofs.h
+Clarified the API description of NULL data in iso_write_opts_set_system_area()
+
+18 May 2024  [483a68a]
+libisofs/fs_image.c
+libisofs/tree.c
+Avoided use of uninitialized variables which was introduced by commit d9c548d
+
+18 May 2024  [57fcd4b]
+libisofs/fs_image.c
+Fixed assessment of MIPS boot equipment which was broken by commit 405f0f0
+
+19 May 2024  [7870801]
+libisofs/ecma119.h
+libisofs/ecma119.c
+libisofs/iso1999.c
+Improved warning messages about symbolic links and special files in
+ISO 9660:1999 tree
+
+12 Jul 2024  [425f5d0]
+libisofs/libisofs.h
+Removed germanisms about "eventual" from API description
+
+16 Jul 2024  [d78028f]
+configure.ac
+Makefile.am
+libisofs/libisofs.h
+libisofs/image.h
+libisofs/image.c
+libisofs/builder.c
+libisofs/fs_local.c
+libisofs/node.c
+libisofs/rockridge.c
+libisofs/messages.c
+libisofs/util.c
+libisofs/aaip_0_2.h
+libisofs/aaip_0_2.c
+libisofs/aaip-os-linux.c
+libisofs/aaip-os-freebsd.c
+libisofs/aaip-os-dummy.c
+libisofs/libisofs.ver
+doc/susp_aaip_isofs_names.txt
+New API calls iso_local_get_lfa_flags(), iso_local_set_lfa_flags(),
+iso_node_get_lfa_flags(), iso_node_set_lfa_flags(),
+iso_util_decode_lfa_flags(), iso_util_encode_lfa_flags()
+
+19 Jul 2024  [fbcacaf]
+libisofs/aaip-os-linux.c
+Fixed iso_local_set_lfa_flags()
+
+19 Jul 2024  [99700ac]
+libisofs/libisofs.h
+libisofs/fs_local.c
+libisofs/util.c
+libisofs/libisofs.ver
+New API call iso_util_get_lfa_masks()
+
+20 Jul 2024  [843587a]
+libisofs/libisofs.h
+libisofs/util.c
+libisofs/aaip-os-linux.c
+Small corrections and adjustments to the recent commits
+
+Jul 23 2024  [cc1884a]
+configure.ac
+Changed in ./configure --enable-linux-attr-flags to --enable-lfa-flags
+
+06 Aug 2024  [7fc7d65]
+libisofs/libisofs.h
+libisofs/fs_local.c
+libisofs/messages.c
+libisofs/aaip-os-linux.c
+New return value 4 of iso_local_get_lfa_flags(): file does not have lfa_flags
+
+06 Aug 2024  [290ef77]
+libisofs/aaip-os-linux.c
+Improved handling of dead symbolic links in aaip_get_attr_list()
+
+07 Aug 2024  [08792a4]
+libisofs/util.c
+Corrected a memory infringement in iso_util_decode_lfa_flags()
+
+08 Aug 2024  [d717613]
+libisofs/fs_local.c
+Avoided touching local file attributes if no change would happen
+
+11 Aug 2024  [443743d]
+libisofs/libisofs.h
+libisofs/fs_local.c
+libisofs/util.c
+libisofs/libisofs.ver
+New API call iso_util_get_effective_lfa_mask()
+
+18 Aug 2024  [7082724]
+libisofs/aaip-os-linux.c
+Improved format of error messages from aaip-os-linux.c
+
+25 Aug 2024  [c4769f3]
+libisofs/libisofs.h
+libisofs/messages.c
+libisofs/fs_local.c
+Separated errors about Linux file attributes from those of xattr and ACL
+
+25 Aug 2024  [622b564]
+libisofs/libisofs.h
+libisofs/fs_local.c
+libisofs/aaip-os-linux.c
+New flag bit2 for iso_local_get_lfa_flags() and iso_local_set_lfa_flags()
+
+27 Aug 2024  [efaab52]
+libisofs/libisofs.h
+libisofs/image.h
+libisofs/image.c
+libisofs/builder.c
+libisofs/fs_local.c
+libisofs/aaip-os-linux.c
+New flag bit5 for iso_file_source_get_aa_string() and
+iso_image_set_ignore_aclea(), new flag bit7 for iso_local_get_lfa_flags()
+
+01 Sep 2024  [3a43995]
+libisofs/ecma119_tree.c
+Made ECMA-119 tree sorting deterministic with different qsort implementations.
+By Henrik Lindström.
+
+01 Sep 2024  [8d9fcf6]
+libisofs/ecma119.c
+libisofs/filesrc.h
+libisofs/filesrc.c
+Made filelist weight sorting deterministic with different qsort
+implementations. By Henrik Lindström.
+
+07 Sep 2024  [9ef7e7f]
+doc/susp_aaip_isofs_names.txt
+Marked the list of lfa flags by "settable", "superuser", "directory only"
+
+08 Sep 2024  [5937ffd]
+libisofs/util.c
+Fixed iso_util_encode_lfa_flags() in respect to attribute "F"
+
+08 Sep 2024  [411d818]
+libisofs/libisofs.h
+libisofs/messages.c
+libisofs/fs_local.c
+libisofs/aaip_0_2.h
+libisofs/aaip-os-linux.c
+New error ISO_LFA_NO_OPEN_LOCAL to distinguish open failure from ioctl failure
+
+14 Sep 2024  [eed1e64]
+libisofs/aaip-os-linux.c
+Corrected a comment at function aaip_get_lfa_flags
+
+06 Oct 2024  [6a100a6]
+libisofs/libisofs.h
+libisofs/iso1999.h
+libisofs/iso1999.c
+doc/devel/cookbook/'ISO 9660-1999'
+Clarified meaning of "ISO 9660:1999" as Enhanced Volume Descriptor of
+ECMA-119 4th Edition
+
+16 Oct 2024  [72f0365]
+libisofs/aaip_0_2.c
+Bug fix: Empty AAIP value spoiled decoding of all AAIP attributes
+
+03 Nov 2024  [b7c1e03]
+configure.ac
+Makefile.am
+libisofs/libisofs.h
+libisofs/image.h
+libisofs/image.c
+libisofs/builder.c
+libisofs/fs_local.c
+libisofs/messages.c
+libisofs/node.c
+libisofs/rockridge.c
+libisofs/aaip_0_2.h
+libisofs/aaip_0_2.c
+libisofs/aaip-os-dummy.c
+libisofs/aaip-os-freebsd.c
+libisofs/aaip-os-linux.c
+libisofs/libisofs.ver
+doc/susp_aaip_isofs_names.txt
+New API calls iso_node_get_projid(), iso_node_set_projid(),
+iso_local_get_projid(), iso_local_set_projid()
+
+16 Dec 2024  [59d1056]
+libisofs/libisofs.h
+libisofs/ecma119.h
+libisofs/ecma119.c
+libisofs/system_area.c
+libisofs/libisofs.ver
+New API call iso_write_opts_set_gpt_with_gaps
+
+01 Mar 2025  [24e3f44]
+libisofs/rockridge.c
+Bug fix: Symbolic links with xattr could cause unusable ISO filesystems.
+         Thanks Paul von Behren.
+
+01 Mar 2025  [17d297b]
+configure.ac
+Makefile.am
+libisofs/libisofs.h
+libisofs/ecma119.c
+libisofs/rockridge.h
+libisofs/rockridge.c
+libisofs/messages.c
+New configuration option --enable-dir-rec-size-check
+
+24 Mar 2025  [30fcd2d]
+configure.ac
+Added to configure.ac explicit checks for stdint.h, inttypes.h, stdlib.h
+because slibtool does not put them into ./configure by default
+
+06 Apr 2025  [8440291]
+libisofs/libiso_msgs.c
+Rectified license text of libiso_msgs.c
+
+07 Apr 2025  [73698da]
+libisofs/rockridge_read.c
+Bug fix: When reading multiple slashes in symbolic link targets they were
+         condensed to a single one if not marked by the SL ROOT-flag
+
+07 Apr 2025  [fa19885]
+libisofs/rockridge.c
+Bug fix: Empty symolic link target components which represent add-on
+         slashes were written with ROOT flag set
+
+07 Apr 2025  [b9faf57]
+libisofs/rockridge.c
+Bug fix: The last trailing slash in a symbolic link target was not written
+
+12 Apr 2025  [4f47414]
+libisofs/fs_image.c
+libisofs/node.c
+libisofs/stream.c
+libisofs/ecma119.c
+libisofs/rockridge.h
+libisofs/rockridge.c
+libisofs/aaip_0_2.h
+Added missing includes of sys/types.h for ssize_t
+
+12 Apr 2025  [f314f30]
+libisofs/rockridge.h
+Removed accidentially introduced condition HAVE_SYS_TYPES_H
+
+16 Apr 2025  [955a7cd]
+libisofs/libisofs.h
+libisofs/messages.c
+libisofs/aaip-os-linux.c
+libisofs/aaip-os-freebsd.c
+libisofs/aaip-os-dummy.c
+libisofs/libisofs.ver
+New API call iso_local_create_dev()
+
+24 Jun 2025  [c843d41]
+libisofs/ecma119.c
+Bug fix: The .. directory record exposed Rock Ridge properties of its
+         grand grand parent. Caused by commit 4d0063f7 in 2009 which fixed
+         the block address pointer of the .. record.
+
+24 Jun 2025  [a485e91]
+libisofs/ecma119.c
+Enhanced reporting with --enable-dir-rec-size-check
+
+24 Jun 2025  [2d4dd99]
+libisofs/ecma119.c
+Fixed a potential problem with .. directory record on big-endian CPUs
+
+24 Jun 2025  [517a8d9]
+libisofs/libisofs.h
+libisofs/ecma119.h
+libisofs/ecma119.c
+libisofs/ecma119_tree.h
+libisofs/rockridge.h
+libisofs/rockridge.c
+libisofs/libisofs.ver
+New API call iso_write_opts_set_rrip_tf_long() and date check for year 2156
+limit to produce 17-byte timestamps
+
+14 Sep 2025  [605643d]
+libisofs/iso1999.c
+libisofs/ecma119_tree.c
+libisofs/joliet.c
+libisofs/filters/external.c
+libisofs/filters/zisofs.c
+libisofs/filters/gzip.c
+libisofs/aaip_0_2.c
+Reacted on compiler warnings of Debian 13 Sid about calloc argument swap
+
+14 Sep 2025  [21cd286]
+libisofs/stream.c
+libisofs/eltorito.c
+libisofs/filters/external.c
+libisofs/filters/zisofs.c
+libisofs/filters/gzip.c
+Reacted on compiler warnings of Debian 13 Sid about IsoStreamIface.type
+
+16 Sep 2025  [1447b1a]
+libisofs/libisofs.h
+libisofs/ecma119.h
+libisofs/ecma119.c
+libisofs/rockridge.h
+libisofs/rockridge.c
+libisofs/util.c
+libisofs/libisofs.ver
+New API call iso_write_opts_set_rrip_tf_year0() 
+
+03 Oct 2025  [bf6f4d1]
+libisofs/libisofs.h
+libisofs/ecma119.h
+libisofs/ecma119.c
+libisofs/rockridge.c
+libisofs/libisofs.ver
+Replaced new API call iso_write_opts_set_rrip_tf_year0() by contrary call
+iso_write_opts_set_rrip_tf_y1900(). I.e. the default was changed.
+
+03 Oct 2025  [ad5996e]
+libisofs/rockridge.c
+Introduced proper assessment and curbing of long form timestamps if
+iso_write_opts_set_replace_timestamps() is not set to default value 0
+
+03 Dec 2025  [b820423]
+libisofs/fs_image.c
+libisofs/util.c
+Improved messages about failed image loading due to MD5 mismatch
+
+03 Dec 2025  [9f2e54b]
+libisofs/messages.c
+Corrected error message text of ISO_MD5_TAG_MISPLACED
+
+03 Dec 2025  [1e60c28]
+libisofs/fs_image.c
+Improved refusal message of image loading in case of problematic MD5 tags
+
+15 Dec 2025  [09e1957]
+libisofs/libisofs.h
+libisofs/image.h
+libisofs/image.c
+libisofs/ecma119.c
+libisofs/joliet.c
+libisofs/iso1999.c
+libisofs/hfsplus.c
+libisofs/fs_image.c
+libisofs/util.h
+libisofs/util.c
+libisofs/libisofs.ver
+New API calls iso_image_set_volume_id_v2(), iso_image_get_volume_id_v2(),
+iso_image_fs_get_volume_id_v2()
+
+17 Dec 2025  [036fe44]
+libisofs/libisofs.h
+libisofs/ecma119.h
+libisofs/ecma119.c
+libisofs/fs_image.c
+libisofs/libisofs.ver
+New API call iso_write_opts_set_relaxed_nonvol_atts()
+
+17 Dec 2025  [fc8be04]
+libisofs/util.h
+libisofs/util.c
+libisofs/ecma119.c
+Bug fix: The characters '.' and ';' were wrongly disallowed with PVD file names
+
+20 Mar 2026  [633918c]
+libisofs/libiso_msgs.h
+Removed reference to libburn-hackers@pykix.org 
+
+29 Mar 2026  [b34018a]
+libisofs/hfsplus.c
+Wrote a comment about false gcc-15 sprintf overflow warning in hfsplus.c
+
+30 Mar 2026  [b039806]
+libisofs/hfsplus.c
+Silenced gcc-15 sprintf overflow warning in hfsplus.c
+
+  []
+configure.ac
+libisofs/libisofs.h
+README
+Version leap to 1.5.8
+
+  []
+ChangeLog
+libisofs/changelog.txt
+Updated change log
+
+------------------------------------ release - libisofs-1.5.8 - 02 Apr 2026
+* Bug fix: File path of imported BIOS boot image was forgotten when it gets
+           overwritten by a file of the same name. Thanks Brian C. Lane.
+* Bug fix: Reproducibility of ISO images depended on "undefined" qsort(3)
+           behavior with comparer function result 0
+* Bug fix: Empty AAIP value spoiled decoding of all AAIP attributes
+* Bug fix: Symbolic links with xattr could cause unusable ISO filesystems.
+           Thanks Paul von Behren.
+* Bug fix: When reading multiple slashes in symbolic link targets they were
+           condensed to a single one if not marked by the SL ROOT-flag
+* Bug fix: Empty symolic link target components which represent add-on
+           slashes were written with ROOT flag set
+* Bug fix: The last trailing slash in a symbolic link target was not written
+* Bug fix: The .. directory record exposed Rock Ridge properties of its
+           grand grand parent. Caused by commit 4d0063f7 in 2009 which fixed
+           the block address pointer of the .. record.
+* Bug fix: The characters '.' and ';' were wrongly disallowed with PVD
+           file names
+* Improved size estimation and property assessment of El Torito hidden boot
+  images
+* Enabled up to 8 appended GPT partitions and improved their number mapping
+* New API calls iso_local_get_lfa_flags(), iso_local_set_lfa_flags(),
+  iso_node_get_lfa_flags(), iso_node_set_lfa_flags(),
+  iso_util_decode_lfa_flags(), iso_util_encode_lfa_flags(),
+  iso_util_get_lfa_masks(), iso_util_get_effective_lfa_mask()
+* New API calls iso_node_get_projid(), iso_node_set_projid(),
+  iso_local_get_projid(), iso_local_set_projid()
+* New API call iso_write_opts_set_gpt_with_gaps
+* New API call iso_local_create_dev()
+* New API call iso_write_opts_set_rrip_tf_long() and date check for year 2150
+  limit to produce 17-byte timestamps
+* New API call iso_write_opts_set_rrip_tf_y1900() 
+* New API calls iso_image_set_volume_id_v2(), iso_image_get_volume_id_v2(),
+  iso_image_fs_get_volume_id_v2()
+* New API call iso_write_opts_set_relaxed_nonvol_atts()
+
+
+
+>>> ??? Restrict restoring directory-only flags to directories ? "DFPT"
 
 
 ------------------------------------------------------------------------
+
+
 Todo about iso_read_image_feature_named() :
 Declared but not yet filled:
     {"hfsplus", 0, 0, 0, NULL},

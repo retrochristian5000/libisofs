@@ -1,12 +1,44 @@
-git clone git@dev.lovelyhq.com:libburnia/libisofs.git
-(to become libisofs-1.5.8 or higher)
+libisofs-1.5.8.tar.gz Thu Apr 02 2026
 ===============================================================================
-- no novelties yet -
+* Bug fix: File path of imported BIOS boot image was forgotten when it gets
+           overwritten by a file of the same name. Thanks Brian C. Lane.
+* Bug fix: Reproducibility of ISO images depended on "undefined" qsort(3)
+           behavior with comparer function result 0
+* Bug fix: Empty AAIP value spoiled decoding of all AAIP attributes
+* Bug fix: Symbolic links with xattr could cause unusable ISO filesystems.
+           Thanks Paul von Behren.
+* Bug fix: When reading multiple slashes in symbolic link targets they were
+           condensed to a single one if not marked by the SL ROOT-flag
+* Bug fix: Empty symolic link target components which represent add-on
+           slashes were written with ROOT flag set
+* Bug fix: The last trailing slash in a symbolic link target was not written
+* Bug fix: The .. directory record exposed Rock Ridge properties of its
+           grand grand parent. Caused by commit 4d0063f7 in 2009 which fixed
+           the block address pointer of the .. record.
+* Bug fix: The characters '.' and ';' were wrongly disallowed with PVD
+           file names
+* Improved size estimation and property assessment of El Torito hidden boot
+  images
+* Enabled up to 8 appended GPT partitions and improved their number mapping
+* New API calls iso_local_get_lfa_flags(), iso_local_set_lfa_flags(),
+  iso_node_get_lfa_flags(), iso_node_set_lfa_flags(),
+  iso_util_decode_lfa_flags(), iso_util_encode_lfa_flags(),
+  iso_util_get_lfa_masks(), iso_util_get_effective_lfa_mask()
+* New API calls iso_node_get_projid(), iso_node_set_projid(),
+  iso_local_get_projid(), iso_local_set_projid()
+* New API call iso_write_opts_set_gpt_with_gaps
+* New API call iso_local_create_dev()
+* New API call iso_write_opts_set_rrip_tf_long() and date check for year 2150
+  limit to produce 17-byte timestamps
+* New API call iso_write_opts_set_rrip_tf_y1900()
+* New API calls iso_image_set_volume_id_v2(), iso_image_get_volume_id_v2(),
+  iso_image_fs_get_volume_id_v2()
+* New API call iso_write_opts_set_relaxed_nonvol_atts()
 
-libisofs-1.5.6.pl01.tar.gz Fri Jun 09 2023
+libisofs-1.5.6.pl01.tar.gz Mon Jun 12 2023
 ===============================================================================
 * Bug fix: On non-GNU/Linux systems ssize_t was not defined in rockridge.h .
-           Report and fix proposal by Rui Chen
+           Report and fix proposal by Rui Chen.
 
 libisofs-1.5.6.tar.gz Wed Jun 07 2023
 ===============================================================================
