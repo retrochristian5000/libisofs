@@ -96,7 +96,7 @@ extern "C" {
  */
 #define iso_lib_header_version_major  1
 #define iso_lib_header_version_minor  5
-#define iso_lib_header_version_micro  8
+#define iso_lib_header_version_micro  9
 
 /**
  * Get version of the libisofs library at runtime.
