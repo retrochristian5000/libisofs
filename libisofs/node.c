@@ -2890,6 +2890,7 @@ int iso_node_set_unique_id(IsoNode *node, IsoImage *image, int flag)
  * @param flag
  *     bit0= compare stat properties and attributes 
  *     bit1= treat all nodes with image ino == 0 as unique
+ *     bit2= do not test for matching inode numbers
  */
 int iso_node_cmp_flag(IsoNode *n1, IsoNode *n2, int flag)
 {
@@ -2906,6 +2907,9 @@ int iso_node_cmp_flag(IsoNode *n1, IsoNode *n2, int flag)
         return 0;
     if (n1->type != n2->type)
         return (n1->type < n2->type ? -1 : 1);
+
+    if (flag & (1 << 2))
+        goto image_inode_match;
 
     /* Imported or explicit ISO image node id has priority */
     ret1 = (iso_node_get_id(n1, &fs_id1, &dev_id1, &ino_id1, 1) > 0);
@@ -3029,7 +3033,7 @@ image_inode_match:;
 /* API */
 int iso_node_cmp_ino(IsoNode *n1, IsoNode *n2, int flag)
 {
-    return iso_node_cmp_flag(n1, n2, 1);
+    return iso_node_cmp_flag(n1, n2, 1 | ((flag & 1) << 2));
 }
 
 

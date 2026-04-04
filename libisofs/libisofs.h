@@ -5570,7 +5570,11 @@ int iso_node_get_hidden(IsoNode *node);
  * @return
  *     -1 if n1 is smaller n2 , 0 if n1 matches n2 , 1 if n1 is larger n2
  * @param flag
- *     Bitfield for control purposes, unused yet, submit 0
+ *     Bitfield for control purposes
+ *     bit0= do not test for matching inode numbers, but still for type and
+             file attributes
+             @since 1.6.0
+ *     
  * @since 0.6.20
  */
 int iso_node_cmp_ino(IsoNode *n1, IsoNode *n2, int flag);
