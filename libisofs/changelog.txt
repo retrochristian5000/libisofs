@@ -1394,13 +1394,13 @@ Wrote a comment about false gcc-15 sprintf overflow warning in hfsplus.c
 libisofs/hfsplus.c
 Silenced gcc-15 sprintf overflow warning in hfsplus.c
 
-  []
+31 Mar 2026  [eb22a05]
 configure.ac
 libisofs/libisofs.h
 README
 Version leap to 1.5.8
 
-  []
+31 Mar 2026  [55bf1e6]
 ChangeLog
 libisofs/changelog.txt
 Updated change log
@@ -1451,10 +1451,18 @@ Bug fix: iso_image_set_ignore_aclea() inverted the setting for reading
 libisofs/aaip-os-linux.c
 Silenced error messages about ioctl(FS_IOC_FSGETXATTR)
 
-  [branch-1.5.8.pl01: ]
+07 Apr 2026  [branch-1.5.8.pl01: b8b86f3]
 ChangeLog
 libisofs/changelog.txt
 Updated change log
+
+07 Apr 2026  [branch-1.5.8.pl01 5c3c979]
+ChangeLog
+Fixed typo in ChangeLog
+
+  [branch-1.5.8.pl01 ]
+libisofs/changelog.txt
+Added data and checksum of final 1.5.8 commits
 
 ------------------------------- release - libisofs-1.5.8.pl01 - 07 Apr 2026
 * Bug fix: iso_image_set_ignore_aclea() inverted the setting for reading
