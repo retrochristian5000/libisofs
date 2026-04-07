@@ -698,10 +698,8 @@ int aaip_get_projid(char *path, uint32_t *projid, int *os_errno, int flag)
  ret= ioctl(fd, FS_IOC_FSGETXATTR, &ioctl_result);
  close(fd);
  if(ret == -1) {
-   if(!(flag & 4))
-     aaip_local_error("ioctl(FS_IOC_FSGETXATTR)", path, errno, 0);
-   *os_errno= errno;
-   return(-2);
+   *projid= 0;
+   return(1);
  }
  *projid= ioctl_result.fsx_projid;
  ret= 1;
