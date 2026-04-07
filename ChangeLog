@@ -1,3 +1,9 @@
+libisofs-1.5.8.pl01tar.gz Tue Apr 07 2026
+===============================================================================
+* Bug fix: iso_image_set_ignore_aclea() inverted the setting for reading
+           the XFS-style project id from disk files
+* Silenced error messages about ioctl(FS_IOC_FSGETXATTR)
+
 libisofs-1.5.8.tar.gz Thu Apr 02 2026
 ===============================================================================
 * Bug fix: File path of imported BIOS boot image was forgotten when it gets

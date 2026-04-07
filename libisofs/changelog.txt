@@ -1442,6 +1442,25 @@ Updated change log
 * New API call iso_write_opts_set_relaxed_nonvol_atts()
 
 
+07 Apr 2026  [branch-1.5.8.pl01: 3c4b66e]
+libisofs/image.c
+Bug fix: iso_image_set_ignore_aclea() inverted the setting for reading
+         the XFS-style project id from disk files
+
+07 Apr 2026  [branch-1.5.8.pl01: 25cf6d5]
+libisofs/aaip-os-linux.c
+Silenced error messages about ioctl(FS_IOC_FSGETXATTR)
+
+  [branch-1.5.8.pl01: ]
+ChangeLog
+libisofs/changelog.txt
+Updated change log
+
+------------------------------- release - libisofs-1.5.8.pl01 - 07 Apr 2026
+* Bug fix: iso_image_set_ignore_aclea() inverted the setting for reading
+           the XFS-style project id from disk files
+* Silenced error messages about ioctl(FS_IOC_FSGETXATTR)
+
 
 >>> ??? Restrict restoring directory-only flags to directories ? "DFPT"
 
