@@ -688,7 +688,7 @@ void iso_image_set_ignore_aclea(IsoImage *image, int what)
     image->builder_ignore_lfa_flags = !(what & 4);
     image->builder_take_all_ea = !!(what & 8);
     image->builder_ignore_ro_lfa_flags = !!(what & 32);
-    image->builder_ignore_projid = !!(what & 64);
+    image->builder_ignore_projid = !(what & 64);
 }
 
 
