@@ -1,4 +1,4 @@
-libisofs-1.5.8.pl01tar.gz Tue Apr 07 2026
+libisofs-1.5.8.pl01.tar.gz Tue Apr 07 2026
 ===============================================================================
 * Bug fix: iso_image_set_ignore_aclea() inverted the setting for reading
            the XFS-style project id from disk files
