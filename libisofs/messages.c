@@ -393,9 +393,11 @@ const char *iso_error_to_msg(int errcode)
         return "Error with decoding AAIP info for ACL or xattr";
     case ISO_AAIP_NO_GET_LOCAL:
     case ISO_AAIP_NO_GET_LOCAL_S:
+    case ISO_AAIP_NO_GET_LOCAL_W:
         return "Error with reading ACL or other attributes from local file";
     case ISO_AAIP_NO_SET_LOCAL:
     case ISO_AAIP_NO_SET_LOCAL_S:
+    case ISO_AAIP_NO_SET_LOCAL_W:
         return "Error with attaching ACL or other attributes to local file";
     case ISO_AAIP_NON_USER_NAME:
         return "Unallowed attempt to set an xattr with non-userspace name";

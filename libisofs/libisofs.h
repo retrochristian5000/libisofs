@@ -10087,6 +10087,12 @@ int iso_conv_name_chars(IsoWriteOpts *opts, char *name, size_t name_len,
                                                        (FAILURE,HIGH, -443) */
 #define ISO_DEV_NO_CREATION         0xE830FE45
 
+/** Error with reading ACL or xattr from local file    (WARNING,HIGH, -444) */
+#define ISO_AAIP_NO_GET_LOCAL_W     0xD030FE44
+
+/** Error with attaching ACL or xattr to local file    (WARNING,HIGH, -445) */
+#define ISO_AAIP_NO_SET_LOCAL_W     0xD030FE43
+
 
 /* Internal developer note: 
    Place new error codes directly above this comment. 

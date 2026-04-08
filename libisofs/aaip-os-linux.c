@@ -111,6 +111,7 @@ int aaip_local_attr_support(int flag)
 
 /* Report an error with local ACL or xattr calls.
    @param flag bit0-7: mode 0=NO_GET_LOCAL , 1=NO_SET_LOCAL
+               bit8= WARNING instead of SORRY
 */
 static
 void aaip_local_error(char *function_name, char *path, int err, int flag)
@@ -118,10 +119,19 @@ void aaip_local_error(char *function_name, char *path, int err, int flag)
  int mode, err_code;
  
  mode= (flag & 255);
- if(mode == 1)
-   err_code= ISO_AAIP_NO_SET_LOCAL_S;
- else
-   err_code= ISO_AAIP_NO_GET_LOCAL_S;
+ if(mode == 1) {
+   if(flag & 256) {
+     err_code= ISO_AAIP_NO_SET_LOCAL_W;
+   } else {
+     err_code= ISO_AAIP_NO_SET_LOCAL_S;
+   }
+ } else {
+   if(flag & 256) {
+     err_code= ISO_AAIP_NO_GET_LOCAL_W;
+   } else {
+     err_code= ISO_AAIP_NO_GET_LOCAL_S;
+   }
+ }
  if(err > 0) {
    if(path[0])
      iso_msg_submit(-1, err_code, 0,
@@ -331,6 +341,7 @@ int aaip_get_attr_list(char *path, size_t *num_attrs, char ***names,
 #endif
 #ifdef Libisofs_with_aaip_projiD
  uint32_t projid;
+ int have_projid= 0;
 #endif
 
  if(flag & (1 << 15)) { /* Free memory */
@@ -406,8 +417,10 @@ ex:;
 
  if(!(flag & 256)) {
    ret= iso_local_get_projid(path, &projid, &os_errno, 0);
-   if(ret > 0 && projid != 0)
+   if(ret > 0 && projid != 0) {
      num_names++;
+     have_projid= 1;
+   }
  }
 
 #endif /* Libisofs_with_aaip_projiD */
@@ -508,7 +521,7 @@ try_lfa_flags:;
 
 #ifdef Libisofs_with_aaip_projiD
 
- if(!(flag & 256)) {
+ if(have_projid) {
    ret= iso_local_get_projid(path,  &projid, &os_errno, 0);
    if(ret > 0 && projid != 0) {
      /* Encode as big-endian number with no trailing 0-bytes */
@@ -698,8 +711,15 @@ int aaip_get_projid(char *path, uint32_t *projid, int *os_errno, int flag)
  ret= ioctl(fd, FS_IOC_FSGETXATTR, &ioctl_result);
  close(fd);
  if(ret == -1) {
+   if(errno == 25) {
+     /* "Inappropriate ioctl for device" = projid not supported in fs
+        Imitate ext4 behavior if projid is not enabled.
+     */
+     *projid= 0;
+     return(1);
+   }
    if(!(flag & 4))
-     aaip_local_error("ioctl(FS_IOC_FSGETXATTR)", path, errno, 0);
+     aaip_local_error("ioctl(FS_IOC_FSGETXATTR)", path, errno, 256);
    *os_errno= errno;
    return(-2);
  }
