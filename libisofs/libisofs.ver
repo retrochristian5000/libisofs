@@ -408,3 +408,7 @@ iso_write_opts_set_rrip_tf_long;
 iso_write_opts_set_rrip_tf_y1900;
 } LIBISOFS6;
 
+LIBISOFS6_1.6.0 {
+iso_lib_get_patch_level;
+} LIBISOFS6_1.5.8;
+

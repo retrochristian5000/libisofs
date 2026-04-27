@@ -75,11 +75,11 @@ extern "C" {
 
 
 /**
- * The following two functions and three macros are utilities to help ensuring
+ * The following three functions and four macros are utilities to help ensuring
  * version match of application, compile time header, and runtime library.
  */
 /**
- * These three release version numbers tell the revision of this header file
+ * The three release version numbers tell the revision of this header file
  * and of the API it describes. They are memorized by applications at
  * compile time.
  * They must show the same values as these symbols in ./configure.ac
@@ -99,12 +99,35 @@ extern "C" {
 #define iso_lib_header_version_micro  9
 
 /**
+ * The patch level text is not decisive for ABI compatibility but rather tells
+ * the presence of possible bug fixes. It gets set to a text like ".pl01" if
+ * such fixes had to be applied after the release of a stable version.
+ * Development versions and first releases will have this text empty.
+ *
+ * @since 1.6.0
+ */
+#define iso_lib_header_patch_level ""
+
+
+/**
  * Get version of the libisofs library at runtime.
  * NOTE: This function may be called before iso_init().
  *
  * @since 0.6.2
  */
 void iso_lib_version(int *major, int *minor, int *micro);
+
+
+/**
+ * Get the patch level text of the libisofs library at runtime. It is either
+ * empty or of the form ".plNN" where NN consists of two digits like "01".
+ * Do not alter or free the resulting text string.
+ * NOTE: This function may be called before iso_init().
+ *
+ * @since 1.6.0
+ */
+const char *iso_lib_get_patch_level(void);
+
 
 /**
  * Check at runtime if the library is ABI compatible with the given version.

@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
  * Copyright (c) 2007 Mario Danic
- * Copyright (c) 2009 - 2022 Thomas Schmitt
+ * Copyright (c) 2009 - 2026 Thomas Schmitt
  * 
  * This file is part of the libisofs project; you can redistribute it and/or 
  * modify it under the terms of the GNU General Public License version 2 
@@ -2080,6 +2080,11 @@ void iso_lib_version(int *major, int *minor, int *micro)
     *minor = LIBISOFS_MINOR_VERSION;
     *micro = LIBISOFS_MICRO_VERSION;
 */
+}
+
+const char *iso_lib_get_patch_level(void)
+{
+    return iso_lib_header_patch_level;
 }
 
 int iso_lib_is_compatible(int major, int minor, int micro)
