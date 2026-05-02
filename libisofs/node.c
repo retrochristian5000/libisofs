@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2009 - 2024 Thomas Schmitt
+ * Copyright (c) 2009 - 2026 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -3251,4 +3251,50 @@ int iso_file_make_md5(IsoFile *file, int flag)
 }
 
 
+/* Function to identify and manage first_dir_rec_offst.
+ * data is supposed to be a pointer to off_t
+ */
+int iso_node_first_dir_rec_xinfo_func(void *data, int flag)
+{
+    if (flag & 1) {
+        free(data);
+    }
+    return 1;
+}
+
+
+/* The iso_node_xinfo_cloner function which gets associated to
+ * iso_node_first_dir_rec_xinfo_func by iso_init() or iso_init_with_flag() via
+ * iso_node_xinfo_make_clonable()
+ */
+int iso_node_first_dir_rec_xinfo_cloner(void *old_data, void **new_data,
+                                        int flag)
+{
+    *new_data = NULL;
+    if (flag)
+        return ISO_XINFO_NO_CLONE;
+    if (old_data == NULL)
+        return 0;
+    *new_data = calloc(1, sizeof(off_t));
+    if (*new_data == NULL)
+        return ISO_OUT_OF_MEM;
+    memcpy(*new_data, old_data, sizeof(off_t));
+    return(sizeof(off_t));
+}
+
+/* API */
+off_t iso_node_get_dir_rec_offset(IsoNode *node, int flag)
+{
+    int ret;
+    void *offst;
+
+    if (node == NULL)
+        return (off_t) -1;
+    if (flag != 0)
+        return (off_t) -1;
+    ret = iso_node_get_xinfo(node, iso_node_first_dir_rec_xinfo_func, &offst);
+    if (ret <= 0)
+        return (off_t) -1;
+    return *((off_t *) offst);
+}
 

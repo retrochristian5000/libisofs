@@ -3404,6 +3404,25 @@ int iso_read_opts_load_system_area(IsoReadOpts *opts, int mode);
 int iso_read_opts_keep_import_src(IsoReadOpts *opts, int mode);
 
 /**
+ * Control whether iso_image_import() shall register in the emerging IsoNode
+ * objects the byte offsets of the first directory record which led to that
+ * node. This registration is necessary for getting useful replies from
+ * iso_node_get_dir_rec_offset(). It costs about 32 bytes per regular file
+ * and 24 bytes per node of other type.
+ *
+ * @param opts
+ *     The option set to be manipulated
+ * @param mode
+ *     If 0, disable the registration. This is the default.
+ *     If 1, enable registration of directory record addresses.
+ * @return
+ *     1 on success, < 0 on error
+ *
+ * @since 1.6.0
+ */
+int iso_read_opts_dir_rec_register(IsoReadOpts *opts, int mode);
+
+/**
  * Import a previous session or image, for growing or modify.
  *
  * @param image
@@ -5384,6 +5403,35 @@ int iso_node_xinfo_make_clonable(iso_node_xinfo_func proc,
  */
 int iso_node_xinfo_get_cloner(iso_node_xinfo_func proc,
                               iso_node_xinfo_cloner *cloner, int flag);
+
+
+/**
+ * Get the byte offset of the first directory record in the imported filesystem
+ * which led to the existence of the given node. The value -1 indicates that
+ * the node does not stem from an imported filesystem, or that no position
+ * information was registered during import, or that the submitted parameter
+ * flag has a value with undefined meaning.
+ * Registration of directory record offsets is disabled by default. It may be
+ * enabled by iso_read_opts_dir_rec_register().
+ * 
+ * If the node stems from a multi-extent data file, then more directory records
+ * with the same file name are stored after the first one. Inquire the number
+ * of all directory records by iso_file_get_old_image_sections() which returns
+ * it in parameter section_count. Directory records may not span over block
+ * boundaries. If the first byte of an expected follow-up record is 0, then the
+ * directory record list continues in the next block. 
+ *
+ * @param node
+ *      The node which shall be inquired.
+ * @param flag
+ *     Unused yet, submit 0
+ * @return
+ *      Byte offset of directory record or -1, if info not available.
+ *
+ * @since 1.6.0
+ */
+off_t iso_node_get_dir_rec_offset(IsoNode *node, int flag);
+
 
 /**
  * Set the name of a node. Note that if the node is already added to a dir

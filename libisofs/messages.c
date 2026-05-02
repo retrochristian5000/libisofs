@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2009 - 2023 Thomas Schmitt
+ * Copyright (c) 2009 - 2026 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -219,6 +219,10 @@ LIBJTE_MISCONFIGURATION_ = 0;
         return ret;
     ret = iso_node_xinfo_make_clonable(iso_hfsplus_xinfo_func,
                                        iso_hfsplus_xinfo_cloner, 0);
+    if (ret < 0)
+        return ret;
+    ret = iso_node_xinfo_make_clonable(iso_node_first_dir_rec_xinfo_func,
+                                       iso_node_first_dir_rec_xinfo_cloner, 0);
     if (ret < 0)
         return ret;
     return 1;

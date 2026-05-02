@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2009 - 2023 Thomas Schmitt
+ * Copyright (c) 2009 - 2026 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -565,5 +565,14 @@ int zisofs_zf_xinfo_cloner(void *old_data, void **new_data, int flag);
 int iso_dir_get_node_trunc(IsoDir *dir, int truncate_length,
                            const char *name, IsoNode **node);
 
+/* Function to identify and manage first_dir_rec_offst.
+ * data is supposed to be a pointer to off_t
+ */
+int iso_node_first_dir_rec_xinfo_func(void *data, int flag);
+
+/* Cloner for iso_node_first_dir_rec_xinfo_func.
+*/
+int iso_node_first_dir_rec_xinfo_cloner(void *old_data, void **new_data,
+                                        int flag);
 
 #endif /*LIBISO_NODE_H_*/

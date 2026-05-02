@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2009 - 2024 Thomas Schmitt
+ * Copyright (c) 2009 - 2026 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -154,6 +154,12 @@ struct iso_read_opts
     int keep_import_src;
 
     /**
+     * Whether byte offsets of directory records in the imported ISO shall be
+     * registered during ISO image import
+     */
+    unsigned int register_dir_rec_offst : 1;
+
+    /**
      * What to do in case of name longer than truncate_length:
      *  0= throw FAILURE
      *  1= truncate to truncate_length with MD5 of whole name at end
@@ -277,7 +283,7 @@ static int ifs_fs_open(IsoImageFilesystem *fs);
 static int ifs_fs_close(IsoImageFilesystem *fs);
 static int iso_file_source_new_ifs(IsoImageFilesystem *fs,
            IsoFileSource *parent, struct ecma119_dir_record *record,
-           IsoFileSource **src, int flag);
+           off_t dir_rec_offst, IsoFileSource **src, int flag);
 
 /** unique identifier for each image */
 unsigned int fs_dev_id = 0;
@@ -459,6 +465,11 @@ typedef struct
     off_t catsize; /* Size of boot catalog in bytes */
     char *catcontent;
 
+    /* Whether byte offsets of directory records in the imported ISO
+       shall be registered
+    */
+    unsigned int register_dir_rec_offst : 1;
+
     /* Whether inode numbers from PX entries shall be discarded */
     unsigned int make_new_ino : 1 ;
 
@@ -502,6 +513,8 @@ typedef struct
 
 } _ImageFsData;
 
+/* # define Ifs_dir_rec_extra_cheaP yes */
+
 typedef struct image_fs_data ImageFileSourceData;
 
 /* IMPORTANT: Any change must be reflected by ifs_clone_src */
@@ -520,6 +533,15 @@ struct image_fs_data
     int nsections;
 
     unsigned int opened : 2; /**< 0 not opened, 1 opened file, 2 opened dir */
+
+    /**
+     * Indication that sizeof(off_t) bytes are appended to this struct.
+     * When memcpy'ed to an off_t variable, they tell the byte offset of
+     * the first directory record of the parent IsoFileSource.
+     * iso_ifs_source_clone() does not copy appended bytes and sets
+     * .data->has_dir_rec_offst = 0 in the new IsoFileSource.
+     */
+    unsigned int has_dir_rec_offst : 1;
 
 #ifdef Libisofs_with_zliB
     uint8_t zisofs_algo[2];
@@ -552,6 +574,25 @@ struct image_fs_data
      * ECMA-119 Extended Attributes.)
      */
     unsigned char *aa_string;
+
+    /* 
+     * If IsoImageFilesystem.data->register_dir_rec_offst is set, then
+     * iso_file_source_new_ifs creates its result src with additional memory
+     * to store the off_t value first_dir_rec_offst. The presence of this
+     * nameless value is announced by  .has_dir_rec_offst == 1.
+     * It is nameless after the struct because src gets attached to IsoFile
+     * objects, where first_dir_rec_offst is unneeded. That way it can be
+     * omitted when register_dir_rec_offst is set to 0.
+     * If register_dir_rec_offst is 1 then the offset value is attached to
+     * all imported IsoNode objects as xinfo. But before that it needs to reach
+     * image_builder_create_node which has a fixed parameter set because
+     * serving as .create_node() in IsoNodeBuilder. So it travels as
+     * out-of-struct appendix of ImageFileSourceData src->data.
+     * If Ifs_dir_rec_extra_cheaP is defined, then image_builder_create_node
+     * creates for regular files a clone of src without extra memory in its
+     * ImageFileSourceData which then bears .has_dir_rec_offst == 0. Else the
+     * off_t appendice will be part of the memory attached to each IsoFile.
+     */
 
 };
 
@@ -759,7 +800,9 @@ int read_dir(ImageFileSourceData *data)
          * We pass a NULL parent instead of dir, to prevent the circular
          * reference from child to parent.
          */
-        ret = iso_file_source_new_ifs(fs, NULL, record, &child, 0);
+        ret = iso_file_source_new_ifs(fs, NULL, record,
+                              (off_t) block * (off_t) BLOCK_SIZE + (off_t) pos,
+                                      &child, 0);
         if (ret < 0) {
             if (child) {
                 /*
@@ -1283,9 +1326,9 @@ int ifs_clone_src(IsoFileSource *old_source,
     if (new_name == NULL)
         goto no_mem;
     new_data = calloc(1, sizeof(ImageFileSourceData));
-
     if (new_data == NULL)
         goto no_mem;
+    new_data->has_dir_rec_offst = 0;
     if (old_data->nsections > 0) {
         new_sections = calloc(old_data->nsections,
                               sizeof(struct iso_file_section));
@@ -1541,6 +1584,7 @@ int iso_rr_msg_submit(_ImageFsData *fsdata, int rr_err_bit,
 static
 int iso_file_source_new_ifs(IsoImageFilesystem *fs, IsoFileSource *parent,
                             struct ecma119_dir_record *record,
+                            off_t dir_rec_offst, 
                             IsoFileSource **src, int flag)
 {
     int ret, ecma119_map, skip_nm = 0;
@@ -1641,7 +1685,18 @@ int iso_file_source_new_ifs(IsoImageFilesystem *fs, IsoFileSource *parent,
         }
 
         if (*src == NULL) {
-            ifsdata = calloc(1, sizeof(ImageFileSourceData));
+            if (fsdata->register_dir_rec_offst) {
+                /*
+                 * ifsdata consists of ImageFileSourceData plus a nameless
+                 * memory copy of an off_t
+                 */
+                ifsdata = calloc(1,
+                                  sizeof(ImageFileSourceData) + sizeof(off_t));
+                ifsdata->has_dir_rec_offst = 1;
+            } else {
+                ifsdata = calloc(1, sizeof(ImageFileSourceData));
+                ifsdata->has_dir_rec_offst = 0;
+            }
             if (ifsdata == NULL) {
                 ret = ISO_OUT_OF_MEM;
                 goto ifs_cleanup;
@@ -1652,6 +1707,14 @@ int iso_file_source_new_ifs(IsoImageFilesystem *fs, IsoFileSource *parent,
                 goto ifs_cleanup;
             }
             ifsrc->data = ifsdata;
+            if (ifsdata->has_dir_rec_offst) {
+                /*
+                 * Append dir_rec_offst after end of the ImageFileSourceData
+                 * part of ifsdata
+                 */
+                memcpy(((char *) ifsdata) + sizeof(ImageFileSourceData),
+                       &dir_rec_offst, sizeof(off_t));
+            }
             ifsdata->name = get_name(fsdata, (char*)record->file_id, record->len_fi[0]);
             if (ifsdata->name == NULL) {
                 iso_msg_submit(fsdata->msgid, ISO_WRONG_ECMA119, 0,
@@ -2124,8 +2187,10 @@ invalid_zf:
         }
 
         /* Call with flag bit1 to prevent further CL relocation */
-        ret = iso_file_source_new_ifs(fs, parent, (struct ecma119_dir_record*)
-                                      buffer, src, flag | 2);
+        ret = iso_file_source_new_ifs(fs, parent,
+                                      (struct ecma119_dir_record*) buffer,
+                                    (off_t) relocated_dir * (off_t) BLOCK_SIZE,
+                                      src, flag | 2);
         if (ret <= 0) {
             goto ex;
         }
@@ -2177,10 +2242,28 @@ invalid_zf:
 
     /* ok, we can now create the file source */
     if (*src == NULL) {
-        ifsdata = calloc(1, sizeof(ImageFileSourceData));
+        if (fsdata->register_dir_rec_offst) {
+            /*
+             * ifsdata consists of ImageFileSourceData plus a nameless
+             * memory copy of an off_t
+             */
+            ifsdata = calloc(1, sizeof(ImageFileSourceData) + sizeof(off_t));
+            ifsdata->has_dir_rec_offst = 1;
+        } else {
+            ifsdata = calloc(1, sizeof(ImageFileSourceData));
+            ifsdata->has_dir_rec_offst = 0;
+        }
         if (ifsdata == NULL) {
             ret = ISO_OUT_OF_MEM;
             goto ifs_cleanup;
+        }
+        if (ifsdata->has_dir_rec_offst) {
+            /*
+             * Append dir_rec_offst after end of the ImageFileSourceData part
+             * of ifsdata
+             */
+            memcpy(((char *) ifsdata) + sizeof(ImageFileSourceData),
+                   &dir_rec_offst, sizeof(off_t));
         }
         ifsrc = calloc(1, sizeof(IsoFileSource));
         if (ifsrc == NULL) {
@@ -2292,7 +2375,9 @@ int ifs_get_root(IsoFilesystem *fs, IsoFileSource **root)
     /* get root attributes from "." entry */
     *root = NULL;
     ret = iso_file_source_new_ifs((IsoImageFilesystem*)fs, NULL,
-                                 (struct ecma119_dir_record*) buffer, root, 1);
+                                  (struct ecma119_dir_record*) buffer,
+                             (off_t) data->iso_root_block * (off_t) BLOCK_SIZE,
+                                  root, 1);
 
     ifs_fs_close((IsoImageFilesystem*)fs);
 ex:;
@@ -3035,6 +3120,7 @@ int iso_image_filesystem_new(IsoDataSource *src, struct iso_read_opts *opts,
         data->md5_load = 0;
     data->md5_checked = 0;
     data->aaip_version = -1;
+    data->register_dir_rec_offst = opts->register_dir_rec_offst;
     data->make_new_ino = opts->make_new_ino;
     data->num_bootimgs = 0;
     for (i = 0; i < Libisofs_max_boot_imageS; i++)
@@ -3344,6 +3430,11 @@ int image_builder_create_node(IsoNodeBuilder *builder, IsoImage *image,
     char *dest = NULL;
     ImageFileSourceData *data;
     _ImageFsData *fsdata;
+    off_t *offst = NULL;
+
+#ifdef Ifs_dir_rec_extra_cheaP
+    IsoFileSource *stream_src;
+#endif
 
 #ifdef Libisofs_with_zliB
     /* Intimate friendship with this function in filters/zisofs.c */
@@ -3424,12 +3515,45 @@ int image_builder_create_node(IsoNodeBuilder *builder, IsoImage *image,
                 IsoStream *stream;
                 IsoFile *file;
 
+#ifdef Ifs_dir_rec_extra_cheaP
+
+                /* <<< ??? DIR_REC
+                       Is cleaning out the off_t worth the effort, given that
+                       has_dir_rec_offst is not set if register_dir_rec_offst
+                       is not on ?
+                 */
+                if (data->has_dir_rec_offst) {
+                    /*
+                     * Create a clone of src for use with IsoFile in order to
+                     * get rid of the extra bytes for the appended off_t.
+                     * ifs_clone_src will not clone these extra bytes.
+                     */
+                    ret = ifs_clone_src(src, &stream_src, 0);
+                    if (ret < 0)
+                        goto ex;
+                } else {
+                    stream_src = src;
+                }
+                ret = iso_file_source_stream_new(stream_src, &stream);
+                if (ret < 0) {
+                    iso_file_source_unref(stream_src);
+                    goto ex;
+                }
+                if (src == stream_src) {
+                    /* take a ref to the src, as stream has taken our ref */
+                    iso_file_source_ref(src);
+                } /* else: stream is now in charge of stream_src */
+
+#else /* Ifs_dir_rec_extra_cheaP */
+
                 ret = iso_file_source_stream_new(src, &stream);
                 if (ret < 0)
                     goto ex;
 
                 /* take a ref to the src, as stream has taken our ref */
                 iso_file_source_ref(src);
+
+#endif /* ! Ifs_dir_rec_extra_cheaP */
 
                 file = calloc(1, sizeof(IsoFile));
                 if (file == NULL) {
@@ -3600,6 +3724,26 @@ int image_builder_create_node(IsoNodeBuilder *builder, IsoImage *image,
             goto ex;
     }
 
+    if(fsdata->register_dir_rec_offst) {
+        /* Add data->first_dir_rec_offst as xinfo */
+        offst = calloc(1, sizeof(off_t));
+        if (offst == NULL) {
+            ret = ISO_OUT_OF_MEM;
+            goto ex;
+        }
+        if (data->has_dir_rec_offst) {
+            /* Copy the offset value which is added after the struct */
+            memcpy(offst, ((char *) data) + sizeof(ImageFileSourceData),
+                   sizeof(off_t));
+        } else {
+            *offst = -1;
+        }
+        ret = iso_node_add_xinfo(new, iso_node_first_dir_rec_xinfo_func,
+                                 offst);
+        if (ret < 0)
+            return ret;
+    }
+
     *node = new; new = NULL;
     {ret = ISO_SUCCESS; goto ex;}
 
@@ -3707,6 +3851,8 @@ int create_boot_img_filesrc(IsoImageFilesystem *fs, IsoImage *image, int idx,
         ret = ISO_OUT_OF_MEM;
         goto boot_fs_cleanup;
     }
+    ifsdata->has_dir_rec_offst = 0;
+
     ifsrc = calloc(1, sizeof(IsoFileSource));
     if (ifsrc == NULL) {
         ret = ISO_OUT_OF_MEM;
@@ -6723,6 +6869,31 @@ int iso_image_import(IsoImage *image, IsoDataSource *src,
                 goto import_revert;
             }
         }
+
+        if(data->register_dir_rec_offst) {
+            /* Add data->first_dir_rec_offst as xinfo */
+            ImageFileSourceData *ifs_data;
+            off_t *offst;
+
+            ifs_data = (ImageFileSourceData*) newroot->data;
+            offst = calloc(1, sizeof(off_t));
+            if (offst == NULL) {
+                ret = ISO_OUT_OF_MEM;
+                goto import_revert;
+            }
+            if (ifs_data->has_dir_rec_offst) {
+               /* Copy the offset value which is added after the struct */
+               memcpy(offst, ((char *) ifs_data) + sizeof(ImageFileSourceData),
+                      sizeof(off_t));
+            } else {
+                *offst = -1;
+            }
+            ret = iso_node_add_xinfo(&(image->root->node),
+                                     iso_node_first_dir_rec_xinfo_func, offst);
+            if (ret < 0)
+                goto import_revert;
+        }
+
     }
 
     ret = iso_root_get_isofsnt(&(image->root->node), &truncate_mode,
@@ -7366,6 +7537,7 @@ int iso_read_opts_new(IsoReadOpts **opts, int profile)
     ropts->nomd5 = 1;
     ropts->load_system_area = 0;
     ropts->keep_import_src = 0;
+    ropts->register_dir_rec_offst = 0;
     ropts->truncate_mode = 1;
     ropts->truncate_length = LIBISOFS_NODE_NAME_MAX;
     ropts->read_features = 0;
@@ -7540,6 +7712,15 @@ int iso_read_opts_keep_import_src(IsoReadOpts *opts, int mode)
         return ISO_NULL_POINTER;
     }
     opts->keep_import_src = mode & 1;
+    return ISO_SUCCESS;
+}
+
+int iso_read_opts_dir_rec_register(IsoReadOpts *opts, int mode)
+{
+    if (opts == NULL) {
+        return ISO_NULL_POINTER;
+    }
+    opts->register_dir_rec_offst = mode & 1;
     return ISO_SUCCESS;
 }
 

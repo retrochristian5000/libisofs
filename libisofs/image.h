@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2009 - 2025 Thomas Schmitt
+ * Copyright (c) 2009 - 2026 Thomas Schmitt
  * 
  * This file is part of the libisofs project; you can redistribute it and/or 
  * modify it under the terms of the GNU General Public License version 2 
@@ -204,6 +204,11 @@ struct Iso_Image
      * manipulation where libisofs is not thread-safe anyway.
      */
     char truncate_buffer[4096];
+
+    /**
+     * Whether to register directory record byte offsets with imported nodes.
+     */
+    int register_dir_rec_offst;
     
     /**
      * When this is not NULL, it is a pointer to a function that will

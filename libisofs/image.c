@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2009 - 2025 Thomas Schmitt
+ * Copyright (c) 2009 - 2026 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -209,6 +209,7 @@ int iso_image_new(const char *name, IsoImage **image)
     img->truncate_mode = 1;
     img->truncate_length = LIBISOFS_NODE_NAME_MAX;
     img->truncate_buffer[0] = 0;
+    img->register_dir_rec_offst = 0;
     img->inode_counter = 0;
     img->used_inodes = NULL;
     img->used_inodes_start = 0;
