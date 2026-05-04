@@ -23,7 +23,7 @@ static void test_rrip_calc_len_file()
 
     file = malloc(sizeof(IsoFile));
     CU_ASSERT_PTR_NOT_NULL_FATAL(file);
-    file->from_old_session = 0;
+    file->node.from_old_session = 0;
     file->sort_weight = 0;
     file->stream = NULL; /* it is not needed here */
     file->node.type = LIBISO_FILE;
@@ -303,7 +303,7 @@ void test_rrip_get_susp_fields_file()
 
     file = malloc(sizeof(IsoFile));
     CU_ASSERT_PTR_NOT_NULL_FATAL(file);
-    file->from_old_session = 0;
+    file->node.from_old_session = 0;
     file->sort_weight = 0;
     file->stream = NULL; /* it is not needed here */
     file->node.type = LIBISO_FILE;
