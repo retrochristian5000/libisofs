@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2013 Thomas Schmitt
+ * Copyright (c) 2009 - 2026 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -497,7 +497,7 @@ int checksum_copy_old_nodes(Ecma119Image *target, IsoNode *node, int flag)
 
     if (node->type == LIBISO_FILE) {
         file = (IsoFile *) node;
-        if (file->from_old_session && target->opts->appendable) {
+        if (file->node.from_old_session && target->opts->appendable) {
             /* Look for checksums at various places */
 
             /* Try checksum directly stored with node */

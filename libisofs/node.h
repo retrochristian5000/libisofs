@@ -121,7 +121,13 @@ struct Iso_Node
     time_t mtime; /**< time of last modification */
     time_t ctime; /**< time of last status change */
 
-    int hidden; /**< whether the node will be hidden, see IsoHideNodeFlag */
+    /** whether the node will be hidden, see IsoHideNodeFlag */
+    unsigned short int hidden;
+
+    /* 1 = The node was loaded from an existing ISO image and if it is an
+           IsoFile it still refers to its data content there.
+    */
+    unsigned int from_old_session : 1;
 
     IsoDir *parent; /**< parent node, NULL for root */
 
@@ -148,11 +154,6 @@ struct Iso_Dir
 struct Iso_File
 {
     IsoNode node;
-
-    /* 1 = The node was loaded from an existing ISO image and still refers
-           to its data content there.
-    */
-    unsigned int from_old_session : 1;
 
     /* 1 = The node got attributed a weight by iso_node_set_sort_weight().
     */

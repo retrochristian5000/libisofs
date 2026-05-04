@@ -1101,7 +1101,7 @@ static int hppa_palo_set_path(IsoImage *img, char *path, char **target,
         return err;
     }
     file = (IsoFile *) node;
-    if (!(file->explicit_weight || file->from_old_session))
+    if (!(file->explicit_weight || file->node.from_old_session))
         file->sort_weight = 2;
     return ISO_SUCCESS;
 }

@@ -1473,6 +1473,7 @@ int iso_node_new_root(IsoDir **root)
     iso_nowtime(&now, 0);
     dir->node.atime = dir->node.ctime = dir->node.mtime = now;
     dir->node.mode = S_IFDIR | 0555;
+    dir->node.from_old_session = 0;
 
     /* set parent to itself, to prevent root to be added to another dir */
     dir->node.parent = dir;
@@ -1502,6 +1503,7 @@ int iso_node_new_dir(char *name, IsoDir **dir)
     new->node.type = LIBISO_DIR;
     new->node.name = name;
     new->node.mode = S_IFDIR;
+    new->node.from_old_session = 0;
     *dir = new;
     return ISO_SUCCESS;
 }
@@ -1528,7 +1530,7 @@ int iso_node_new_file(char *name, IsoStream *stream, IsoFile **file)
     new->node.type = LIBISO_FILE;
     new->node.name = name;
     new->node.mode = S_IFREG;
-    new->from_old_session = 0;
+    new->node.from_old_session = 0;
     new->explicit_weight = 0;
     new->sort_weight = 0;
     new->stream = stream;
@@ -1565,6 +1567,7 @@ int iso_node_new_symlink(char *name, char *dest, IsoSymlink **link)
     new->node.name = name;
     new->dest = dest;
     new->node.mode = S_IFLNK;
+    new->node.from_old_session = 0;
     new->fs_id = 0;
     new->st_dev = 0;
     new->st_ino = 0;
@@ -1599,6 +1602,7 @@ int iso_node_new_special(char *name, mode_t mode, dev_t dev,
     new->node.name = name;
 
     new->node.mode = mode;
+    new->node.from_old_session = 0;
     new->dev = dev;
     new->fs_id = 0;
     new->st_dev = 0;
@@ -2674,9 +2678,9 @@ int iso_node_zf_by_magic(IsoNode *node, int flag)
         ret = 1;
         if (pos->type == LIBISO_FILE) {
             file = (IsoFile *) pos;
-            if ((flag & 16) && file->from_old_session)
+            if ((flag & 16) && file->node.from_old_session)
                 return 0;
-            if (!((flag & 1) && file->from_old_session)) {
+            if (!((flag & 1) && file->node.from_old_session)) {
                 if (strncmp(file->stream->class->type, "ziso", 4) == 0)
                     return 1; /* The stream is enough of marking */
                 if (strncmp(file->stream->class->type, "osiz", 4) == 0) {
@@ -2686,7 +2690,7 @@ int iso_node_zf_by_magic(IsoNode *node, int flag)
                 }
             }
             hflag = flag & 0xff06;
-            if ((flag & 1) && file->from_old_session)
+            if ((flag & 1) && file->node.from_old_session)
                 hflag |= 1;
             ret = iso_file_zf_by_magic(file, hflag);
         } else if (pos->type == LIBISO_DIR) {
@@ -3229,7 +3233,7 @@ int iso_file_make_md5(IsoFile *file, int flag)
     int ret, dig = 0;
     char *md5 = NULL;
 
-    if (file->from_old_session)
+    if (file->node.from_old_session)
         dig = 1;
     md5 = calloc(16, 1);
     if (md5 == NULL) 
@@ -3296,5 +3300,11 @@ off_t iso_node_get_dir_rec_offset(IsoNode *node, int flag)
     if (ret <= 0)
         return (off_t) -1;
     return *((off_t *) offst);
+}
+
+/* API */
+int iso_node_is_imported(IsoNode *node, int flag)
+{
+    return(node->from_old_session);
 }
 

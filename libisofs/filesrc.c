@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- *               2010 - 2012 Thomas Schmitt
+ *               2010 - 2026 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -88,8 +88,8 @@ int iso_file_src_create(Ecma119Image *img, IsoFile *file, IsoFileSrc **src)
     }
 
     /* fill key and other atts */
-    fsrc->no_write = (file->from_old_session && img->opts->appendable);
-    if (file->from_old_session && img->opts->appendable) {
+    fsrc->no_write = (file->node.from_old_session && img->opts->appendable);
+    if (file->node.from_old_session && img->opts->appendable) {
         /*
          * On multisession discs we keep file sections from old image.
          */
@@ -142,7 +142,7 @@ int iso_file_src_create(Ecma119Image *img, IsoFile *file, IsoFileSrc **src)
     iso_stream_ref(fsrc->stream);
 
     if ((img->opts->md5_file_checksums & 1) &&
-        file->from_old_session && img->opts->appendable) {
+        file->node.from_old_session && img->opts->appendable) {
         ret = iso_node_get_xinfo((IsoNode *) file, checksum_md5_xinfo_func,
                                   &xipt);
         if (ret <= 0)

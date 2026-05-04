@@ -321,6 +321,12 @@ typedef struct Iso_Boot IsoBoot;
  *
  * @see iso_node_set_hidden
  * @since 0.6.2
+ *
+ * Note for developers who extend this enum:
+ * IsoNode stores the value as unsigned short int. So if bits above 15 are
+ * defined here, then the definition of struct Iso_Node in node.h must be
+ * changed.
+ *
  */
 enum IsoHideNodeFlag {
     /** Hide the node in the ECMA-119 / RR tree */
@@ -5404,6 +5410,19 @@ int iso_node_xinfo_make_clonable(iso_node_xinfo_func proc,
 int iso_node_xinfo_get_cloner(iso_node_xinfo_func proc,
                               iso_node_xinfo_cloner *cloner, int flag);
 
+/**
+ * Inquire whether the given node stems from iso_image_import(),
+ *
+ * @param node
+ *      The node which shall be inquired.
+ * @param flag
+ *      Unused yet, submit 0
+ * @return
+ *      1 means yes, 0 means no
+ *
+ * @since 1.6.0
+ */
+int iso_node_is_imported(IsoNode *node, int flag);
 
 /**
  * Get the byte offset of the first directory record in the imported filesystem
@@ -5424,7 +5443,7 @@ int iso_node_xinfo_get_cloner(iso_node_xinfo_func proc,
  * @param node
  *      The node which shall be inquired.
  * @param flag
- *     Unused yet, submit 0
+ *      Unused yet, submit 0
  * @return
  *      Byte offset of directory record or -1, if info not available.
  *

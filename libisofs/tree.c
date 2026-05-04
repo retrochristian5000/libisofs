@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2011 - 2022 Thomas Schmitt
+ * Copyright (c) 2011 - 2026 Thomas Schmitt
  * 
  * This file is part of the libisofs project; you can redistribute it and/or 
  * modify it under the terms of the GNU General Public License version 2 
@@ -1455,7 +1455,7 @@ int iso_tree_clone_file(IsoFile *old_file,
     if (ret < 0)
         goto ex;
     new_stream = NULL; /* now owned by new_file */
-    new_file->from_old_session = old_file->from_old_session;
+    new_file->node.from_old_session = old_file->node.from_old_session;
     new_file->explicit_weight = old_file->explicit_weight;
     new_file->sort_weight = old_file->sort_weight;
     *new_node = (IsoNode *) new_file;

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2010 - 2025 Thomas Schmitt
+ * Copyright (c) 2010 - 2026 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -616,7 +616,7 @@ int iso_image_set_boot_image(IsoImage *image, const char *image_path,
     catalog->node = cat_node;
     catalog->sort_weight = 1000000000;                          /* very high */
     if (boot_node != NULL)
-        if (!(boot_node->explicit_weight || boot_node->from_old_session))
+        if (!(boot_node->explicit_weight || boot_node->node.from_old_session))
             boot_node->sort_weight = 2;
     iso_node_ref((IsoNode*)cat_node);
     image->bootcat = catalog;
@@ -800,7 +800,7 @@ int iso_image_add_boot_image(IsoImage *image, const char *image_path,
     if (ret < 0) 
         return ret;
     if (boot_node != NULL)
-        if (!(boot_node->explicit_weight || boot_node->from_old_session))
+        if (!(boot_node->explicit_weight || boot_node->node.from_old_session))
             boot_node->sort_weight = 2;
     catalog->bootimages[catalog->num_bootimages] = boot_img;
     catalog->num_bootimages++;

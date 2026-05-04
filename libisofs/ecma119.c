@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
  * Copyright (c) 2007 Mario Danic
- * Copyright (c) 2009 - 2025 Thomas Schmitt
+ * Copyright (c) 2009 - 2026 Thomas Schmitt
  *
  * This file is part of the libisofs project; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License version 2 
@@ -2815,7 +2815,7 @@ int checksum_prepare_nodes(Ecma119Image *target, IsoNode *node, int flag)
 
     if (node->type == LIBISO_FILE) {
         file = (IsoFile *) node;
-        if (file->from_old_session) {
+        if (file->node.from_old_session) {
             /* Record attribute isofs.cx as xinfo before it can get overwritten
                for the emerging image.
                The recorded index will be used to retrieve the loaded MD5
@@ -2840,7 +2840,7 @@ int checksum_prepare_nodes(Ecma119Image *target, IsoNode *node, int flag)
                     no_md5 = 1;
             }
         }
-        if (file->from_old_session && target->opts->appendable) {
+        if (file->node.from_old_session && target->opts->appendable) {
             /* Save MD5 data of files from old image which will not
                be copied and have an MD5 recorded in the old image. */
             has_xinfo = iso_node_get_xinfo(node, checksum_md5_xinfo_func,

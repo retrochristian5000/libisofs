@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
  * Copyright (c) 2007 Mario Danic
- * Copyright (c) 2009 - 2025 Thomas Schmitt
+ * Copyright (c) 2009 - 2026 Thomas Schmitt
  * 
  * This file is part of the libisofs project; you can redistribute it and/or 
  * modify it under the terms of the GNU General Public License version 2 
@@ -1062,7 +1062,7 @@ int add_zf_field(Ecma119Image *t, Ecma119Node *n, struct susp_info *info,
                                         zisofs file header when inquired)
     */
 
-    if (t->opts->appendable && file->from_old_session) 
+    if (t->opts->appendable && file->node.from_old_session) 
         will_copy = 0;
 
     first_filter = first_stream = last_stream = iso_file_get_stream(file);

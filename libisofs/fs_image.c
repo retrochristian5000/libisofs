@@ -3561,9 +3561,6 @@ int image_builder_create_node(IsoNodeBuilder *builder, IsoImage *image,
                     {ret = ISO_OUT_OF_MEM; goto ex;}
                 }
 
-                /* mark file as from old session */
-                file->from_old_session = 1;
-
                 /*
                  * and we set the sort weight based on the block on image, to
                  * improve performance on image modifying.
@@ -3707,6 +3704,7 @@ int image_builder_create_node(IsoNodeBuilder *builder, IsoImage *image,
     new->ctime = info.st_ctime;
 
     new->hidden = 0;
+    new->from_old_session = 1;
 
     new->parent = NULL;
     new->next = NULL;
@@ -6853,6 +6851,7 @@ int iso_image_import(IsoImage *image, IsoDataSource *src,
         image->root->node.atime = info.st_atime;
         image->root->node.mtime = info.st_mtime;
         image->root->node.ctime = info.st_ctime;
+        image->root->node.from_old_session = 1;
 
         /* This might fail in iso_node_add_xinfo() */
         ret = src_aa_to_node(newroot, &(image->root->node), 0);
@@ -7839,8 +7838,7 @@ int iso_file_get_old_image_sections(IsoFile *file, int *section_count,
     }
     *section_count = 0;
     *sections = NULL;
-    if (file->from_old_session != 0) {
-
+    if (file->node.from_old_session != 0) {
         /*
          * When file is from old session, we retrieve the original IsoFileSource
          * to get the sections. This break encapsultation, but safes memory as
