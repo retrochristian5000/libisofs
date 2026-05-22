@@ -1069,10 +1069,13 @@ int iso_local_get_projid(char *disk_path, uint32_t *projid, int *os_errno,
 
     *projid = 0;
     *os_errno = 0;
-    if (flag & 32)
+    if (flag & 32) {
         ret = stat(disk_path, &stbuf);
-    else
+    } else {
         ret = lstat(disk_path, &stbuf);
+        if (ret == 0 && S_ISLNK(stbuf.st_mode))
+            return(3);
+    }
     if (ret == -1) {
         *os_errno = errno;
         return ISO_FILE_DOESNT_EXIST;
@@ -1083,7 +1086,7 @@ int iso_local_get_projid(char *disk_path, uint32_t *projid, int *os_errno,
     if(ret == -1)
         return ISO_PROJID_NO_OPEN_LOCAL;
     if(ret < 0)
-        return ISO_PROJID_NO_SET_LOCAL;
+        return ISO_PROJID_NO_GET_LOCAL;
     return ret;
 }
 
