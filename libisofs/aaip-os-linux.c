@@ -7,7 +7,7 @@
 
  To be included by aaip_0_2.c for Linux
 
- Copyright (c) 2009 - 2025 Thomas Schmitt
+ Copyright (c) 2009 - 2026 Thomas Schmitt
 
  This file is part of the libisofs project; you can redistribute it and/or
  modify it under the terms of the GNU General Public License version 2
@@ -43,7 +43,18 @@
 #endif
 #endif
 
+#ifdef Libisofs_include_ioctl_fs_H
+#undef Libisofs_include_ioctl_fs_H
+#endif
 #ifdef Libisofs_with_aaip_lfa_flagS
+#define Libisofs_include_ioctl_fs_H yes
+#else
+#ifdef Libisofs_with_aaip_projiD
+#define Libisofs_include_ioctl_fs_H yes
+#endif /* ! Libisofs_with_aaip_projiD */
+#endif /* ! Libisofs_with_aaip_lfa_flagS */
+
+#ifdef Libisofs_include_ioctl_fs_H
 #include <sys/ioctl.h>
 #include <linux/fs.h>
 #endif
@@ -112,7 +123,6 @@ int aaip_local_attr_support(int flag)
 /* Report an error with local ACL or xattr calls.
    @param flag bit0-7: mode 0=NO_GET_LOCAL , 1=NO_SET_LOCAL
 */
-static
 void aaip_local_error(char *function_name, char *path, int err, int flag)
 {
  int mode, err_code;
@@ -321,16 +331,20 @@ int aaip_get_attr_list(char *path, size_t *num_attrs, char ***names,
  ssize_t value_ret, list_size= 0;
 #define Libisofs_aaip_get_attr_activE yes
 #endif
-#ifdef Libisofs_aaip_get_attr_activE
- ssize_t i, num_names= 0;
-#endif
 #ifdef Libisofs_with_aaip_lfa_flagS
  uint64_t lfa_flags;
  int max_bit, os_errno, lfa_length;
  unsigned char lfa_value[8];
+#define Libisofs_aaip_get_attr_activE yes
 #endif
 #ifdef Libisofs_with_aaip_projiD
  uint32_t projid;
+ int projid_os_errno, projid_length;
+ unsigned char projid_value[8];
+#define Libisofs_aaip_get_attr_activE yes
+#endif
+#ifdef Libisofs_aaip_get_attr_activE
+ ssize_t i, num_names= 0;
 #endif
 
  if(flag & (1 << 15)) { /* Free memory */
@@ -405,7 +419,7 @@ ex:;
 #ifdef Libisofs_with_aaip_projiD
 
  if(!(flag & 256)) {
-   ret= iso_local_get_projid(path, &projid, &os_errno, 0);
+   ret= iso_local_get_projid(path, &projid, &projid_os_errno, 0);
    if(ret > 0 && projid != 0)
      num_names++;
  }
@@ -474,9 +488,9 @@ ex:;
    (*num_attrs)++;
  }
 
-#endif /* Libisofs_with_aaip_acL */
-
 try_lfa_flags:;
+
+#endif /* Libisofs_with_aaip_acL */
 
 #ifdef Libisofs_with_aaip_lfa_flagS
 
@@ -509,19 +523,20 @@ try_lfa_flags:;
 #ifdef Libisofs_with_aaip_projiD
 
  if(!(flag & 256)) {
-   ret= iso_local_get_projid(path,  &projid, &os_errno, 0);
+   ret= iso_local_get_projid(path, &projid, &projid_os_errno, 0);
    if(ret > 0 && projid != 0) {
      /* Encode as big-endian number with no trailing 0-bytes */
-     ret= aaip_encode_uint64((uint64_t) projid, lfa_value, &lfa_length, 0);
+     ret= aaip_encode_uint64((uint64_t) projid, projid_value, &projid_length,
+                             0);
      if(ret > 0) {
        (*names)[*num_attrs]= strdup("isofs.pi");
        if((*names)[*num_attrs] == NULL)
          {ret= -1; goto ex;}
-       (*values)[*num_attrs]= calloc(lfa_length, 1);
+       (*values)[*num_attrs]= calloc(projid_length, 1);
        if((*values)[*num_attrs] == NULL)
          {ret= -1; goto ex;}
-       memcpy((*values)[*num_attrs], (char *) lfa_value, lfa_length);
-       (*value_lengths)[*num_attrs]= lfa_length;
+       memcpy((*values)[*num_attrs], (char *) projid_value, projid_length);
+       (*value_lengths)[*num_attrs]= projid_length;
        (*num_attrs)++;
      }
    }
@@ -770,7 +785,7 @@ ex:
 }
 
 
-static void register_errno(int *errnos, int i)
+void register_errno(int *errnos, int i)
 {
  if(errno > 0)
    errnos[i]= errno;
