@@ -1460,7 +1460,7 @@ Updated change log
 ChangeLog
 Fixed typo in ChangeLog
 
-  [branch-1.5.8.pl01 ]
+07 Apr 2026  [branch-1.5.8.pl01 d6db767]
 libisofs/changelog.txt
 Added data and checksum of final 1.5.8 commits
 
@@ -1468,6 +1468,27 @@ Added data and checksum of final 1.5.8 commits
 * Bug fix: iso_image_set_ignore_aclea() inverted the setting for reading
            the XFS-style project id from disk files
 * Silenced error messages about ioctl(FS_IOC_FSGETXATTR)
+
+
+22 May 2026  [branch-1.5.8.pl02 4141151]
+libisofs/fs_local.c
+Bug fix: iso_local_get_projid() without flag bit5 returned
+         ISO_PROJID_NO_OPEN_LOCAL on dangling symlinks
+
+22 May 2026  [branch-1.5.8.pl02 89a5812]
+libisofs/aaip-os-linux.c
+Bug fix: Compile time error with --disable-lfa-flags --enable-projid
+
+22 May 2026  [branch-1.5.8.pl02 ]
+ChangeLog
+libisofs/changelog.txt
+Updated change log
+
+------------------------------- release - libisofs-1.5.8.pl02 - 22 May 2026
+* Bug fix: iso_local_get_projid() without flag bit5 returned
+           ISO_PROJID_NO_OPEN_LOCAL on dangling symlinks
+* Bug fix: Compile time error with --disable-lfa-flags --enable-projid
+
 
 
 >>> ??? Restrict restoring directory-only flags to directories ? "DFPT"
