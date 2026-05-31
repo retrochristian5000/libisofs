@@ -146,6 +146,8 @@ AC_ARG_ENABLE(debug,
               , enable_debug=yes)
 if test x$enable_debug != xyes; then
     if test x$GCC = xyes; then
+        # Remove "-g -O2" which gets set if CFLAGS was empty at configure start
+        CFLAGS="$(echo $CFLAGS | sed -e 's/-g -O2//')"
         CFLAGS="-O3 $CFLAGS"
         CFLAGS="-fexpensive-optimizations $CFLAGS"
     fi
