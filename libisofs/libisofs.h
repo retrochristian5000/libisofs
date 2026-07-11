@@ -1593,6 +1593,23 @@ int iso_write_opts_set_hfsp_serial_number(IsoWriteOpts *opts,
 int iso_write_opts_set_hfsp_block_size(IsoWriteOpts *opts,
                                      int hfsp_block_size, int apm_block_size);
 
+/**
+ * Choose what code to write into the HFS+ file fields creator and type
+ * if no values were defined by the application.
+ * 
+ * @param opts
+ *      The option set to be manipulated.
+ * @param default_mode
+ *      Defines the characters to represent unset creator and type
+ *      0= four binary zeros (this is the default setting)
+ *      1= four question marks '?'
+ *      2= four blanks ' '
+ *      Any other values get mapped to 0.
+ *
+ * @since 1.6.0
+ */
+int iso_write_opts_set_hfsplus_crtp_default(IsoWriteOpts *opts,
+                                            int default_mode);
 
 /**
  * Whether to create an additional tree starting at Enhanced Volume Descriptor
@@ -8572,7 +8589,7 @@ uint64_t iso_util_get_effective_lfa_mask(uint64_t change_mask, int flag);
  * @return
  *      1 = ok, projid is valid
  *      3 = ok, symbolic link encountered, flag bit5 not set, projid set to 0
- *     <0 = error with system calls
+ *     <0 = error with system calls or ISO_PROJID_NOT_ENABLED
  *
  * @since 1.5.8
  */
@@ -9411,7 +9428,7 @@ struct iso_hfsplus_xinfo_data {
 int iso_hfsplus_xinfo_func(void *data, int flag);
 
 /** 
- * Create an instance of struct iso_hfsplus_xinfo_new().
+ * Create an instance of struct iso_hfsplus_xinfo_data.
  *
  * @param flag
  *      Bitfield for control purposes. Unused yet. Submit 0.

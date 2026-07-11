@@ -413,5 +413,6 @@ iso_lib_get_patch_level;
 iso_node_get_dir_rec_offset;
 iso_node_is_imported;
 iso_read_opts_dir_rec_register;
+iso_write_opts_set_hfsplus_crtp_default;
 } LIBISOFS6_1.5.8;
 

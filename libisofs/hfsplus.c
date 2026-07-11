@@ -911,8 +911,21 @@ iso_msg_debug(t->image->id,
 			      return ret;
 			    else 
 			      {
-				memset (common->file_type, 0, 4);
-				memset (common->file_creator, 0, 4);
+                                if (t->opts->hfsp_default_crtp == 1)
+				  {
+	 			    memcpy (common->file_type, "????", 4);
+				    memcpy (common->file_creator, "????", 4);
+                                  }
+				else if (t->opts->hfsp_default_crtp == 2)
+		    		  {
+	 			    memcpy (common->file_type, "    ", 4);
+				    memcpy (common->file_creator, "    ", 4);
+				  }
+				else
+				  {
+				    memset (common->file_type, 0, 4);
+				    memset (common->file_creator, 0, 4);
+				  }
 			      }
 			  }
 

@@ -4109,6 +4109,7 @@ int iso_write_opts_new(IsoWriteOpts **opts, int profile)
         wopts->hfsp_serial_number[i] = 0;
     wopts->apm_block_size = 0;
     wopts->hfsp_block_size = 0;
+    wopts->hfsp_default_crtp = 0;
     memset(wopts->gpt_disk_guid, 0, 16);
     wopts->gpt_disk_guid_mode = 0;
     wopts->max_ce_entries = 31; /* Linux hates >= RR_MAX_CE_ENTRIES = 32 */
@@ -4950,6 +4951,16 @@ int iso_write_opts_set_max_ce_entries(IsoWriteOpts *opts, uint32_t num,
         num = 1;
     opts->max_ce_entries = num;
     opts->max_ce_drop_attr = flag & 15;
+    return ISO_SUCCESS;
+}
+
+int iso_write_opts_set_hfsplus_crtp_default(IsoWriteOpts *opts,
+                                            int default_mode)
+{
+    if (default_mode >= 0 && default_mode <= 2)
+        opts->hfsp_default_crtp = default_mode;
+    else
+        opts->hfsp_default_crtp = 0;
     return ISO_SUCCESS;
 }
 

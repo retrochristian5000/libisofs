@@ -555,6 +555,17 @@ struct iso_write_opts {
      */
     int hfsp_block_size;
 
+    /* Choose value to be written if no HFS+ creator and type are set for a
+       file:
+         0= {0,0,0,0}
+         1= {'?','?','?','?'}
+         2= {' ',' ',' ',' '}
+       https://daringfireball.net/2004/02/setting_empty_file_and_creator_types
+       says: 0 is official, '?' and ' ' are inofficial.
+       Mac program codesign(1) complains about '?'.
+    */
+    int hfsp_default_crtp;
+
     /* Block size of and in APM : 0= auto , 512, or 2048
      */
     int apm_block_size;
