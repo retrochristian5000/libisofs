@@ -911,8 +911,8 @@ iso_msg_debug(t->image->id,
 			      return ret;
 			    else 
 			      {
-				memcpy (common->file_type, "????", 4);
-				memcpy (common->file_creator, "????", 4);
+				memset (common->file_type, 0, 4);
+				memset (common->file_creator, 0, 4);
 			      }
 			  }
 
