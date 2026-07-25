@@ -90,7 +90,7 @@ dnl To abort configuration if iconv() still cannot be compiled
 LIBBURNIA_ASSERT_ICONV
 
 
-AC_PROG_LIBTOOL
+m4_ifdef([LT_INIT], [LT_INIT], [AC_PROG_LIBTOOL])
 AC_SUBST(LIBTOOL_DEPS)
 # LIBTOOL="$LIBTOOL --silent"
 
