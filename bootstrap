@@ -1,7 +1,20 @@
 #!/bin/sh -x
 
 aclocal -I .
-libtoolize --copy --force
+
+if libtoolize --copy --force
+then
+  dummy=dummy
+else
+  if glibtoolize --copy --force
+  then
+    set +x
+    echo "bootstrap: Note: glibtoolize succeeded where libtoolize failed"
+    set -x
+  else
+    exit 1
+  fi
+fi
 autoconf
 
 automake --foreign --add-missing --copy --include-deps
