@@ -3152,6 +3152,10 @@ int iso_image_filesystem_new(IsoDataSource *src, struct iso_read_opts *opts,
     ifs->free = ifs_fs_free;
 
     /* read Volume Descriptors and ensure it is a valid image */
+
+    /* 1. first, open the data source and the filesystem */
+    ifs_fs_open(ifs);
+
     if (data->md5_load == 1) {
         /* From opts->block on : check for superblock and tree tags */
         ret = iso_src_check_sb_tree(src, opts->block, 0);
@@ -3173,9 +3177,6 @@ int iso_image_filesystem_new(IsoDataSource *src, struct iso_read_opts *opts,
         if (ret == 1)
             data->md5_checked = 3;
     }
-
-    /* 1. first, open the filesystem */
-    ifs_fs_open(ifs);
 
     /* 2. read primary volume description */
     ret = read_pvm(data, opts->block + 16);
