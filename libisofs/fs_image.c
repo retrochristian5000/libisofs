@@ -7239,7 +7239,8 @@ no_1999_convert:;
                                                    !!(relaxed & 2));
         }
     }
-    if (*features != NULL) {
+    /* Now is sure: if features != NULL then *features != NULL */
+    if (features != NULL) {
         (*features)->tree_loaded = image->tree_loaded;
         if ((ret = iso_img_features_set_named((*features), "tree_loaded",
                                  (int64_t)(*features)->tree_loaded, NULL)) < 0)
@@ -7386,9 +7387,11 @@ no_1999_convert:;
         }
     }
 
-    ret = iso_image_assess_tree_compliance(image, opts, *features);
-    if (ret < 0)
-        goto import_revert;
+    if (features != NULL) {
+        ret = iso_image_assess_tree_compliance(image, opts, *features);
+        if (ret < 0)
+            goto import_revert;
+    }
 
     ret = ISO_SUCCESS;
     goto import_cleanup;
