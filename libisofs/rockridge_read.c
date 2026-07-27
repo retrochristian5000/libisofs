@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Vreixo Formoso
- * Copyright (c) 2009 - 2025 Thomas Schmitt
+ * Copyright (c) 2009 - 2026 Thomas Schmitt
  * 
  * This file is part of the libisofs project; you can redistribute it and/or 
  * modify it under the terms of the GNU General Public License version 2 
@@ -378,14 +378,24 @@ int read_rr_NM(struct susp_sys_user_entry *nm, char **name, int *cont)
 /**
  * Read a SL RR entry (RRIP, 4.1.3), checking if the destination continues.
  * 
+ * @param dest
+ *      returns the intermediate resulting target path.
+ *      This may be non-NULL but empty, which after the last SL entry
+ *      means "/".
  * @param cont
  *      0 not continue, 1 continue, 2 continue component 
+ * @param first_component
+ *      State of reading.
+ *      Submit with content 1 at first call of read_rr_SL for the file.
+ *      read_rr_SL will set *first_component to 0 when the first component
+ *      of the first SL is processed.
  * @return
  *      1 on success, < 0 on error
  */
-int read_rr_SL(struct susp_sys_user_entry *sl, char **dest, int *cont)
+int read_rr_SL(struct susp_sys_user_entry *sl, char **dest, int *cont,
+               int *first_component)
 {
-    int pos, real_root_flag = 0, in_root = 0;
+    int pos;
     
     if (sl == NULL || dest == NULL) {
         return ISO_NULL_POINTER;
@@ -400,8 +410,6 @@ int read_rr_SL(struct susp_sys_user_entry *sl, char **dest, int *cont)
         uint8_t len;
         uint8_t flags = sl->data.SL.comps[pos];
 
-        in_root = real_root_flag;
-        real_root_flag = 0;
 
         if (flags & 0x2) {
             /* current directory */
@@ -417,20 +425,16 @@ int read_rr_SL(struct susp_sys_user_entry *sl, char **dest, int *cont)
                But genisoimage and older libisofs both set bit 3 with
                any empty component which represents an add-on slash.
             */
-            comp = "/";
-            if (pos == 0 || in_root) {
-                /* Real root directory or add-on slash of root slash */
-                len = 1;
-                real_root_flag = 1;
-            } else if (pos + 2 + sl->data.SL.comps[pos + 1] + 5 >=
-                       sl->len_sue[0]) {
-                /* A final component with bit 3 traditionally leads to a
-                   double slash in Linux and in older libisofs.
+            len = 0;
+            if (*first_component == 0 &&
+                pos + 2 + sl->data.SL.comps[pos + 1] + 5 >= sl->len_sue[0] &&
+                !(sl->data.SL.flags[0] & 1)) {
+                /* A final component with bit 3 in the last SL entry
+                   traditionally leads to a double slash in Linux and in
+                   older libisofs.
                 */
+                comp = "/";
                 len = 1;
-            } else {
-                /* Just a mislead component in the inner of the path */
-                len = 0;
             }
         } else if (flags & ~0x01) {
             /* unsupported flag component */
@@ -448,8 +452,8 @@ int read_rr_SL(struct susp_sys_user_entry *sl, char **dest, int *cont)
             if (*dest == NULL) {
                 return ISO_OUT_OF_MEM;
             }
-            /* it is a new component, add the '/' */
-            if (!(pos == 0 || in_root)) {
+            /* it is a new component, insert the '/' if it is not the first */
+            if (*first_component == 0) {
                 (*dest)[size] = '/';
                 (*dest)[size+1] = '\0';
             }
@@ -466,6 +470,7 @@ int read_rr_SL(struct susp_sys_user_entry *sl, char **dest, int *cont)
             /* The first component begins */
             *dest = iso_util_strcopy(comp, len);
         }
+        *first_component = 0;
         if (*dest == NULL) {
             return ISO_OUT_OF_MEM;
         }

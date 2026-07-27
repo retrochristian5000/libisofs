@@ -1612,6 +1612,7 @@ int iso_file_source_new_ifs(IsoImageFilesystem *fs, IsoFileSource *parent,
     char *cpt;
 
     int has_px = 0;
+    int link_first_component = 1;
 
 #ifdef Libisofs_with_zliB
     uint8_t zisofs_alg[2], zisofs_hs4 = 0, zisofs_bsl2 = 0;
@@ -1868,7 +1869,8 @@ if (name != NULL && !namecont) {
                                  "CONTINUE flag. Ignored");
                     continue;
                 }
-                ret = read_rr_SL(sue, &linkdest, &linkdestcont);
+                ret = read_rr_SL(sue, &linkdest, &linkdestcont,
+                                 &link_first_component);
                 if (ret < 0) {
                     /* notify and continue */
                     ret = iso_rr_msg_submit(fsdata, 5, ISO_WRONG_RR_WARN, ret,
@@ -2063,6 +2065,19 @@ invalid_zf:
             } else {
                 free(name);
                 name = newname;
+            }
+        }
+
+        /* allocated but empty linkdest means "/" */
+        if (linkdest != NULL) {
+            if (linkdest[0] == 0) {
+                linkdest = realloc(linkdest, 2);
+                if (linkdest == NULL) {
+                    free(name);
+                    ret = ISO_OUT_OF_MEM;
+                    goto ex;
+                }
+                strcpy(linkdest, "/");
             }
         }
 
