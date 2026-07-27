@@ -4018,7 +4018,9 @@ void iso_image_set_app_use(IsoImage *image, const char *app_use_data,
  *
  * @param image 
  *      The image to inquire
- * @since 1.3.2
+ *
+ * This call is declared since 1.3.2, but implemented only since 1.6.0.
+ * @since 1.6.0
  */
 const char *iso_image_get_app_use(IsoImage *image);
 

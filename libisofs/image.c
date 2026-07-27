@@ -580,6 +580,11 @@ void iso_image_set_app_use(IsoImage *image, const char *app_use_data,
         memset(image->application_use + count, 0, 512 - count);
 }
 
+const char *iso_image_get_app_use(IsoImage *image)
+{
+    return image->application_use;
+}
+
 int iso_image_get_msg_id(IsoImage *image)
 {
     return image->id;
