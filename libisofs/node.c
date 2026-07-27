@@ -828,8 +828,10 @@ int iso_node_take(IsoNode *node)
     }
 
     pos = iso_dir_find_node(dir, node);
-    if (pos == NULL) {
+    if (*pos == NULL) {
         /* should never occur */
+        iso_msg_submit(-1, ISO_ASSERT_FAILURE, 0,
+                    "iso_node_take: Cannot find node in its parent directory");
         return ISO_ASSERT_FAILURE;
     }
 
