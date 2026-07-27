@@ -5795,6 +5795,8 @@ int iso_dir_get_children_count(IsoDir *dir);
  *     Possible errors:
  *         ISO_NULL_POINTER, if node is NULL
  *         ISO_NODE_NOT_ADDED_TO_DIR, if node doesn't belong to a dir
+ *         ISO_WILL_NOT_TAKE_ROOT, if node is the root directory of an IsoImage
+ *                                 @since 1.6.0
  *
  * @since 0.6.2
  */
@@ -10199,6 +10201,10 @@ int iso_conv_name_chars(IsoWriteOpts *opts, char *name, size_t name_len,
 
 /** Error with attaching ACL or xattr to local file    (WARNING,HIGH, -445) */
 #define ISO_AAIP_NO_SET_LOCAL_W     0xD030FE43
+
+/** Prevented iso_node_take with the root directory node
+                                                       (FAILURE,HIGH, -446) */
+#define ISO_WILL_NOT_TAKE_ROOT      0xE830FE42
 
 
 /* Internal developer note: 

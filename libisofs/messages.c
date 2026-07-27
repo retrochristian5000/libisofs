@@ -607,6 +607,8 @@ const char *iso_error_to_msg(int errcode)
         return "Creation of device file in local filesystem failed";
     case ISO_DEV_NO_CREATION:
         return "Creation of device file type in local filesystem not enabled";
+    case ISO_WILL_NOT_TAKE_ROOT:
+        return "Prevented iso_node_take with the root directory node";
     default:
         return "Unknown error";
     }

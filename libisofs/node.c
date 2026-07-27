@@ -822,7 +822,10 @@ int iso_node_take(IsoNode *node)
         return ISO_NODE_NOT_ADDED_TO_DIR;
     }
 
-    /* >>> Do not take root directory ! (dir == node) ? */;
+    /* Do not take root directory. It is owned by its IsoImage. */
+    if ((IsoNode *) dir == node) {
+        return ISO_WILL_NOT_TAKE_ROOT;
+    }
 
     pos = iso_dir_find_node(dir, node);
     if (pos == NULL) {
