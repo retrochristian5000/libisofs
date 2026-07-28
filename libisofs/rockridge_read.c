@@ -426,6 +426,7 @@ int read_rr_SL(struct susp_sys_user_entry *sl, char **dest, int *cont,
                any empty component which represents an add-on slash.
             */
             len = 0;
+            comp = "";
             if (*first_component == 0 &&
                 pos + 2 + sl->data.SL.comps[pos + 1] + 5 >= sl->len_sue[0] &&
                 !(sl->data.SL.flags[0] & 1)) {
