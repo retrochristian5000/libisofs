@@ -9,7 +9,7 @@
                 Interchange of Persistent File Attributes
 
           by Thomas Schmitt    - mailto:scdbackup@gmx.net
-          Libburnia project    - mailto:libburn-hackers@pykix.org
+          Libburnia project    - mailto:bug-xorriso@gnu.org
 
 
 AAIP is intended as companion of the Rock Ridge Interchange Protocol RRIP
@@ -82,7 +82,7 @@ space of an AL entry then it shall be continued in following AL entries.
 
 All Component Records of a component except the last one shall have the
 CONTINUE flag set. A Component Record with CONTINUE set to 0 indicates the end
-of the component. An eventually following Component Record starts the next
+of the component. A possibly following Component Record starts the next
 component.
 
 -------------------------------------------------------------------------------
@@ -230,10 +230,10 @@ SWITCH_MARK entry may direct further entries to the "default" ACL which
 is defined for directory objects. The EXEC bit of SWITCH_MARK shall be 1.
 The bits for WRITE, READ, QUALIFIER shall be 0.
 
-An eventually needed qualifier is stored in one or more Qualifier Records.
+If a qualifier is needed then is stored in one or more Qualifier Records.
 
   [b] "BP 2 - Qualifier Record Head" shall be present only if QUALIFIER is set
-      to 1. It shall give the number of Qualifier Bytes and eventually
+      to 1. It shall give the number of Qualifier Bytes and possibly
       indicate that the qualifier continues in a Qualifier Record which comes
       immediately after this record.
           0 to 127   Q_LENGTH, the qualifier is complete by this record
@@ -401,7 +401,7 @@ AAIP 1.0 had ER signature "AAIP_0100".
 
 AAIP 0.2 with ER signature "AAIP_0002" allowed to announce and use a different
 signature than "AA". This was revoked because ES entries serve the purpose
-to distinguish AAIP entries from eventual "AA" entries of any other extension.
+to distinguish AAIP entries from possible "AA" entries of any other extension.
 Regrettably no reader (kernel) was found which neatly interprets ES. Many do
 not even recognize the RRIP-1.12 ER signatures "IEEE_P1282", "IEEE_1282".
 
