@@ -691,7 +691,6 @@ int aaip_add_AL(Ecma119Image *t, struct susp_info *susp,
 {
     int ret, done = 0, len, es_extra = 0;
     uint8_t *aapt, *cpt;
-    size_t count = 0;
 
     if (!(flag & 1))
         flag |= 2;
@@ -705,7 +704,6 @@ int aaip_add_AL(Ecma119Image *t, struct susp_info *susp,
             done = !(aapt[4] & 1);
             len = aapt[2];
             susp_calc_add_to_ce(t, ce_len, ce_mem, len, flag & 2);
-            count += len;
         }
     } else {
         *sua_free -= num_data + es_extra;
