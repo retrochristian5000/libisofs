@@ -880,8 +880,18 @@ struct IsoFileSource_Iface
 
     /**
      * Valid only if .version is > 0. See above.
-     * Get the AAIP string with encoded ACL and xattr.
+     * Get the AAIP string with encoded ACL and other extra meta data.
+     *
+     * AAIP is a protocol which like Rock Ridge (RRIP) is governed by the
+     * System Use Sharing Protocol (SUSP) in the System Use part of ISO 9660
+     * directory records. Its purpose is to record a list of name/value pairs
+     * which are referred in this API description as xattr.
      * (Not to be confused with ECMA-119 Extended Attributes).
+     *
+     * The format is described in file libisofs/doc/susp_aaip_2_0.txt .
+     * Names which begin by "isofs." are reserved for internal use by libisofs.
+     * A list of defined xattr in the "isofs." namespace is in
+     * file libisofs/doc/susp_aaip_isofs_names.txt .
      *
      * bit1 and bit2 of flag should be implemented so that freshly fetched
      * info does not include the undesired ACL or xattr. Nevertheless if the
@@ -1335,10 +1345,10 @@ int iso_image_new(const char *name, IsoImage **image);
 
 
 /**
- * Control whether ACL and xattr will be imported from external filesystems
- * (typically the local POSIX filesystem) when new nodes get inserted. If
- * enabled by iso_write_opts_set_aaip() they will later be written into the
- * image as AAIP extension fields.
+ * Control whether ACL and xattr with other extra meta data will be imported
+ * from external filesystems (typically the local POSIX filesystem) when new
+ * nodes get inserted. If enabled by iso_write_opts_set_aaip() they will later
+ * be written into the resulting ISO filesystem as AAIP data.
  *
  * A change of this setting does neither affect existing IsoNode objects
  * nor the way how ACL and xattr are handled when loading an ISO image.
@@ -1656,7 +1666,8 @@ int iso_write_opts_set_iso1999(IsoWriteOpts *opts, int enable);
 int iso_write_opts_set_hardlinks(IsoWriteOpts *opts, int enable);
 
 /**
- * Control writing of AAIP information for ACL and xattr.
+ * Control writing of AAIP information for ACL and xattr with Linux-like file
+ * flags, MD5 checksums, HFS+ properties, and other extra meta data.
  * For importing ACL and xattr when inserting nodes from external filesystems
  * (e.g. the local POSIX filesystem) see iso_image_set_ignore_aclea().
  * For loading of this information from images see iso_read_opts_set_no_aaip().
@@ -2048,6 +2059,13 @@ int iso_write_opts_set_sort_files(IsoWriteOpts *opts, int sort);
  * were written into the image output stream, not necessarily as they were
  * on hard disk at any point of time.
  * See also calls iso_image_get_session_md5() and iso_file_get_md5().
+ *
+ * Important: Writing of the MD5 checksums will only work if writing of AAIP is
+ *            enabled. Their storage location, layout, and the relation
+ *            of the files to their checksum is recorded in AAIP attributes
+ *            of namespace "isofs.".
+ *            Writing of AAIP is controlled by iso_write_opts_set_aaip().
+ *
  * @param opts
  *      The option set to be manipulated.
  * @param session
@@ -3214,8 +3232,8 @@ int iso_read_opts_set_no_joliet(IsoReadOpts *opts, int nojoliet);
 int iso_read_opts_set_no_iso1999(IsoReadOpts *opts, int noiso1999);
 
 /**
- * Control reading of AAIP information about ACL and xattr when loading
- * existing images.
+ * Control reading of AAIP information about ACL and xattr with other extra
+ * meta data when importing existing ISO images.
  * For importing ACL and xattr when inserting nodes from external filesystems
  * (e.g. the local POSIX filesystem) see iso_image_set_ignore_aclea().
  * For writing of this information see iso_write_opts_set_aaip().
@@ -3233,8 +3251,9 @@ int iso_read_opts_set_no_aaip(IsoReadOpts *opts, int noaaip);
 /**
  * Control reading of an array of MD5 checksums which is possibly stored
  * at the end of a session. See also iso_write_opts_set_record_md5().
- * Important: Loading of the MD5 array will only work if AAIP is enabled
- *            because its position and layout is recorded in xattr "isofs.ca".
+ * Important: Loading of the MD5 array will only work if loading of AAIP is
+ *            enabled. Its position and layout is recorded in
+ *            xattr "isofs.ca". See iso_read_opts_set_no_aaip().
  *
  * @param opts
  *       The option set to be manipulated
@@ -3380,7 +3399,9 @@ int iso_read_opts_set_input_charset(IsoReadOpts *opts, const char *charset);
  *       Bitfield for control purposes:
  *       bit0= Allow to use the input character set name which is possibly
  *             stored in attribute "isofs.cs" of the root directory.
- *             Applications may attach this xattr by iso_node_set_attrs() to
+ *             This attribute is only read from ISO filesystems if reading of
+ *             AAIP data is enabled. See iso_read_opts_set_no_aaip().
+ *             Applications may attach it by iso_node_set_attrs() to
  *             the root node, call iso_write_opts_set_output_charset() with the
  *             same name, and enable iso_write_opts_set_aaip() when writing
  *             an image.
@@ -7536,7 +7557,7 @@ int iso_file_source_readlink(IsoFileSource *src, char *buf, size_t bufsiz);
 
 
 /**
- * Get the AAIP string with encoded ACL and xattr.
+ * Get the AAIP string with encoded ACL and xattr of all name spaces.
  * (Not to be confused with ECMA-119 Extended Attributes).
  * @param src        The file source object to be inquired.
  * @param aa_string  Returns a pointer to the AAIP string data. If no AAIP
@@ -8105,7 +8126,10 @@ int iso_node_set_attrs(IsoNode *node, size_t num_attrs, char **names,
  * Obtain the Linux-like file attribute flags (chattr) as bit array.
  * The bit numbers are compatible to the FS_*_FL definitions in Linux
  * include file <linux/fs.h>. A (possibly outdated) copy of them is in
- * doc/susp_aaip_isofs_names.txt, name isofs.fa .
+ * doc/susp_aaip_isofs_names.txt.
+ * The flags are stored in AAIP attributes with name "isofs.fa". So writing to
+ * ids into an ISO filesystem and importing them from an ISO filesystem is
+ * controlled by iso_write_opts_set_aaip() and iso_read_opts_set_no_aaip().
  * 
  * @param node
  *      The node that is to be inquired.
@@ -8151,6 +8175,10 @@ int iso_node_set_lfa_flags(IsoNode *node, uint64_t lfa_flags, int flag);
 /**
  * Obtain the XFS-style project id of the given node.
  * The result is 0 if no project id information is associated with the node.
+ * 
+ * The ids are stored in AAIP attributes with name "isofs.pi". So writing to
+ * ids into an ISO filesystem and importing them from an ISO filesystem is
+ * controlled by iso_write_opts_set_aaip() and iso_read_opts_set_no_aaip().
  * 
  * @param node
  *      The node that is to be inquired.
@@ -9511,8 +9539,8 @@ int iso_image_hfsplus_bless(IsoImage *img, enum IsoHfsplusBlessings blessing,
  * @param img
  *     The image to inquire.
  * @param blessed_nodes
- *     Will return a pointer to an internal node array of image.
- *     This pointer is valid only as long as image exists and only until
+ *     Will return a pointer to an internal node array of img.
+ *     This pointer is valid only as long as img exists and only until
  *     iso_image_hfsplus_bless() gets used to manipulate the blessings.
  *     Do not free() this array. Do not alter the content of the array
  *     directly, but rather use iso_image_hfsplus_bless() and re-inquire
@@ -9534,6 +9562,17 @@ int iso_image_hfsplus_bless(IsoImage *img, enum IsoHfsplusBlessings blessing,
  */
 int iso_image_hfsplus_get_blessed(IsoImage *img, IsoNode ***blessed_nodes,
                                   int *bless_max, int flag);
+
+/**
+ * HFS+ blessings and Creator/Type data primarily affect the HFS+ filesystem
+ * metadata, which cannot be read back by libisofs.
+ * In order to make this information available when importing the ISO
+ * filesystem, blessings and Creator/Type get stored in the ISO filesystem as
+ * xattr "isofs.hb" and "isofs.hx" if AAIP writing is enabled by
+ * iso_write_opts_set_aaip().
+ * The xattr are imported and put into effect if AAIP reading is enabled by
+ * iso_read_opts_set_no_aaip().
+ */
 
 
 /* ----------------------------- Character sets ---------------------------- */
