@@ -1299,13 +1299,10 @@ int iso_node_is_valid_link_dest(const char *dest)
 
     /* guard against the empty string or big dest... */
     if (dest[0] == '\0') {
-#ifdef Libisofs_debug_rr_reserveD
-        fprintf(stderr, "libisofs_DEBUG: ISO_RR_NAME_RESERVED by empty link target\n");
-#endif
-        return ISO_RR_NAME_RESERVED;
+        return ISO_EMPTY_LINK_TARGET;
     }
     if (strlen(dest) > LIBISOFS_NODE_PATH_MAX)
-        return ISO_RR_PATH_TOO_LONG;
+        return ISO_OVERSIZED_LINK_TARGET;
 
     /* check that all components are valid */
     if (!strcmp(dest, "/")) {

@@ -10247,6 +10247,12 @@ int iso_conv_name_chars(IsoWriteOpts *opts, char *name, size_t name_len,
                                                        (FAILURE,HIGH, -446) */
 #define ISO_WILL_NOT_TAKE_ROOT      0xE830FE42
 
+/** Prevented symbolic link with empty target          (FAILURE,HIGH, -447) */
+#define ISO_EMPTY_LINK_TARGET       0xE830FE41
+
+/** Prevented symbolic link with oversized target      (FAILURE,HIGH, -448) */
+#define ISO_OVERSIZED_LINK_TARGET   0xE830FE40
+
 
 /* Internal developer note: 
    Place new error codes directly above this comment. 

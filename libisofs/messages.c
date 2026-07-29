@@ -609,6 +609,10 @@ const char *iso_error_to_msg(int errcode)
         return "Creation of device file type in local filesystem not enabled";
     case ISO_WILL_NOT_TAKE_ROOT:
         return "Prevented iso_node_take with the root directory node";
+    case ISO_EMPTY_LINK_TARGET:
+        return "Prevented symbolic link with empty target";
+    case ISO_OVERSIZED_LINK_TARGET:
+        return "Prevented symbolic link with oversized target";
     default:
         return "Unknown error";
     }
