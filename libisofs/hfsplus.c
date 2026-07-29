@@ -597,7 +597,6 @@ write_sb (Ecma119Image *t)
     struct hfsplus_volheader sb;
     static char buffer[1024];
     int ret;
-    int i;
     uint32_t block_size;
 
     iso_msg_debug(t->image->id, "Write HFS+ superblock");
@@ -649,19 +648,11 @@ write_sb (Ecma119Image *t)
     iso_msb ((uint8_t *) &sb.catalog_file.extents[0].start, t->hfsp_catalog_file_start - t->hfsp_part_start, 4);
     iso_msb ((uint8_t *) &sb.catalog_file.extents[0].count, 2 * t->hfsp_nnodes, 4);
     iso_msg_debug(t->image->id, "catalog_file_start = %d\n", (int)t->hfsp_catalog_file_start);
-
-    for (i = 0; i < ISO_HFSPLUS_BLESS_MAX; i++) {
-     iso_msb ((uint8_t *) (&sb.ppc_bootdir + i
-			   + (i == ISO_HFSPLUS_BLESS_OSX_FOLDER)),
-	      t->hfsp_bless_id[i], 4);
-
-#ifdef Libisofs_ts_debuG
-     iso_msg_debug(t->image->id, "hfsplus bless %d written for cat_id %u",
-                   i, t->hfsp_bless_id[i]);
-#endif /* Libisofs_ts_debuG */
-
-    }
-
+    iso_msb ((uint8_t *) &sb.ppc_bootdir, t->hfsp_bless_id[0], 4);
+    iso_msb ((uint8_t *) &sb.intel_bootfile, t->hfsp_bless_id[1], 4);
+    iso_msb ((uint8_t *) &sb.showfolder, t->hfsp_bless_id[2], 4);
+    iso_msb ((uint8_t *) &sb.os9folder, t->hfsp_bless_id[3], 4);
+    iso_msb ((uint8_t *) &sb.osxfolder, t->hfsp_bless_id[4], 4);
     memcpy (&sb.num_serial, &t->opts->hfsp_serial_number, 8);
     ret = iso_write(t, &sb, sizeof (sb));
     if (ret < 0)
