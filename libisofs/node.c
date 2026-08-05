@@ -1880,6 +1880,8 @@ int iso_node_merge_xattr(IsoNode *node, size_t num_attrs, char **names,
                 /* Delete unmatched pair */
                 free((*m_names)[j]);
                 (*m_names)[j] = NULL;
+                free((*m_values)[j]);
+                (*m_values)[j] = NULL;
                 deleted++;
             }
         }
@@ -1902,7 +1904,7 @@ int iso_node_merge_xattr(IsoNode *node, size_t num_attrs, char **names,
                 (*m_values)[j] = NULL;
                 (*m_value_lengths)[j] = 0;
                 if (flag & 4) {
-                    /* Delete pair */
+                    /* Delete pair (value is already freed) */
                     free((*m_names)[j]);
                     (*m_names)[j] = NULL;
                     deleted++;
