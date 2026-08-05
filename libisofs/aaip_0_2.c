@@ -330,6 +330,8 @@ static double aaip_numeric_id(char *name, int flag)
  double num;
  char *cpt;
 
+ if(*name == 0)
+   return(-1);
  for(cpt= name; *cpt != 0; cpt++)
    if(*cpt < '0' || *cpt >'9')
  break;
@@ -438,8 +440,7 @@ static ssize_t aaip_encode_acl_text(char *acl_text, mode_t st_mode,
          pwd= getpwnam(name);
          if(pwd == NULL) {
            num= aaip_numeric_id(name, 0);
-           if(num <= 0) {
-             /* ACL_USER is not part of AAIP 2.0 */
+           if(num < 0) {
              if(flag & 16)
                iso_msg_submit(-1, ISO_AAIP_BAD_ACL_TEXT, 0,
                             "Unknown user name found in ACL text: '%s'", name);
@@ -490,8 +491,7 @@ static ssize_t aaip_encode_acl_text(char *acl_text, mode_t st_mode,
          grp= getgrnam(name);
          if(grp == NULL) {
            num= aaip_numeric_id(name, 0);
-           if(num <= 0) {
-             /* ACL_GROUP is not part of AAIP 2.0 */
+           if(num < 0) {
              if(flag & 16)
                iso_msg_submit(-1, ISO_AAIP_BAD_ACL_TEXT, 0,
                            "Unknown group name found in ACL text: '%s'", name);
