@@ -1463,9 +1463,9 @@ int iso_write_opts_set_will_cancel(IsoWriteOpts *opts, int will_cancel);
  *      The option set to be manipulated.
  * @param level
  *      -> 1 for higher compatibility with old systems. With this level
- *      filenames are restricted to 8.3 characters.
+ *           filenames are restricted to 8.3 characters.
  *      -> 2 to allow up to 31 filename characters.
- *      -> 3 to allow files greater than 4GB
+ *      -> 3 to allow files larger than 4GiB - 1 byte
  * @return
  *      1 success, < 0 error
  *
@@ -3439,7 +3439,8 @@ int iso_read_opts_load_system_area(IsoReadOpts *opts, int mode);
  * @param mode
  *       Bitfield for control purposes:
  *       bit0= Keep a reference to the IsoDataSource until the IsoImage object
- *             gets disposed by its final iso_image_unref().
+ *             imports another data source or until the IsoImage object gets
+ *             disposed by its final iso_image_unref().
  *       Submit any other bits with value 0.
  *
  * @since 1.4.0
@@ -3467,16 +3468,22 @@ int iso_read_opts_keep_import_src(IsoReadOpts *opts, int mode);
 int iso_read_opts_dir_rec_register(IsoReadOpts *opts, int mode);
 
 /**
- * Import a previous session or image, for growing or modify.
+ * Import an existing ISO 9660 filesystem, for reading, growing, or modifying.
+ * This function reads the directory tree and keeps the data source open for
+ * further read access.
  *
  * @param image
- *     The image context to which old image will be imported. Note that all
- *     files added to image, and image attributes, will be replaced with the
- *     contents of the old image.
+ *     The image context to which the filesystem will be imported. Note that
+ *     all files which were already added to image and all changed image
+ *     attributes, will be replaced with the contents of the filesystem.
  *     TODO #00025 support for merging old image files
  * @param src
- *     Data Source from which old image will be read. A extra reference is
- *     added, so you still need to iso_data_source_unref() yours.
+ *     Data Source from which the filesystem will be read.
+ *     image will obtain an extra reference to src, which it will unref when
+ *     another data source gets imported or when image gets disposed.
+ *     So you still need to call iso_data_source_unref(src) yourself.
+ *     The underlying storage, like optical medium or data file, has to stay
+ *     available until image gives up its reference.
  * @param opts
  *     Options for image import. All needed data will be copied, so you
  *     can free the given struct once this function returns.
@@ -4244,6 +4251,7 @@ int iso_image_get_bootcat(IsoImage *image, IsoBoot **catnode, uint32_t *lba,
  * @param bootnodes
  *      Returns NULL or an allocated array of pointers to the IsoFile nodes
  *      which bear the content of the boot images in boots.
+ *      Apply system call free(boots) to dispose it.
  *      An array entry is NULL if the boot image source is no IsoFile.
 
 >>> Need getter for partition index
@@ -8716,7 +8724,7 @@ int iso_local_create_dev(char *disk_path, mode_t st_mode, dev_t dev,
  *   iso_file_add_zisofs_filter()
  *   iso_file_add_gzip_filter()
  * which may or may not be available depending on compile time settings and
- * installed software packages like libz.
+ * installed software packages like zlib.
  *
  * During image generation filters get not in effect if the original IsoStream
  * is an "fsrc" stream based on a file in the loaded ISO image and if the
@@ -8877,9 +8885,9 @@ int iso_stream_get_external_filter(IsoStream *stream,
  * Install a zisofs filter on top of the content stream of a data file.
  * zisofs is a compression format which is decompressed by some Linux kernels.
  * See also doc/zisofs_format.txt and doc/zisofs2_format.txt.
- * The filter will not be installed if its output size is not smaller than
- * the size of the input stream.
- * This is only enabled if the use of libz was enabled at compile time.
+ * Depending on parameter flag the filter might not be installed if its output
+ * size is not smaller than the size of the input stream.
+ * This is only enabled if the use of zlib was enabled at compile time.
  * @param file
  *      The data file node which shall show filtered content.
  * @param flag
@@ -9169,7 +9177,7 @@ int iso_node_zf_by_magic(IsoNode *node, int flag);
  * gzip is a compression format which is used by programs gzip and gunzip.
  * The filter will not be installed if its output size is not smaller than
  * the size of the input stream.
- * This is only enabled if the use of libz was enabled at compile time.
+ * This is only enabled if the use of zlib was enabled at compile time.
  * @param file
  *      The data file node which shall show filtered content.
  * @param flag
