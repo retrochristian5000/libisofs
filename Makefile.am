@@ -278,6 +278,7 @@ EXTRA_DIST = \
 	doc/doxygen.conf.in \
 	doc/Tutorial \
 	README \
+	README_AI \
 	AUTHORS \
 	COPYRIGHT \
 	COPYING \
