@@ -1254,7 +1254,7 @@ struct iso_stream
  *
  * @since 0.6.2
  */
-int iso_init();
+int iso_init(void);
 
 /**
  * Initialize libisofs. Before any usage of the library you must either call
@@ -1274,7 +1274,7 @@ int iso_init_with_flag(int flag);
  *
  * @since 0.6.2
  */
-void iso_finish();
+void iso_finish(void);
 
 /**
  * Override the reply of libc function nl_langinfo(CODESET) which may or may
@@ -7329,7 +7329,7 @@ int iso_set_abort_severity(char *severity);
  *
  * @since 0.6.2
  */
-void *iso_get_messenger();
+void *iso_get_messenger(void);
 
 /**
  * Take a ref to the given IsoFileSource.

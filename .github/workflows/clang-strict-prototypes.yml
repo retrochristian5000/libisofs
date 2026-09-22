@@ -1,0 +1,40 @@
+name: Clang strict prototypes
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'libisofs/libisofs.h'
+      - 'libisofs/messages.c'
+      - 'test/test_strict_prototypes.py'
+      - '.github/workflows/clang-strict-prototypes.yml'
+  pull_request:
+    paths:
+      - 'libisofs/libisofs.h'
+      - 'libisofs/messages.c'
+      - 'test/test_strict_prototypes.py'
+      - '.github/workflows/clang-strict-prototypes.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  clang:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Audit declarations and definitions
+        run: python3 test/test_strict_prototypes.py
+      - name: Compile public header with strict prototypes
+        shell: bash
+        run: |
+          cat > /tmp/libisofs-strict-prototypes.c <<'EOF'
+          #define HAVE_STDINT_H 1
+          #include "libisofs/libisofs.h"
+          int main(void)
+          {
+              return 0;
+          }
+          EOF
+          clang -std=c17 -Wall -Wextra -Werror -Wstrict-prototypes \
+            -I. -fsyntax-only /tmp/libisofs-strict-prototypes.c

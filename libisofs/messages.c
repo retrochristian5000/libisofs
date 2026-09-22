@@ -228,12 +228,12 @@ LIBJTE_MISCONFIGURATION_ = 0;
     return 1;
 }
 
-int iso_init()
+int iso_init(void)
 {
     return iso_init_with_flag(0);
 }
 
-void iso_finish()
+void iso_finish(void)
 {
     libiso_msgs_destroy(&libiso_msgr, 0);
     iso_node_xinfo_dispose_cloners(0);
@@ -809,7 +809,7 @@ int iso_sev_to_text(int severity_number, char **severity_name)
  *
  * @return the handle. Do only use with compatible
  */
-void *iso_get_messenger()
+void *iso_get_messenger(void)
 {
     return libiso_msgr;
 }
