@@ -23,6 +23,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            autoconf automake clang libtool pkg-config zlib1g-dev
       - name: Audit declarations and definitions
         run: python3 test/test_strict_prototypes.py
       - name: Compile public header with strict prototypes
@@ -38,3 +43,17 @@ jobs:
           EOF
           clang -std=c17 -Wall -Wextra -Werror -Wstrict-prototypes \
             -I. -fsyntax-only /tmp/libisofs-strict-prototypes.c
+
+      - name: Build library with strict prototypes
+        shell: bash
+        run: |
+          ./bootstrap
+          mkdir build-strict
+          cd build-strict
+          CFLAGS='-O2 -Werror=strict-prototypes' ../configure \
+            --disable-shared \
+            --enable-static \
+            --disable-libacl \
+            --disable-libjte \
+            --disable-ldconfig-at-install
+          make -j2

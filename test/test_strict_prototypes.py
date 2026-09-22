@@ -23,14 +23,20 @@ for definition in (
 ):
     assert definition in messages, f"missing strict definition: {definition}"
 
-old_style = re.compile(
-    r"\b(?:iso_init|iso_finish|iso_get_messenger)\s*\(\s*\)"
+old_header_declarations = (
+    "int iso_init();",
+    "void iso_finish();",
+    "void *iso_get_messenger();",
 )
-for path, text in (
-    ("libisofs/libisofs.h", header),
-    ("libisofs/messages.c", messages),
-):
-    match = old_style.search(text)
-    assert match is None, f"old-style empty parameter list remains in {path}"
+for declaration in old_header_declarations:
+    assert declaration not in header, f"old-style declaration remains: {declaration}"
+
+old_definitions = (
+    "int iso_init()",
+    "void iso_finish()",
+    "void *iso_get_messenger()",
+)
+for definition in old_definitions:
+    assert definition not in messages, f"old-style definition remains: {definition}"
 
 print("libisofs strict-prototype audit passed")
