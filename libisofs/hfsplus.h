@@ -187,10 +187,10 @@ struct hfsplus_catfile_common
 #define HFSPLUS_MAX_DECOMPOSE_LEN 4
 
 extern uint16_t (*hfsplus_decompose_pages[256])[HFSPLUS_MAX_DECOMPOSE_LEN + 1];
-void make_hfsplus_decompose_pages();
+void make_hfsplus_decompose_pages(void);
 
 extern uint16_t *hfsplus_class_pages[256];
-void make_hfsplus_class_pages();
+void make_hfsplus_class_pages(void);
 
 extern const uint16_t hfsplus_casefold[];
 

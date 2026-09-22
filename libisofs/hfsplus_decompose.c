@@ -1051,7 +1051,7 @@ static uint16_t decompose_pages[16 * 256][HFSPLUS_MAX_DECOMPOSE_LEN + 1];
 uint16_t (*hfsplus_decompose_pages[256])[HFSPLUS_MAX_DECOMPOSE_LEN + 1];
 
 
-void make_hfsplus_decompose_pages()
+void make_hfsplus_decompose_pages(void)
 {
     int page_idx = -1, char_idx, i;
     uint16_t *rpt, *page_pt, *value_pt;

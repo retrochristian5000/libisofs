@@ -7,6 +7,9 @@ import re
 ROOT = Path(__file__).resolve().parents[1]
 header = (ROOT / "libisofs/libisofs.h").read_text(encoding="utf-8")
 messages = (ROOT / "libisofs/messages.c").read_text(encoding="utf-8")
+hfs_header = (ROOT / "libisofs/hfsplus.h").read_text(encoding="utf-8")
+hfs_decompose = (ROOT / "libisofs/hfsplus_decompose.c").read_text(encoding="utf-8")
+hfs_classes = (ROOT / "libisofs/hfsplus_classes.c").read_text(encoding="utf-8")
 
 expected = (
     "int iso_init(void);",
@@ -38,5 +41,24 @@ old_definitions = (
 )
 for definition in old_definitions:
     assert definition not in messages, f"old-style definition remains: {definition}"
+
+for declaration in (
+    "void make_hfsplus_decompose_pages(void);",
+    "void make_hfsplus_class_pages(void);",
+):
+    assert declaration in hfs_header, f"missing HFS+ strict prototype: {declaration}"
+
+for old_declaration in (
+    "void make_hfsplus_decompose_pages();",
+    "void make_hfsplus_class_pages();",
+):
+    assert old_declaration not in hfs_header, (
+        f"old-style HFS+ declaration remains: {old_declaration}"
+    )
+
+assert "void make_hfsplus_decompose_pages(void)" in hfs_decompose
+assert "void make_hfsplus_decompose_pages()" not in hfs_decompose
+assert "void make_hfsplus_class_pages(void)" in hfs_classes
+assert "void make_hfsplus_class_pages()" not in hfs_classes
 
 print("libisofs strict-prototype audit passed")

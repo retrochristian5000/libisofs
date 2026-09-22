@@ -432,7 +432,7 @@ uint16_t *hfsplus_class_pages[256];
 
 static uint16_t class_pages[19][256];
 
-void make_hfsplus_class_pages()
+void make_hfsplus_class_pages(void)
 {
     int page_idx = -1, char_idx, i;
     uint16_t *rpt, *page_pt;

@@ -6,12 +6,18 @@ on:
     paths:
       - 'libisofs/libisofs.h'
       - 'libisofs/messages.c'
+      - 'libisofs/hfsplus.h'
+      - 'libisofs/hfsplus_decompose.c'
+      - 'libisofs/hfsplus_classes.c'
       - 'test/test_strict_prototypes.py'
       - '.github/workflows/clang-strict-prototypes.yml'
   pull_request:
     paths:
       - 'libisofs/libisofs.h'
       - 'libisofs/messages.c'
+      - 'libisofs/hfsplus.h'
+      - 'libisofs/hfsplus_decompose.c'
+      - 'libisofs/hfsplus_classes.c'
       - 'test/test_strict_prototypes.py'
       - '.github/workflows/clang-strict-prototypes.yml'
 
@@ -52,7 +58,7 @@ jobs:
           ./bootstrap
           mkdir build-strict
           cd build-strict
-          CFLAGS='-O2 -Werror=strict-prototypes' ../configure \
+          CC=clang CFLAGS='-O2 -Werror=strict-prototypes' ../configure \
             --disable-shared \
             --enable-static \
             --disable-libacl \
