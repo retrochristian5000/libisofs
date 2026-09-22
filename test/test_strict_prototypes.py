@@ -10,6 +10,7 @@ messages = (ROOT / "libisofs/messages.c").read_text(encoding="utf-8")
 hfs_header = (ROOT / "libisofs/hfsplus.h").read_text(encoding="utf-8")
 hfs_decompose = (ROOT / "libisofs/hfsplus_decompose.c").read_text(encoding="utf-8")
 hfs_classes = (ROOT / "libisofs/hfsplus_classes.c").read_text(encoding="utf-8")
+demo = (ROOT / "demo/demo.c").read_text(encoding="utf-8")
 
 expected = (
     "int iso_init(void);",
@@ -60,5 +61,7 @@ assert "void make_hfsplus_decompose_pages(void)" in hfs_decompose
 assert "void make_hfsplus_decompose_pages()" not in hfs_decompose
 assert "void make_hfsplus_class_pages(void)" in hfs_classes
 assert "void make_hfsplus_class_pages()" not in hfs_classes
+assert "void iso_help(void)" in demo
+assert "void iso_help()" not in demo
 
 print("libisofs strict-prototype audit passed")

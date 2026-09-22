@@ -251,7 +251,7 @@ void iso_usage(char **argv)
     printf("%s [OPTIONS] DIRECTORY OUTPUT\n", argv[0]);
 }
 
-void iso_help()
+void iso_help(void)
 {
     printf(
         "Options:\n"
