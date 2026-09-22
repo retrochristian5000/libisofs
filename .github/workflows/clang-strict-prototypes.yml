@@ -35,6 +35,8 @@ jobs:
         run: |
           cat > /tmp/libisofs-strict-prototypes.c <<'EOF'
           #define HAVE_STDINT_H 1
+          #include <sys/types.h>
+          #include <time.h>
           #include "libisofs/libisofs.h"
           int main(void)
           {
