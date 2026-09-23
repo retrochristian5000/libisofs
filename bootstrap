@@ -2,19 +2,26 @@
 
 aclocal -I .
 
-if libtoolize --copy --force
+# Respect an explicitly selected GNU libtoolize. On macOS GNU Libtool is
+# conventionally installed as glibtoolize to avoid colliding with Apple's
+# unrelated /usr/bin/libtool.
+if test -n "$LIBTOOLIZE"
 then
-  dummy=dummy
+  "$LIBTOOLIZE" --copy --force || exit 1
+elif test "$(uname -s 2>/dev/null)" = Darwin && command -v glibtoolize >/dev/null 2>&1
+then
+  glibtoolize --copy --force || exit 1
+elif command -v libtoolize >/dev/null 2>&1
+then
+  libtoolize --copy --force || exit 1
+elif command -v glibtoolize >/dev/null 2>&1
+then
+  glibtoolize --copy --force || exit 1
 else
-  if glibtoolize --copy --force
-  then
-    set +x
-    echo "bootstrap: Note: glibtoolize succeeded where libtoolize failed"
-    set -x
-  else
-    exit 1
-  fi
+  echo "bootstrap: GNU libtoolize/glibtoolize not found" >&2
+  exit 1
 fi
+
 autoconf
 
 automake --foreign --add-missing --copy --include-deps
