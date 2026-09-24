@@ -446,8 +446,8 @@ int create_image(IsoImage *image, const char *image_path,
             break;
         default:
             iso_msg_submit(image->id, ISO_BOOT_IMAGE_NOT_VALID, 0,
-                          "Invalid image size %d Kb. Must be one of 1.2, 1.44"
-                          "or 2.88 Mb", iso_stream_get_size(stream) / 1024);
+                          "Invalid image size %ld Kb. Must be one of 1.2, 1.44"
+                          "or 2.88 Mb", (long) (iso_stream_get_size(stream) / 1024));
             return ISO_BOOT_IMAGE_NOT_VALID;
             break;
         }
