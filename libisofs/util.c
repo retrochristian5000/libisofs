@@ -78,12 +78,14 @@ char *iso_local_make_abspath(const char *path)
 
     cwd_len = strlen(cwd);
     path_len = strlen(path);
-    need = cwd_len + (cwd_len > 1 ? 1 : 0) + path_len + 1;
-    if (need < cwd_len || need < path_len) {
+    need = cwd_len > 1 ? 1 : 0;
+    if (cwd_len > ((size_t) -1) - need ||
+        path_len > ((size_t) -1) - cwd_len - need - 1) {
         free(cwd);
         errno = ENOMEM;
         return NULL;
     }
+    need += cwd_len + path_len + 1;
 
     result = malloc(need);
     if (result == NULL) {
