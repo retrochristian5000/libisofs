@@ -327,18 +327,23 @@ dnl ts A90409
 AC_ARG_ENABLE(zlib,
 [  --enable-zlib           Enable use of zlib by libisofs, default=yes],
                , enable_zlib=yes)
+ZLIB_LIBS=
 if test "x$enable_zlib" = xyes; then
-dnl Check whether there is the header for zlib. 
+dnl Check whether there is the header for zlib.
 dnl If not, erase this macro which would enable use of compress2() and others.
-dnl Linking fails on SuSE 9.0 because zlib has compress2() but lacks  
+dnl Linking fails on SuSE 9.0 because zlib has compress2() but lacks
 dnl compressBound(). So compressBound is the more modern thing to test.
-dnl The empty parameter after "compressBound" causes -lz.
+dnl Keep the dependency explicit rather than leaking -lz through global LIBS,
+dnl so static consumers can recover it from libisofs-1.pc.
     ZLIB_DEF="-DLibisofs_with_zliB"
-    AC_CHECK_HEADER(zlib.h, AC_CHECK_LIB(z, compressBound, , ZLIB_DEF= ), ZLIB_DEF= )
+    AC_CHECK_HEADER(zlib.h,
+        AC_CHECK_LIB(z, compressBound, [ZLIB_LIBS="-lz"], [ZLIB_DEF=]),
+        [ZLIB_DEF=])
 else
     ZLIB_DEF=
 fi
 AC_SUBST(ZLIB_DEF)
+AC_SUBST(ZLIB_LIBS)
 
 dnl ts B00927
 AC_ARG_ENABLE(libjte,

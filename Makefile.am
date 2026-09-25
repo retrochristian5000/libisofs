@@ -95,7 +95,7 @@ libisofs_libisofs_la_SOURCES = \
 	libisofs/md5.h \
 	libisofs/md5.c
 libisofs_libisofs_la_LIBADD= \
-	$(THREAD_LIBS)
+	$(THREAD_LIBS) $(ZLIB_LIBS)
 libinclude_HEADERS = \
 	libisofs/libisofs.h
 
