@@ -8,5 +8,5 @@ Description: ISO9660 filesystem creation library
 Version: @VERSION@
 Requires: 
 Libs: -L${libdir} -lisofs
-Libs.private: @THREAD_LIBS@ @ZLIB_LIBS@
+Libs.private: @THREAD_LIBS@ @ICONV_LIBS@ @ZLIB_LIBS@
 Cflags: -I${includedir}/libisofs
