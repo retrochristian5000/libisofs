@@ -149,7 +149,8 @@ void ds_free_data(IsoDataSource *src)
  * and standard POSIX I/O calls.
  * 
  * @param path
- *     The path of the file
+ *     The host-filesystem path of the file. Relative paths are anchored to
+ *     the current working directory when this object is created.
  * @param src
  *     Will be filled with the pointer to the newly created data source.
  * @return
@@ -158,6 +159,7 @@ void ds_free_data(IsoDataSource *src)
 int iso_data_source_new_from_file(const char *path, IsoDataSource **src)
 {
     int ret;
+    char *absolute_path;
     struct file_data_src *data;
     IsoDataSource *ds;
 
@@ -165,31 +167,33 @@ int iso_data_source_new_from_file(const char *path, IsoDataSource **src)
         return ISO_NULL_POINTER;
     }
 
-    /* ensure we have read access to the file */
-    ret = iso_eaccess(path);
+    absolute_path = iso_local_make_abspath(path);
+    if (absolute_path == NULL) {
+        return errno == ENOMEM ? ISO_OUT_OF_MEM : ISO_FILE_ERROR;
+    }
+
+    /* ensure we have read access to the same anchored host path we retain */
+    ret = iso_eaccess(absolute_path);
     if (ret < 0) {
+        free(absolute_path);
         return ret;
     }
 
     data = malloc(sizeof(struct file_data_src));
     if (data == NULL) {
+        free(absolute_path);
         return ISO_OUT_OF_MEM;
     }
 
     ds = malloc(sizeof(IsoDataSource));
     if (ds == NULL) {
+        free(absolute_path);
         free(data);
         return ISO_OUT_OF_MEM;
     }
 
     /* fill data fields */
-    data->path = strdup(path);
-    if (data->path == NULL) {
-        free(data);
-        free(ds);
-        return ISO_OUT_OF_MEM;
-    }
-
+    data->path = absolute_path;
     data->fd = -1;
     ds->version = 0;
     ds->refcount = 1;

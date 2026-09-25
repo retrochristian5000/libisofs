@@ -38,6 +38,13 @@
 #define DIV_UP(n,div) ((n + div - 1) / div)
 #define ROUND_UP(n,mul) (DIV_UP(n, mul) * mul)
 
+/*
+ * Return a malloc()ed absolute host-filesystem path without applying ISO-tree
+ * path rules. Relative paths are anchored to the current working directory at
+ * call time; symlink components are deliberately not resolved.
+ */
+char *iso_local_make_abspath(const char *path);
+
 int int_pow(int base, int power);
 
 /**

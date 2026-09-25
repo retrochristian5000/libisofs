@@ -7114,7 +7114,9 @@ void iso_data_source_unref(IsoDataSource *src);
  * accessing regular files or block devices with ISO images.
  *
  * @param path
- *     The absolute path of the file
+ *     Host-filesystem path of the file. Absolute paths are used as given.
+ *     Relative paths are anchored to the current working directory when the
+ *     data source is created, so later directory changes cannot retarget it.
  * @param src
  *     Will be filled with the pointer to the newly created data source.
  * @return

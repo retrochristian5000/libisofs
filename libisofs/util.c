@@ -44,6 +44,63 @@
 static int iso_iconv_debug = 0;
 
 
+char *iso_local_make_abspath(const char *path)
+{
+    char *cwd = NULL, *result;
+    size_t cwd_size = 256, cwd_len, path_len, need;
+    int saved_errno;
+
+    if (path == NULL)
+        return NULL;
+    if (path[0] == '/' || path[0] == 0)
+        return strdup(path);
+
+    while (1) {
+        cwd = malloc(cwd_size);
+        if (cwd == NULL)
+            return NULL;
+        if (getcwd(cwd, cwd_size) != NULL)
+            break;
+
+        saved_errno = errno;
+        free(cwd);
+        cwd = NULL;
+        if (saved_errno != ERANGE) {
+            errno = saved_errno;
+            return NULL;
+        }
+        if (cwd_size > ((size_t) -1) / 2) {
+            errno = ENOMEM;
+            return NULL;
+        }
+        cwd_size *= 2;
+    }
+
+    cwd_len = strlen(cwd);
+    path_len = strlen(path);
+    need = cwd_len + (cwd_len > 1 ? 1 : 0) + path_len + 1;
+    if (need < cwd_len || need < path_len) {
+        free(cwd);
+        errno = ENOMEM;
+        return NULL;
+    }
+
+    result = malloc(need);
+    if (result == NULL) {
+        free(cwd);
+        return NULL;
+    }
+
+    memcpy(result, cwd, cwd_len);
+    need = cwd_len;
+    if (cwd_len > 1)
+        result[need++] = '/';
+    memcpy(result + need, path, path_len + 1);
+    free(cwd);
+    return result;
+}
+
+
 struct iso_iconv_handle {
     int status;  /* bit0= open , bit1= identical mapping */
     iconv_t descr;

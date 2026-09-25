@@ -695,14 +695,20 @@ int lfs_get_by_path(IsoFilesystem *fs, const char *path, IsoFileSource **file)
     int ret;
     IsoFileSource *src;
     struct stat info;
-    char *ptr, *brk_info, *component;
+    char *ptr, *brk_info, *component, *absolute_path;
     
     if (fs == NULL || path == NULL || file == NULL) {
         return ISO_NULL_POINTER;
     }
+
+    absolute_path = iso_local_make_abspath(path);
+    if (absolute_path == NULL) {
+        return errno == ENOMEM ? ISO_OUT_OF_MEM : ISO_FILE_ERROR;
+    }
+    path = absolute_path;
     
     /* 
-     * first of all check that it is a valid path.
+     * first of all check that it is a valid host-filesystem path.
      */
     if (lstat(path, &info) != 0) {
         int err;
@@ -728,21 +734,25 @@ int lfs_get_by_path(IsoFilesystem *fs, const char *path, IsoFileSource **file)
             err = ISO_FILE_ERROR;
             break;
         }
+        free(absolute_path);
         return err;
     }
     
     /* ok, path is valid. create the file source */
     ret = lfs_get_root(fs, &src);
     if (ret < 0) {
+        free(absolute_path);
         return ret;
     }
     if (!strcmp(path, "/")) {
         /* we are looking for root */
         *file = src;
+        free(absolute_path);
         return ISO_SUCCESS;
     }
 
     ptr = strdup(path);
+    free(absolute_path);
     if (ptr == NULL) {
         iso_file_source_unref(src);
         return ISO_OUT_OF_MEM;
@@ -755,7 +765,12 @@ int lfs_get_by_path(IsoFilesystem *fs, const char *path, IsoFileSource **file)
             child = src;
         } else if (!strcmp(component, "..")) {
             child = ((_LocalFsFileSource*)src->data)->parent;
-            iso_file_source_ref(child);
+            if (child == NULL) {
+                child = src;
+                iso_file_source_ref(child);
+            } else {
+                iso_file_source_ref(child);
+            }
             iso_file_source_unref(src);
         } else {
             ret = iso_file_source_new_lfs(src, component, &child);
