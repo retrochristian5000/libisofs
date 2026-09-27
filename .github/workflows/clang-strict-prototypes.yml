@@ -70,7 +70,7 @@ jobs:
           ./bootstrap
           mkdir build-strict
           cd build-strict
-          CC=clang CFLAGS='-O2 -Werror=strict-prototypes' ../configure \
+          CC=clang CFLAGS='-O2' ../configure \
             --disable-shared \
             --enable-static \
             --disable-verbose-debug \
@@ -81,4 +81,4 @@ jobs:
             echo "configure incorrectly enabled verbose debug" >&2
             exit 1
           fi
-          make -j2
+          make -j2 CFLAGS='-O2 -Werror=strict-prototypes'

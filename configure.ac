@@ -70,7 +70,6 @@ test "$prefix" = "NONE" && prefix=$ac_default_prefix
 dnl ts B90405 : Disabled on advise of Ross Burton
 dnl AM_MAINTAINER_MODE
 
-AC_PROG_CC
 AM_PROG_CC_C_O
 AC_C_CONST
 AC_C_INLINE

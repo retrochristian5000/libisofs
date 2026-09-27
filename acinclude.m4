@@ -69,14 +69,15 @@ AC_DEFUN([LIBBURNIA_CHECK_ICONV],
   libburnia_liconv="no"
   libburnia_save_LIBS="$LIBS"
   LIBS="$LIBS -liconv"
-  AC_TRY_LINK([#include <stdlib.h>
-#include <iconv.h>],
-    [iconv_t cd = iconv_open("","");
-     iconv(cd,NULL,NULL,NULL,NULL);
-     iconv_close(cd);],
-     [libburnia_liconv="yes"],
-     [LIBS="$libburnia_save_LIBS"]
-  )
+  AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM(
+       [[#include <stdlib.h>
+#include <iconv.h>]],
+       [[iconv_t cd = iconv_open("", "");
+         iconv(cd, NULL, NULL, NULL, NULL);
+         iconv_close(cd);]])],
+    [libburnia_liconv="yes"],
+    [LIBS="$libburnia_save_LIBS"])
   AC_MSG_RESULT([$libburnia_liconv])
 
   if test x"$libburnia_save_LIBS" = x"$LIBS"
@@ -88,12 +89,15 @@ AC_DEFUN([LIBBURNIA_CHECK_ICONV],
 
   dnl Check for iconv(..., const char **inbuf, ...)
   AC_MSG_CHECKING([for const qualifier with iconv() ])
-  AC_TRY_COMPILE([
-#include <stdlib.h>
+  AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM(
+       [[#include <stdlib.h>
 #include <iconv.h>
-size_t iconv (iconv_t cd, char * *inbuf, size_t *inbytesleft, char * *outbuf, size_t *outbytesleft);
-], [], [libburnia_iconv_const=""], [libburnia_iconv_const="const"]
-  )
+size_t iconv (iconv_t cd, char * *inbuf, size_t *inbytesleft,
+              char * *outbuf, size_t *outbytesleft);]],
+       [[]])],
+    [libburnia_iconv_const=""],
+    [libburnia_iconv_const="const"])
   AC_DEFINE_UNQUOTED([ICONV_CONST], [$libburnia_iconv_const])
   test -z "$libburnia_iconv_const" && libburnia_iconv_const="no"
   AC_MSG_RESULT([$libburnia_iconv_const])
@@ -108,8 +112,9 @@ AC_DEFUN([LIBBURNIA_ASSERT_ICONV],
   then
     dnl Check for the essential gestures of libisofs/util.c
     AC_MSG_CHECKING([for iconv() to be accessible now ])
-    AC_TRY_LINK([
-#include <stdlib.h>
+    AC_LINK_IFELSE(
+      [AC_LANG_PROGRAM(
+         [[#include <stdlib.h>
 #include <wchar.h>
 #include <string.h>
 #include <errno.h>
@@ -119,12 +124,12 @@ AC_DEFUN([LIBBURNIA_ASSERT_ICONV],
 #include <iconv.h>
 #include <locale.h>
 #include <langinfo.h>
-#include <unistd.h>],
-[iconv_t cd = iconv_open("","");
-iconv(cd,NULL,NULL,NULL,NULL);
-iconv_close(cd);
-], [iconv_test="yes"], [iconv_test="no"]
-    )
+#include <unistd.h>]],
+         [[iconv_t cd = iconv_open("", "");
+           iconv(cd, NULL, NULL, NULL, NULL);
+           iconv_close(cd);]])],
+      [iconv_test="yes"],
+      [iconv_test="no"])
     AC_MSG_RESULT([$iconv_test])
     if test x$iconv_test = xno
     then
@@ -150,8 +155,9 @@ AC_DEFUN([LIBISOFS_ASSERT_VERS_LIBS],
 [
     libburnia_save_LDFLAGS="$LDFLAGS"
     LDFLAGS="$LDFLAGS -Wl,--version-script=$srcdir/libisofs/libisofs.ver"
-    AC_TRY_LINK([#include <stdio.h>], [printf("Hello\n");],
-                [vers_libs_test="yes"], [vers_libs_test="no"])
+    AC_LINK_IFELSE(
+        [AC_LANG_PROGRAM([[#include <stdio.h>]], [[printf("Hello\\n");]])],
+        [vers_libs_test="yes"], [vers_libs_test="no"])
     if test x$vers_libs_test = xyes
     then
         LIBLDFLAGS="-Wl,--version-script=$srcdir/libisofs/libisofs.ver"
@@ -216,10 +222,12 @@ dnl It tests whether the global variable exists and is suitable for
 dnl integer arithmetics.
 AC_DEFUN([LIBBURNIA_TRY_TIMEZONE],
 [
-    echo -n "checking for timezone variable ... "
-    AC_TRY_LINK([ #include <time.h> ], [long int i; i = 1 - timezone; ], 
-                [LIBBURNIA_TIMEZONE="timezone"], [LIBBURNIA_TIMEZONE="0"]
-    )
-    echo "$LIBBURNIA_TIMEZONE"
+    AC_MSG_CHECKING([for timezone variable])
+    AC_LINK_IFELSE(
+        [AC_LANG_PROGRAM([[#include <time.h>]],
+                         [[long int i = 1 - timezone; (void) i;]])],
+        [LIBBURNIA_TIMEZONE="timezone"],
+        [LIBBURNIA_TIMEZONE="0"])
+    AC_MSG_RESULT([$LIBBURNIA_TIMEZONE])
 ])
 
