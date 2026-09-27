@@ -14,6 +14,41 @@ esac
 ])
 
 
+dnl Prefer LLVM companion tools when the selected C compiler is Clang.
+dnl This keeps static archives and Libtool's symbol/object inspection in the
+dnl same toolchain family without overriding explicit AR/RANLIB/NM/etc.
+dnl The linker is intentionally not selected here: some targets (notably
+dnl Darwin arm64e) still require the platform linker for relocation support.
+AC_DEFUN([LIBISOFS_PREFER_LLVM_TOOLS],
+[
+  AC_CACHE_CHECK([whether the C compiler is Clang],
+                 [libisofs_cv_c_compiler_is_clang],
+    [AC_COMPILE_IFELSE(
+       [AC_LANG_PROGRAM(
+          [[#ifndef __clang__
+#error not clang
+#endif]],
+          [[]])],
+       [libisofs_cv_c_compiler_is_clang=yes],
+       [libisofs_cv_c_compiler_is_clang=no])])
+
+  AS_IF([test "x$libisofs_cv_c_compiler_is_clang" = xyes], [
+    AC_CHECK_TOOLS([AR], [llvm-ar ar], [ar])
+    AC_CHECK_TOOLS([RANLIB], [llvm-ranlib ranlib], [:])
+    AC_CHECK_TOOLS([NM], [llvm-nm nm], [nm])
+    AC_CHECK_TOOLS([OBJDUMP], [llvm-objdump objdump], [objdump])
+    AC_CHECK_TOOLS([STRIP], [llvm-strip strip], [:])
+
+    AS_CASE([$host_os],
+      [darwin*], [
+        AC_CHECK_TOOLS([DSYMUTIL], [llvm-dsymutil dsymutil], [:])
+        AC_CHECK_TOOLS([LIPO], [llvm-lipo lipo], [:])
+        AC_CHECK_TOOLS([OTOOL], [llvm-otool otool], [:])
+      ])
+  ])
+])
+
+
 AC_DEFUN([TARGET_SHIZZLE],
 [
   ARCH=""

@@ -45,7 +45,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y \
-            autoconf automake clang libtool pkg-config zlib1g-dev
+            autoconf automake clang libtool llvm pkg-config zlib1g-dev
       - name: Audit declarations and definitions
         run: python3 test/test_strict_prototypes.py
       - name: Compile public header with strict prototypes
@@ -81,4 +81,12 @@ jobs:
             echo "configure incorrectly enabled verbose debug" >&2
             exit 1
           fi
+          for tool in llvm-ar llvm-ranlib llvm-nm llvm-objdump llvm-strip; do
+            command -v "$tool" >/dev/null
+          done
+          grep -Eq '^AR=.*llvm-ar' libtool
+          grep -Eq '^RANLIB=.*llvm-ranlib' libtool
+          grep -Eq '^NM=.*llvm-nm' libtool
+          grep -Eq '^OBJDUMP=.*llvm-objdump' libtool
+          grep -Eq '^STRIP=.*llvm-strip' libtool
           make -j2 CFLAGS='-O2 -Werror=strict-prototypes'

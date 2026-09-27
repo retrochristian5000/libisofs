@@ -74,6 +74,10 @@ AM_PROG_CC_C_O
 AC_C_CONST
 AC_C_INLINE
 
+dnl Keep the binary utilities in the same toolchain family as Clang where
+dnl compatible LLVM replacements exist. Explicit user selections still win.
+LIBISOFS_PREFER_LLVM_TOOLS
+
 dnl Large file support
 AC_SYS_LARGEFILE
 AC_FUNC_FSEEKO
