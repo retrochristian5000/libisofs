@@ -5,7 +5,7 @@ dnl Provided under the terms of the GNU General Public License version 2 or late
 
 AC_DEFUN([LIBBURNIA_SET_FLAGS],
 [
-case $target_os in
+case $host_os in
 freebsd* | netbsd*)
         LDFLAGS="$LDFLAGS -L/usr/local/lib"
         CPPFLAGS="$CPPFLAGS -I/usr/local/include"
@@ -19,12 +19,12 @@ AC_DEFUN([TARGET_SHIZZLE],
   ARCH=""
   LIBBURNIA_PKGCONFDIR="$libdir"/pkgconfig
 
-  AC_MSG_CHECKING([target operating system])
+  AC_MSG_CHECKING([host operating system])
 
   LIBBURNIA_SUPP_ACL=none
   LIBBURNIA_SUPP_FATTR=none
   LIBBURNIA_LDCONFIG_CMD="echo 'No ldconfig run performed. If needed, configure manually for:'"
-  case $target in
+  case $host in
     *-*-linux*)
       ARCH=linux
       LIBBURN_ARCH_LIBS=

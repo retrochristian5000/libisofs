@@ -4,6 +4,11 @@ on:
   push:
     branches: [master]
     paths:
+      - 'configure.ac'
+      - 'acinclude.m4'
+      - 'Makefile.am'
+      - 'libisofs-1.pc.in'
+      - 'bootstrap'
       - 'libisofs/libisofs.h'
       - 'libisofs/messages.c'
       - 'libisofs/hfsplus.h'
@@ -14,6 +19,11 @@ on:
       - '.github/workflows/clang-strict-prototypes.yml'
   pull_request:
     paths:
+      - 'configure.ac'
+      - 'acinclude.m4'
+      - 'Makefile.am'
+      - 'libisofs-1.pc.in'
+      - 'bootstrap'
       - 'libisofs/libisofs.h'
       - 'libisofs/messages.c'
       - 'libisofs/hfsplus.h'
@@ -63,7 +73,12 @@ jobs:
           CC=clang CFLAGS='-O2 -Werror=strict-prototypes' ../configure \
             --disable-shared \
             --enable-static \
+            --disable-verbose-debug \
             --disable-libacl \
             --disable-libjte \
             --disable-ldconfig-at-install
+          if grep '^DEFS = ' Makefile | grep -q 'LIBISOFS_VERBOSE_DEBUG'; then
+            echo "configure incorrectly enabled verbose debug" >&2
+            exit 1
+          fi
           make -j2

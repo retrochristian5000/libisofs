@@ -1,9 +1,9 @@
 AC_INIT([libisofs], [1.5.9], [http://libburnia-project.org])
-AC_PREREQ([2.50])
+AC_PREREQ([2.69])
 dnl AC_CONFIG_HEADER([config.h])	
 
 AC_CANONICAL_HOST
-AC_CANONICAL_TARGET
+AC_USE_SYSTEM_EXTENSIONS
 
 LIBBURNIA_SET_FLAGS
 
@@ -70,6 +70,7 @@ test "$prefix" = "NONE" && prefix=$ac_default_prefix
 dnl ts B90405 : Disabled on advise of Ross Burton
 dnl AM_MAINTAINER_MODE
 
+AC_PROG_CC
 AM_PROG_CC_C_O
 AC_C_CONST
 AC_C_INLINE
@@ -78,9 +79,8 @@ dnl Large file support
 AC_SYS_LARGEFILE
 AC_FUNC_FSEEKO
 AC_CHECK_FUNC([fseeko])
-if test ! $ac_cv_func_fseeko; then
-   AC_MSG_ERROR([Libisofs requires largefile support.])
-fi
+AS_IF([test "x$ac_cv_func_fseeko" != xyes],
+      [AC_MSG_ERROR([Libisofs requires largefile support.])])
 
 dnl If iconv(3) is in an extra lib, then it gets added to variable LIBS.
 dnl If not, then no -liconv will be added.
@@ -108,9 +108,6 @@ dnl GNU libtool checks them by default/unconditionally, but slibtool does not.
 dnl So accept the ugly double check and -DHAVE_*_H arguments with GNU libtool.
 AC_CHECK_HEADERS(stdint.h inttypes.h stdlib.h)
 
-dnl Use GNU extensions if available
-AC_DEFINE(_GNU_SOURCE, 1)
-
 dnl Check for tm_gmtoff field in struct tm
 AC_CHECK_MEMBER([struct tm.tm_gmtoff],
 	[AC_DEFINE(HAVE_TM_GMTOFF, 1,
@@ -118,11 +115,15 @@ AC_CHECK_MEMBER([struct tm.tm_gmtoff],
 	,
 	[#include <time.h>])
 
-dnl Check if non standard timegm() function is available
-AC_CHECK_DECL([timegm], 
-	[AC_DEFINE(HAVE_TIMEGM, 1, [Define this if timegm function is available])],
-	,
-	[#include <time.h>])
+dnl Check if non standard timegm() function is both declared and linkable
+AC_MSG_CHECKING([for timegm()])
+AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM([[#include <time.h>]],
+                     [[struct tm tm_value = {0}; (void) timegm(&tm_value);]])],
+    [AC_MSG_RESULT([yes])
+     AC_DEFINE([HAVE_TIMEGM], [1],
+               [Define this if timegm function is available])],
+    [AC_MSG_RESULT([no])])
 
 dnl Whether timezone is an integer variable
 AH_TEMPLATE([Libburnia_timezonE], [Either timezone or 0])
@@ -134,11 +135,15 @@ else
    AC_DEFINE([Libburnia_timezonE], [0])
 fi
 
-dnl Check if non standard eaccess() function is available
-AC_CHECK_DECL([eaccess], 
-	[AC_DEFINE(HAVE_EACCESS, 1, [Define this if eaccess function is available])],
-	,
-	[#include <unistd.h>])
+dnl Check if non standard eaccess() function is both declared and linkable
+AC_MSG_CHECKING([for eaccess()])
+AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM([[#include <unistd.h>]],
+                     [[(void) eaccess(".", R_OK);]])],
+    [AC_MSG_RESULT([yes])
+     AC_DEFINE([HAVE_EACCESS], [1],
+               [Define this if eaccess function is available])],
+    [AC_MSG_RESULT([no])])
 
 THREAD_LIBS=-lpthread
 AC_SUBST(THREAD_LIBS)
@@ -168,9 +173,15 @@ else
 fi
 
 dnl Verbose debug to make libisofs issue more debug messages
-AC_ARG_ENABLE(verbose-debug,
-[  --enable-verbose-debug  Enable verbose debug messages, default=no],
-	AC_DEFINE(LIBISOFS_VERBOSE_DEBUG, 1))
+AC_ARG_ENABLE([verbose-debug],
+[AS_HELP_STRING([--enable-verbose-debug],
+                [Enable verbose debug messages @<:@default=no@:>@])],
+[], [enable_verbose_debug=no])
+AS_CASE([$enable_verbose_debug],
+        [yes], [AC_DEFINE([LIBISOFS_VERBOSE_DEBUG], [1],
+                         [Define to enable verbose libisofs debug messages.])],
+        [no], [],
+        [AC_MSG_ERROR([--enable-verbose-debug accepts only yes or no])])
 
 
 dnl Determine target directory for libisofs-*.pc
@@ -185,15 +196,20 @@ AC_ARG_ENABLE(libacl,
 [  --enable-libacl         Enable use of ACL functions by libisofs, default=yes],
                , enable_libacl=yes)
 LIBACL_DEF=
-has_acl_h_but_no_func=0
+has_acl_h_but_no_libacl=0
+LIBACL_LIBS=
 if test x$LIBBURNIA_SUPP_ACL = xlibacl
 then
     if test x$enable_libacl = xyes; then
 dnl Check whether there is libacl-devel and libacl-runtime.
 dnl If not, erase this macro which would enable use of acl_to_text and others
         LIBACL_DEF="-DLibisofs_with_aaip_acL"
-dnl The empty yes case obviously causes -lacl to be linked
-        AC_CHECK_HEADER(sys/acl.h, AC_CHECK_LIB(acl, acl_to_text, , has_acl_h_but_no_libacl=1 ), LIBACL_DEF= )
+dnl Keep -lacl explicit so static consumers receive it through pkg-config.
+        AC_CHECK_HEADER(sys/acl.h,
+                        AC_CHECK_LIB(acl, acl_to_text,
+                                     [LIBACL_LIBS="-lacl"],
+                                     [has_acl_h_but_no_libacl=1]),
+                        [LIBACL_DEF=])
         if test "$has_acl_h_but_no_libacl" = 1
         then
             AC_CHECK_LIB(c, acl_to_text, X= , LIBACL_DEF= )
@@ -212,6 +228,7 @@ else
     echo "disabled local processing of ACL"
 fi
 AC_SUBST(LIBACL_DEF)
+AC_SUBST(LIBACL_LIBS)
 
 
 dnl ts A90123 - B80508
@@ -357,13 +374,19 @@ dnl ts B00927
 AC_ARG_ENABLE(libjte,
 [  --enable-libjte         Enable use of libjte >= 2.0 by libisofs, default=yes],
                , enable_libjte=yes)
+LIBJTE_LIBS=
 if test "x$enable_libjte" = xyes; then
     LIBJTE_DEF="-DLibisofs_with_libjtE"
-    AC_CHECK_HEADER(libjte/libjte.h, AC_CHECK_LIB(jte, libjte_set_checksum_algorithm, , LIBJTE_DEF= ), LIBJTE_DEF= )
+    dnl Keep -ljte explicit for the library link and static pkg-config users.
+    AC_CHECK_HEADER(libjte/libjte.h,
+                    AC_CHECK_LIB(jte, libjte_set_checksum_algorithm,
+                                 [LIBJTE_LIBS="-ljte"], [LIBJTE_DEF=]),
+                    [LIBJTE_DEF=])
 else
     LIBJTE_DEF=
 fi
 AC_SUBST(LIBJTE_DEF)
+AC_SUBST(LIBJTE_LIBS)
 
 
 dnl ts C50224
