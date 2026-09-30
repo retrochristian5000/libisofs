@@ -5,14 +5,18 @@ on:
     branches: [master]
     paths:
       - 'configure.ac'
+      - 'acinclude.m4'
       - 'libisofs/libisofs.h'
       - 'test/test_arm64e_abi.c'
+      - 'test/test_build_sed.sh'
       - '.github/workflows/arm64e-abi.yml'
   pull_request:
     paths:
       - 'configure.ac'
+      - 'acinclude.m4'
       - 'libisofs/libisofs.h'
       - 'test/test_arm64e_abi.c'
+      - 'test/test_build_sed.sh'
       - '.github/workflows/arm64e-abi.yml'
 
 permissions:
@@ -23,6 +27,8 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+      - name: Audit build sed expressions with macOS sed
+        run: test/test_build_sed.sh
 
       - name: Verify Apple arm64e compiler target
         shell: bash

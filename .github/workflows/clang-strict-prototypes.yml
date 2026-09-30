@@ -16,6 +16,7 @@ on:
       - 'libisofs/hfsplus_classes.c'
       - 'demo/demo.c'
       - 'test/test_strict_prototypes.py'
+      - 'test/test_build_sed.sh'
       - '.github/workflows/clang-strict-prototypes.yml'
   pull_request:
     paths:
@@ -31,6 +32,7 @@ on:
       - 'libisofs/hfsplus_classes.c'
       - 'demo/demo.c'
       - 'test/test_strict_prototypes.py'
+      - 'test/test_build_sed.sh'
       - '.github/workflows/clang-strict-prototypes.yml'
 
 permissions:
@@ -41,6 +43,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Audit build sed expressions
+        run: test/test_build_sed.sh
       - name: Install build prerequisites
         run: |
           sudo apt-get update

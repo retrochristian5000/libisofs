@@ -74,7 +74,7 @@ AC_DEFUN([TARGET_SHIZZLE],
       LIBBURN_ARCH_LIBS=-lcam
 
       # This may later be overridden by configure --enable-libdir-pkgconfig
-      LIBBURNIA_PKGCONFDIR=$(echo "$libdir" | sed 's/\/lib$/\/libdata/')/pkgconfig
+      LIBBURNIA_PKGCONFDIR=$(printf '%s\n' "$libdir" | "$SED" 's,/lib$,/libdata,')/pkgconfig
       ;;
     *)
       ARCH=
