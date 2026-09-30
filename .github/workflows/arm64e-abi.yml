@@ -1,0 +1,68 @@
+name: Darwin arm64e ABI
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'configure.ac'
+      - 'libisofs/libisofs.h'
+      - 'test/test_arm64e_abi.c'
+      - '.github/workflows/arm64e-abi.yml'
+  pull_request:
+    paths:
+      - 'configure.ac'
+      - 'libisofs/libisofs.h'
+      - 'test/test_arm64e_abi.c'
+      - '.github/workflows/arm64e-abi.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  arm64e:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify Apple arm64e compiler target
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = arm64
+          xcrun clang -arch arm64e -dM -E -x c /dev/null > /tmp/arm64e-macros.txt
+          grep -q '^#define __APPLE__ 1$' /tmp/arm64e-macros.txt
+          grep -q '^#define __arm64e__ 1$' /tmp/arm64e-macros.txt
+
+          cat > /tmp/libisofs-arm64e-feature.c <<'EOF'
+          #ifndef __has_feature
+          #define __has_feature(x) 0
+          #endif
+          #if !__has_feature(ptrauth_calls)
+          #error arm64e target lacks ptrauth_calls
+          #endif
+          int main(void) { return 0; }
+          EOF
+          xcrun clang -arch arm64e -std=c17 -Werror -fsyntax-only             /tmp/libisofs-arm64e-feature.c
+
+      - name: Compile callback ABI probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          common_flags=(
+            -std=c17
+            -Wall
+            -Wextra
+            -Werror
+            -Wstrict-prototypes
+            -Werror=incompatible-function-pointer-types
+            -Wcast-function-type-strict
+            -I.
+          )
+
+          # Keep the source valid for ordinary Apple arm64 as well.
+          xcrun clang -arch arm64 "${common_flags[@]}" -fsyntax-only             test/test_arm64e_abi.c
+
+          # arm64e must preserve typed authenticated indirect-call boundaries.
+          xcrun clang -arch arm64e "${common_flags[@]}" -S -emit-llvm             test/test_arm64e_abi.c -o /tmp/libisofs-arm64e.ll
+          grep -q '"ptrauth-calls"' /tmp/libisofs-arm64e.ll
+          grep -q '"ptrauth"' /tmp/libisofs-arm64e.ll

@@ -74,6 +74,44 @@ AM_PROG_CC_C_O
 AC_C_CONST
 AC_C_INLINE
 
+dnl Detect the compiler-selected Darwin arm64e ABI independently of the
+dnl machine which happens to run configure. This matters for cross builds
+dnl using e.g. "clang -arch arm64e" on another Darwin architecture.
+AC_CACHE_CHECK([whether the C compiler targets Apple arm64e],
+               [libisofs_cv_cc_arm64e],
+  [AC_COMPILE_IFELSE(
+     [AC_LANG_SOURCE([[
+#if !defined(__APPLE__) || !defined(__arm64e__)
+#error not Apple arm64e
+#endif
+int libisofs_arm64e_target_probe(void) { return 0; }
+]])],
+     [libisofs_cv_cc_arm64e=yes],
+     [libisofs_cv_cc_arm64e=no])])
+
+AS_IF([test "x$libisofs_cv_cc_arm64e" = xyes], [
+  AC_CACHE_CHECK([whether arm64e pointer-authenticated calls are enabled],
+                 [libisofs_cv_cc_arm64e_ptrauth_calls],
+    [AC_COMPILE_IFELSE(
+       [AC_LANG_SOURCE([[
+#ifndef __has_feature
+#define __has_feature(x) 0
+#endif
+#if !__has_feature(ptrauth_calls)
+#error arm64e without ptrauth_calls
+#endif
+int libisofs_arm64e_ptrauth_probe(void) { return 0; }
+]])],
+       [libisofs_cv_cc_arm64e_ptrauth_calls=yes],
+       [libisofs_cv_cc_arm64e_ptrauth_calls=no])])
+
+  AS_IF([test "x$libisofs_cv_cc_arm64e_ptrauth_calls" != xyes],
+        [AC_MSG_ERROR([Apple arm64e target requires Clang pointer-authenticated calls])])
+
+  AC_DEFINE([LIBISOFS_ARM64E_ABI], [1],
+            [Define to 1 when compiling for the Apple arm64e ABI.])
+])
+
 dnl Keep the binary utilities in the same toolchain family as Clang where
 dnl compatible LLVM replacements exist. Explicit user selections still win.
 LIBISOFS_PREFER_LLVM_TOOLS
