@@ -72,6 +72,9 @@ jobs:
         shell: bash
         run: |
           ./bootstrap
+          # Obsolete probe macros can silently change configure results on
+          # newer Autoconf. Treat any future obsolete-macro use as a CI error.
+          autoconf -W none,obsolete,error
           mkdir build-strict
           cd build-strict
           CC=clang CFLAGS='-O2' ../configure \

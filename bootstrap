@@ -1,7 +1,9 @@
 #!/bin/sh -x
 
-aclocal -I .
-
+# Install the Libtool macro files before aclocal builds aclocal.m4. Otherwise
+# the result can depend on whether a matching Libtool installation happens to
+# be visible in aclocal's global search path.
+#
 # Respect an explicitly selected GNU libtoolize. On macOS GNU Libtool is
 # conventionally installed as glibtoolize to avoid colliding with Apple's
 # unrelated /usr/bin/libtool.
@@ -22,6 +24,6 @@ else
   exit 1
 fi
 
+aclocal -I .
 autoconf
-
 automake --foreign --add-missing --copy --include-deps

@@ -150,7 +150,10 @@ dnl To abort configuration if iconv() still cannot be compiled
 LIBBURNIA_ASSERT_ICONV
 
 
-m4_ifdef([LT_INIT], [LT_INIT], [AC_PROG_LIBTOOL])
+dnl GNU Libtool documents LT_INIT as the supported entry point.
+dnl bootstrap installs the Libtool M4 files before aclocal, so there is no
+dnl need to retain the deprecated AC_PROG_LIBTOOL compatibility alias here.
+LT_INIT
 AC_SUBST(LIBTOOL_DEPS)
 # LIBTOOL="$LIBTOOL --silent"
 
