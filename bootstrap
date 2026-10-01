@@ -10,15 +10,14 @@
 if test -n "$LIBTOOLIZE"
 then
   "$LIBTOOLIZE" --copy --force || exit 1
-elif test "$(uname -s 2>/dev/null)" = Darwin && command -v glibtoolize >/dev/null 2>&1
+elif command -v glibtoolize >/dev/null 2>&1
 then
+  # macOS installs GNU Libtool under the collision-free glibtoolize name.
+  # Prefer it wherever present instead of spawning uname just to identify Darwin.
   glibtoolize --copy --force || exit 1
 elif command -v libtoolize >/dev/null 2>&1
 then
   libtoolize --copy --force || exit 1
-elif command -v glibtoolize >/dev/null 2>&1
-then
-  glibtoolize --copy --force || exit 1
 else
   echo "bootstrap: GNU libtoolize/glibtoolize not found" >&2
   exit 1

@@ -73,8 +73,13 @@ AC_DEFUN([TARGET_SHIZZLE],
       LIBBURNIA_SUPP_FATTR=extattr
       LIBBURN_ARCH_LIBS=-lcam
 
-      # This may later be overridden by configure --enable-libdir-pkgconfig
-      LIBBURNIA_PKGCONFDIR=$(printf '%s\n' "$libdir" | "$SED" 's,/lib$,/libdata,')/pkgconfig
+      # This may later be overridden by configure --enable-libdir-pkgconfig.
+      # Avoid a sed subprocess for a suffix rewrite that POSIX shell parameter
+      # expansion can express without depending on a particular core utility.
+      case "$libdir" in
+        */lib) LIBBURNIA_PKGCONFDIR="${libdir%/lib}/libdata/pkgconfig" ;;
+        *)     LIBBURNIA_PKGCONFDIR="$libdir/pkgconfig" ;;
+      esac
       ;;
     *)
       ARCH=

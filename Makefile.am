@@ -240,7 +240,7 @@ demo_demo_SOURCES = demo/demo.c
 # which George Danchev reported Dec 03 2011.
 # Learned from: http://www.gnu.org/software/automake/manual/automake.html#Clean
 clean-local:
-	-rm -rf demo/.libs
+	-$(RM) -r demo/.libs
 
 ## ========================================================================= ##
 
@@ -256,12 +256,12 @@ doc/html: doc/doxygen.conf
 
 install-data-local: 
 	if [ -d doc/html ]; then \
-		$(mkinstalldirs) $(docdir)/html; \
-		$(INSTALL_DATA) doc/html/* $(docdir)/html; \
+		$(MKDIR_P) "$(docdir)/html"; \
+		$(INSTALL_DATA) doc/html/* "$(docdir)/html"; \
 	fi
 
 uninstall-local:
-	rm -rf $(docdir)
+	$(RM) -r "$(docdir)"
 
 ## ========================================================================= ##
 
