@@ -251,7 +251,7 @@ AC_ARG_ENABLE(debug,
 [  --enable-debug          Disable aggressive optimizations, default=yes],
               , enable_debug=yes)
 if test x$enable_debug != xyes; then
-    if test x$GCC = xyes -a x$libisofs_user_cflags_set != xyes; then
+    if test x$GCC = xyes && test x$libisofs_user_cflags_set != xyes; then
         # Remove Autoconf's default "-g -O2" only when the caller did not
         # supply CFLAGS. Use the sed selected by AC_PROG_SED and preserve the
         # input byte-for-byte through printf instead of unquoted echo.
@@ -261,7 +261,7 @@ if test x$enable_debug != xyes; then
     fi
     CFLAGS="-DNDEBUG $CFLAGS"
 else
-    if test x$GCC = xyes -a x$libisofs_user_cflags_set != xyes; then
+    if test x$GCC = xyes && test x$libisofs_user_cflags_set != xyes; then
         CFLAGS="-g -pedantic -Wall -Wextra -Wno-unused-parameter -Wno-char-subscripts $CFLAGS"
     fi
     CFLAGS="-DDEBUG $CFLAGS"
