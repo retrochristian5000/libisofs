@@ -232,6 +232,17 @@ else
     CFLAGS="-DDEBUG $CFLAGS"
 fi
 
+dnl Allow integrators which only consume the library to skip the demo program.
+dnl Keep the historical standalone behavior as the default.
+AC_ARG_ENABLE([demo],
+[AS_HELP_STRING([--enable-demo],
+                [Build the demo program @<:@default=yes@:>@])],
+[], [enable_demo=yes])
+AS_CASE([$enable_demo],
+        [yes|no], [],
+        [AC_MSG_ERROR([--enable-demo accepts only yes or no])])
+AM_CONDITIONAL([BUILD_DEMO], [test "x$enable_demo" = xyes])
+
 dnl Verbose debug to make libisofs issue more debug messages
 AC_ARG_ENABLE([verbose-debug],
 [AS_HELP_STRING([--enable-verbose-debug],

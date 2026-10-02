@@ -105,8 +105,10 @@ install-exec-hook:
 ## ========================================================================= ##
 
 ## Build demo applications
+if BUILD_DEMO
 noinst_PROGRAMS = \
-	demo/demo 
+	demo/demo
+endif
 
 #	demo/tree \
 #	demo/find \
