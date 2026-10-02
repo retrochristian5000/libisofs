@@ -266,7 +266,7 @@ install-data-local:
 uninstall-local:
 	$(RM) -r "$(docdir)"
 
-endif BUILD_DOCS
+endif
 
 ## ========================================================================= ##
 
