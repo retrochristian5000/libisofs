@@ -247,6 +247,7 @@ clean-local:
 ## ========================================================================= ##
 
 ## Build documentation (You need Doxygen for this to work)
+if BUILD_DOCS
 
 docdir = $(DESTDIR)$(prefix)/share/doc/$(PACKAGE)-$(VERSION)
 
@@ -256,7 +257,7 @@ doc/html: doc/doxygen.conf
 	$(RM) -r doc/html; \
 	doxygen doc/doxygen.conf;
 
-install-data-local: 
+install-data-local:
 	if [ -d doc/html ]; then \
 		$(MKDIR_P) "$(docdir)/html"; \
 		$(INSTALL_DATA) doc/html/* "$(docdir)/html"; \
@@ -264,6 +265,8 @@ install-data-local:
 
 uninstall-local:
 	$(RM) -r "$(docdir)"
+
+endif BUILD_DOCS
 
 ## ========================================================================= ##
 

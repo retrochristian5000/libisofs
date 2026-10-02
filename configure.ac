@@ -242,6 +242,16 @@ AS_CASE([$enable_demo],
         [yes|no], [],
         [AC_MSG_ERROR([--enable-demo accepts only yes or no])])
 AM_CONDITIONAL([BUILD_DEMO], [test "x$enable_demo" = xyes])
+dnl Allow embedded/library-only consumers to omit generated API documentation.
+dnl Standalone libisofs keeps its historical documentation behavior by default.
+AC_ARG_ENABLE([docs],
+[AS_HELP_STRING([--enable-docs],
+                [Build/install Doxygen documentation @<:@default=yes@:>@])],
+[], [enable_docs=yes])
+AS_CASE([$enable_docs],
+        [yes|no], [],
+        [AC_MSG_ERROR([--enable-docs accepts only yes or no])])
+AM_CONDITIONAL([BUILD_DOCS], [test "x$enable_docs" = xyes])
 
 dnl Verbose debug to make libisofs issue more debug messages
 AC_ARG_ENABLE([verbose-debug],
