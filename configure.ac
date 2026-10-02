@@ -122,6 +122,38 @@ int libisofs_arm64e_ptrauth_probe(void) { return 0; }
   AC_DEFINE([LIBISOFS_ARM64E_ABI], [1],
             [Define to 1 when compiling for the Apple arm64e ABI.])
 ])
+dnl Keep the public libisofs C ABI aligned with modern 64-bit Darwin.
+dnl libisofs.h exposes off_t/time_t/ino_t/size_t and typed function pointers,
+dnl so a width mismatch here can become memory corruption at an API boundary.
+AC_CACHE_CHECK([for the 64-bit Darwin libisofs ABI contract],
+               [libisofs_cv_darwin_abi64],
+  [AC_COMPILE_IFELSE(
+     [AC_LANG_SOURCE([[
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <time.h>
+typedef int (*libisofs_darwin_xinfo_func)(void *, int);
+#if defined(__APPLE__) && defined(__LP64__)
+typedef char libisofs_assert_void_ptr_64[(sizeof(void *) == 8) ? 1 : -1];
+typedef char libisofs_assert_size_t_64[(sizeof(size_t) == 8) ? 1 : -1];
+typedef char libisofs_assert_ssize_t_64[(sizeof(ssize_t) == 8) ? 1 : -1];
+typedef char libisofs_assert_off_t_64[(sizeof(off_t) == 8) ? 1 : -1];
+typedef char libisofs_assert_time_t_64[(sizeof(time_t) == 8) ? 1 : -1];
+typedef char libisofs_assert_ino_t_64[(sizeof(ino_t) == 8) ? 1 : -1];
+typedef char libisofs_assert_func_ptr_64[
+    (sizeof(libisofs_darwin_xinfo_func) == 8) ? 1 : -1];
+#endif
+int libisofs_darwin_abi_probe(void) { return 0; }
+]])],
+     [libisofs_cv_darwin_abi64=yes],
+     [libisofs_cv_darwin_abi64=no])])
+AS_CASE([$host_os],
+  [darwin*], [
+    AS_IF([test "x$libisofs_cv_darwin_abi64" != xyes],
+          [AC_MSG_ERROR([64-bit Darwin libisofs ABI width contract failed])])
+    AC_DEFINE([LIBISOFS_DARWIN_ABI64], [1],
+              [Define to 1 for a validated 64-bit Darwin ABI build.])
+  ])
 
 dnl Keep the binary utilities in the same toolchain family as Clang where
 dnl compatible LLVM replacements exist. Explicit user selections still win.
