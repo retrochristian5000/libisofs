@@ -243,25 +243,25 @@ AC_SUBST(ARCH)
 AC_SUBST(LIBBURN_ARCH_LIBS)
 
 
-dnl See if the user wants aggressive optimizations of the code
+dnl See if the user wants aggressive optimizations of the code.
+dnl A caller-supplied CFLAGS is an explicit compiler policy boundary: preserve
+dnl it instead of prepending libisofs' historical optimization/warning bundle.
+dnl The DEBUG/NDEBUG semantic define still follows --enable-debug.
 AC_ARG_ENABLE(debug,
 [  --enable-debug          Disable aggressive optimizations, default=yes],
               , enable_debug=yes)
 if test x$enable_debug != xyes; then
-    if test x$GCC = xyes; then
+    if test x$GCC = xyes -a x$libisofs_user_cflags_set != xyes; then
         # Remove Autoconf's default "-g -O2" only when the caller did not
         # supply CFLAGS. Use the sed selected by AC_PROG_SED and preserve the
         # input byte-for-byte through printf instead of unquoted echo.
-        if test x$libisofs_user_cflags_set != xyes
-        then
-            CFLAGS="$(printf '%s\n' "$CFLAGS" | "$SED" -e 's/^-g -O2$//')"
-        fi
+        CFLAGS="$(printf '%s\n' "$CFLAGS" | "$SED" -e 's/^-g -O2$//')"
         CFLAGS="-O3 $CFLAGS"
         CFLAGS="-fexpensive-optimizations $CFLAGS"
     fi
     CFLAGS="-DNDEBUG $CFLAGS"
 else
-    if test x$GCC = xyes; then
+    if test x$GCC = xyes -a x$libisofs_user_cflags_set != xyes; then
         CFLAGS="-g -pedantic -Wall -Wextra -Wno-unused-parameter -Wno-char-subscripts $CFLAGS"
     fi
     CFLAGS="-DDEBUG $CFLAGS"
