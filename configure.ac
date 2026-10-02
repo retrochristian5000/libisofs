@@ -149,10 +149,13 @@ int libisofs_darwin_abi_probe(void) { return 0; }
      [libisofs_cv_darwin_abi64=no])])
 AS_CASE([$host_os],
   [darwin*], [
-    AS_IF([test "x$libisofs_cv_darwin_abi64" != xyes],
-          [AC_MSG_ERROR([64-bit Darwin libisofs ABI width contract failed])])
-    AC_DEFINE([LIBISOFS_DARWIN_ABI64], [1],
-              [Define to 1 for a validated 64-bit Darwin ABI build.])
+    AS_CASE([$host_cpu],
+      [x86_64|aarch64|arm64|arm64e], [
+        AS_IF([test "x$libisofs_cv_darwin_abi64" != xyes],
+              [AC_MSG_ERROR([64-bit Darwin libisofs ABI width contract failed])])
+        AC_DEFINE([LIBISOFS_DARWIN_ABI64], [1],
+                  [Define to 1 for a validated 64-bit Darwin ABI build.])
+      ])
   ])
 
 dnl Keep the binary utilities in the same toolchain family as Clang where
