@@ -552,8 +552,10 @@ AC_SUBST(LIBBURNIA_LDCONFIG_CMD)
 
 AC_CONFIG_FILES([
 	Makefile
-	doc/doxygen.conf
 	version.h
 	libisofs-1.pc
 	])
+AS_IF([test "x$enable_docs" = xyes], [
+	AC_CONFIG_FILES([doc/doxygen.conf])
+])
 AC_OUTPUT
