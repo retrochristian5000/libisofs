@@ -1,0 +1,160 @@
+name: macOS library build
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'configure.ac'
+      - 'acinclude.m4'
+      - 'Makefile.am'
+      - 'libisofs-1.pc.in'
+      - 'bootstrap'
+      - 'libisofs/**'
+      - 'test/test_build_sed.sh'
+      - '.github/workflows/macos-build.yml'
+  pull_request:
+    paths:
+      - 'configure.ac'
+      - 'acinclude.m4'
+      - 'Makefile.am'
+      - 'libisofs-1.pc.in'
+      - 'bootstrap'
+      - 'libisofs/**'
+      - 'test/test_build_sed.sh'
+      - '.github/workflows/macos-build.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.arch }} on ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-26
+            arch: arm64
+            deployment: '11.0'
+          - runner: macos-15-intel
+            arch: x86_64
+            deployment: '10.15'
+    runs-on: ${{ matrix.runner }}
+
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: '1'
+      HOMEBREW_NO_INSTALL_CLEANUP: '1'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build prerequisites
+        run: brew install autoconf automake libtool m4 make pkgconf
+
+      - name: Build and validate static libisofs
+        shell: bash
+        env:
+          ARCH: ${{ matrix.arch }}
+          DEPLOYMENT: ${{ matrix.deployment }}
+        run: |
+          set -euo pipefail
+
+          export SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"
+          export MACOSX_DEPLOYMENT_TARGET="$DEPLOYMENT"
+          export CC="$(xcrun --find clang)"
+          export M4="$(brew --prefix m4)/bin/m4"
+          export LIBTOOLIZE="$(brew --prefix libtool)/bin/glibtoolize"
+          MAKE="$(command -v gmake)"
+
+          test -x "$CC"
+          test -x "$M4"
+          test -x "$LIBTOOLIZE"
+          test -x "$MAKE"
+
+          export CFLAGS="-O2 -std=gnu11 -Werror=strict-prototypes -arch $ARCH -isysroot $SDKROOT -mmacosx-version-min=$DEPLOYMENT"
+          export CPPFLAGS=
+          export LDFLAGS=
+
+          test/test_build_sed.sh
+          ./bootstrap
+          autoconf -W none,obsolete,error
+
+          build_dir="$RUNNER_TEMP/libisofs-$ARCH-build"
+          prefix="$RUNNER_TEMP/libisofs-$ARCH-prefix"
+          mkdir -p "$build_dir"
+          cd "$build_dir"
+
+          "$GITHUB_WORKSPACE/configure" \
+            --prefix="$prefix" \
+            --disable-shared \
+            --enable-static \
+            --disable-demo \
+            --disable-docs \
+            --disable-versioned-libs \
+            --disable-libacl \
+            --disable-xattr \
+            --disable-lfa-flags \
+            --disable-projid \
+            --disable-dir-rec-size-check \
+            --disable-debug \
+            --disable-libjte \
+            --disable-ldconfig-at-install
+
+          "$MAKE" -j2
+
+          archive="$build_dir/libisofs/.libs/libisofs.a"
+          test -f "$archive"
+          archive_archs="$(xcrun lipo -archs "$archive")"
+          read -r -a archive_arch_list <<< "$archive_archs"
+          test "${#archive_arch_list[@]}" -eq 1
+          test "${archive_arch_list[0]}" = "$ARCH"
+
+          "$MAKE" \
+            install-libLTLIBRARIES \
+            install-libincludeHEADERS \
+            install-pkgconfigDATA
+
+          pc_file="$(find "$prefix" -path '*/pkgconfig/libisofs-1.pc' -print -quit)"
+          test -n "$pc_file"
+          test -f "$prefix/include/libisofs/libisofs.h"
+
+          pkgconf="$(command -v pkg-config || command -v pkgconf)"
+          test -x "$pkgconf"
+          export PKG_CONFIG_PATH="$(dirname "$pc_file")"
+
+          static_libs="$("$pkgconf" --static --libs libisofs-1)"
+          case " $static_libs " in
+            *" -lz "*) ;;
+            *) printf 'error: static libisofs metadata lost -lz: %s\n' "$static_libs" >&2; exit 1 ;;
+          esac
+          case " $static_libs " in
+            *" -lpthread "*) ;;
+            *) printf 'error: static libisofs metadata lost -lpthread: %s\n' "$static_libs" >&2; exit 1 ;;
+          esac
+
+          cat > "$RUNNER_TEMP/libisofs-consumer.c" <<'EOF'
+          #include <sys/types.h>
+          #include <time.h>
+          #include <libisofs.h>
+
+          int main(void)
+          {
+              if (iso_init() < 0)
+                  return 1;
+              iso_finish();
+              return 0;
+          }
+          EOF
+
+          read -r -a pc_flags <<< "$("$pkgconf" --static --cflags --libs libisofs-1)"
+          "$CC" \
+            -std=gnu11 \
+            -Werror=strict-prototypes \
+            -arch "$ARCH" \
+            -isysroot "$SDKROOT" \
+            -mmacosx-version-min="$DEPLOYMENT" \
+            "$RUNNER_TEMP/libisofs-consumer.c" \
+            "${pc_flags[@]}" \
+            -o "$RUNNER_TEMP/libisofs-consumer"
+
+          "$RUNNER_TEMP/libisofs-consumer"
