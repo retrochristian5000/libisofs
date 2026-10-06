@@ -1,6 +1,5 @@
 AC_INIT([libisofs], [1.5.9], [http://libburnia-project.org])
 AC_PREREQ([2.69])
-dnl AC_CONFIG_HEADER([config.h])	
 
 AC_CANONICAL_HOST
 AC_USE_SYSTEM_EXTENSIONS
@@ -196,7 +195,7 @@ AC_PROG_INSTALL
 
 dnl GNU libtool checks them by default/unconditionally, but slibtool does not.
 dnl So accept the ugly double check and -DHAVE_*_H arguments with GNU libtool.
-AC_CHECK_HEADERS([stdint.h inttypes.h stdlib.h])
+AC_CHECK_HEADERS_ONCE([stdint.h inttypes.h stdlib.h])
 
 dnl Check for tm_gmtoff field in struct tm
 AC_CHECK_MEMBER([struct tm.tm_gmtoff],
