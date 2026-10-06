@@ -196,7 +196,7 @@ AC_PROG_INSTALL
 
 dnl GNU libtool checks them by default/unconditionally, but slibtool does not.
 dnl So accept the ugly double check and -DHAVE_*_H arguments with GNU libtool.
-AC_CHECK_HEADERS(stdint.h inttypes.h stdlib.h)
+AC_CHECK_HEADERS([stdint.h inttypes.h stdlib.h])
 
 dnl Check for tm_gmtoff field in struct tm
 AC_CHECK_MEMBER([struct tm.tm_gmtoff],
@@ -247,9 +247,10 @@ dnl See if the user wants aggressive optimizations of the code.
 dnl A caller-supplied CFLAGS is an explicit compiler policy boundary: preserve
 dnl it instead of prepending libisofs' historical optimization/warning bundle.
 dnl The DEBUG/NDEBUG semantic define still follows --enable-debug.
-AC_ARG_ENABLE(debug,
-[  --enable-debug          Disable aggressive optimizations, default=yes],
-              , enable_debug=yes)
+AC_ARG_ENABLE([debug],
+[AS_HELP_STRING([--enable-debug],
+                [Disable aggressive optimizations @<:@default=yes@:>@])],
+[], [enable_debug=yes])
 if test x$enable_debug != xyes; then
     if test x$GCC = xyes && test x$libisofs_user_cflags_set != xyes; then
         # Remove Autoconf's default "-g -O2" only when the caller did not
@@ -308,9 +309,10 @@ LIBBURNIA_SET_PKGCONFIG
 
 dnl Add compiler-specific flags
 
-AC_ARG_ENABLE(libacl,
-[  --enable-libacl         Enable use of ACL functions by libisofs, default=yes],
-               , enable_libacl=yes)
+AC_ARG_ENABLE([libacl],
+[AS_HELP_STRING([--enable-libacl],
+                [Enable use of ACL functions by libisofs @<:@default=yes@:>@])],
+[], [enable_libacl=yes])
 LIBACL_DEF=
 has_acl_h_but_no_libacl=0
 LIBACL_LIBS=
@@ -348,12 +350,14 @@ AC_SUBST(LIBACL_LIBS)
 
 
 dnl ts A90123 - B80508
-AC_ARG_ENABLE(xattr,
-              [  --enable-xattr          Enable use of extended file attributes by libisofs, default=yes],
-              , enable_xattr=yes)
-AC_ARG_ENABLE(xattr-h-pref-attr,
-              [  --enable-xattr-h-pref-attr  Prefer include file attr/xattr.h over sys/xattr.h, default=no],
-              , enable_xattr_h_pref_attr=no)
+AC_ARG_ENABLE([xattr],
+[AS_HELP_STRING([--enable-xattr],
+                [Enable extended file attributes @<:@default=yes@:>@])],
+[], [enable_xattr=yes])
+AC_ARG_ENABLE([xattr-h-pref-attr],
+[AS_HELP_STRING([--enable-xattr-h-pref-attr],
+                [Prefer attr/xattr.h over sys/xattr.h @<:@default=no@:>@])],
+[], [enable_xattr_h_pref_attr=no])
 
 XATTR_DEF=
 XATTR_ADDON_DEF=
@@ -433,9 +437,10 @@ AC_SUBST(XATTR_DEF)
 
 dnl ts C40713
 LFA_DEF=
-AC_ARG_ENABLE(lfa-flags,
-[  --enable-lfa-flags      Enable processing of Linux chattr(1) flags, default=yes],
-               , enable_lfa_flags=yes)
+AC_ARG_ENABLE([lfa-flags],
+[AS_HELP_STRING([--enable-lfa-flags],
+                [Enable Linux chattr(1) flags @<:@default=yes@:>@])],
+[], [enable_lfa_flags=yes])
 if test x"$enable_lfa_flags" = xyes; then
     AC_CHECK_HEADER(linux/fs.h, LFA_DEF="-DLibisofs_with_aaip_lfa_flagS",
                     LFA_DEF=)
@@ -449,9 +454,10 @@ AC_SUBST(LFA_DEF)
 
 dnl ts C41009
 PROJID_DEF=
-AC_ARG_ENABLE(projid,
-[  --enable-projid      Enable processing of XFS-style project id, default=yes],
-               , enable_projid=yes)
+AC_ARG_ENABLE([projid],
+[AS_HELP_STRING([--enable-projid],
+                [Enable XFS-style project id @<:@default=yes@:>@])],
+[], [enable_projid=yes])
 if test x"$enable_projid" = xyes; then
     AC_CHECK_HEADER(linux/fs.h, PROJID_DEF="-DLibisofs_with_aaip_projiD",
                     PROJID_DEF=)
@@ -465,9 +471,10 @@ AC_SUBST(PROJID_DEF)
 
 
 dnl ts A90409
-AC_ARG_ENABLE(zlib,
-[  --enable-zlib           Enable use of zlib by libisofs, default=yes],
-               , enable_zlib=yes)
+AC_ARG_ENABLE([zlib],
+[AS_HELP_STRING([--enable-zlib],
+                [Enable use of zlib by libisofs @<:@default=yes@:>@])],
+[], [enable_zlib=yes])
 ZLIB_LIBS=
 if test "x$enable_zlib" = xyes; then
 dnl Check whether there is the header for zlib.
@@ -487,9 +494,10 @@ AC_SUBST(ZLIB_DEF)
 AC_SUBST(ZLIB_LIBS)
 
 dnl ts B00927
-AC_ARG_ENABLE(libjte,
-[  --enable-libjte         Enable use of libjte >= 2.0 by libisofs, default=yes],
-               , enable_libjte=yes)
+AC_ARG_ENABLE([libjte],
+[AS_HELP_STRING([--enable-libjte],
+                [Enable use of libjte >= 2.0 @<:@default=yes@:>@])],
+[], [enable_libjte=yes])
 LIBJTE_LIBS=
 if test "x$enable_libjte" = xyes; then
     LIBJTE_DEF="-DLibisofs_with_libjtE"
@@ -506,9 +514,10 @@ AC_SUBST(LIBJTE_LIBS)
 
 
 dnl ts C50224
-AC_ARG_ENABLE(dir-rec-size-check,
-[  --enable-dir-rec-size-check     Detailed check of directory size prediction, default=no],
-               , dir_rec_size_check=no)
+AC_ARG_ENABLE([dir-rec-size-check],
+[AS_HELP_STRING([--enable-dir-rec-size-check],
+                [Check directory size prediction in detail @<:@default=no@:>@])],
+[], [dir_rec_size_check=no])
 if test x$enable_dir_rec_size_check = xyes; then
     DIR_REC_SIZE_CHECK="-DLibisofs_dir_rec_size_checK"
     echo "enabled  detailed check of directory size prediction"
@@ -523,9 +532,10 @@ AC_SUBST(DIR_REC_SIZE_CHECK)
 # Since libisofs obeys strict ABI backward compatibility, it needs only the
 # simple feature to declare function names "global:" or "local:". Only the
 # global ones are visible to applications at library load time.
-AC_ARG_ENABLE(versioned-libs,
-[  --enable-versioned-libs Enable strict symbol encapsulation , default=yes],
-               , enable_versioned_libs=yes)
+AC_ARG_ENABLE([versioned-libs],
+[AS_HELP_STRING([--enable-versioned-libs],
+                [Enable strict symbol encapsulation @<:@default=yes@:>@])],
+[], [enable_versioned_libs=yes])
 if test x$enable_versioned_libs = xyes; then
     vers_libs_test=no
     LIBISOFS_ASSERT_VERS_LIBS
@@ -539,9 +549,10 @@ else
     echo "disabled strict symbol encapsulation"
 fi
 
-AC_ARG_ENABLE(ldconfig-at-install,
-[  --enable-ldconfig-at-install    On GNU/Linux run ldconfig, default=yes],
-               , ldconfig_at_install=yes)
+AC_ARG_ENABLE([ldconfig-at-install],
+[AS_HELP_STRING([--enable-ldconfig-at-install],
+                [Run ldconfig on GNU/Linux @<:@default=yes@:>@])],
+[], [ldconfig_at_install=yes])
 if test x$ldconfig_at_install = xyes; then 
     dummy=dummy
 else

@@ -219,9 +219,10 @@ if test "x$LIBBURNIA_PKGCONFDIR" = "x$libdir"/pkgconfig
 then
   dummy=dummy
 else
-  AC_ARG_ENABLE(libdir-pkgconfig,
-  [  --enable-libdir-pkgconfig  Install to $libdir/pkgconfig on any OS, default=no],
-   , enable_libdir_pkgconfig="no")
+  AC_ARG_ENABLE([libdir-pkgconfig],
+  [AS_HELP_STRING([--enable-libdir-pkgconfig],
+                  [Install to $libdir/pkgconfig on any OS @<:@default=no@:>@])],
+  [], [enable_libdir_pkgconfig=no])
   AC_MSG_CHECKING([for --enable-libdir-pkgconfig])
   if test "x$enable_libdir_pkgconfig" = xyes
   then
@@ -231,9 +232,10 @@ else
 fi
 
 libburnia_pkgconfig_override="no"
-AC_ARG_ENABLE(pkgconfig-path,
-[  --enable-pkgconfig-path=DIR  Absolute path of directory for libisofs-*.pc],
-libburnia_pkgconfig_override="yes" , enable_pkgconfig_path="none")
+AC_ARG_ENABLE([pkgconfig-path],
+[AS_HELP_STRING([--enable-pkgconfig-path=DIR],
+                [Absolute path for libisofs pkg-config files])],
+[libburnia_pkgconfig_override=yes], [enable_pkgconfig_path=none])
 AC_MSG_CHECKING([for overridden pkgconfig directory path])
 if test "x$enable_pkgconfig_path" = xno
 then
