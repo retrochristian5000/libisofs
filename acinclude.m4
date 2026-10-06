@@ -3,8 +3,9 @@ dnl Copyright (c) 2009 - 2019 Thomas Schmitt
 dnl Provided under the terms of the GNU General Public License version 2 or later.
 
 
-AC_DEFUN([LIBBURNIA_SET_FLAGS],
+AC_DEFUN_ONCE([LIBBURNIA_SET_FLAGS],
 [
+  AC_REQUIRE([AC_CANONICAL_HOST])
 case $host_os in
 freebsd* | netbsd*)
         LDFLAGS="$LDFLAGS -L/usr/local/lib"
@@ -19,8 +20,10 @@ dnl This keeps static archives and Libtool's symbol/object inspection in the
 dnl same toolchain family without overriding explicit AR/RANLIB/NM/etc.
 dnl The linker is intentionally not selected here: some targets (notably
 dnl Darwin arm64e) still require the platform linker for relocation support.
-AC_DEFUN([LIBISOFS_PREFER_LLVM_TOOLS],
+AC_DEFUN_ONCE([LIBISOFS_PREFER_LLVM_TOOLS],
 [
+  AC_REQUIRE([AC_PROG_CC])
+  AC_REQUIRE([AC_CANONICAL_HOST])
   AC_CACHE_CHECK([whether the C compiler is Clang],
                  [libisofs_cv_c_compiler_is_clang],
     [AC_COMPILE_IFELSE(
@@ -49,8 +52,9 @@ AC_DEFUN([LIBISOFS_PREFER_LLVM_TOOLS],
 ])
 
 
-AC_DEFUN([TARGET_SHIZZLE],
+AC_DEFUN_ONCE([TARGET_SHIZZLE],
 [
+  AC_REQUIRE([AC_CANONICAL_HOST])
   ARCH=""
   LIBBURNIA_PKGCONFDIR="$libdir"/pkgconfig
 
@@ -101,8 +105,9 @@ dnl gives unlimited permission to copy and/or distribute it,
 dnl with or without modifications, as long as this notice is preserved.
 dnl From Bruno Haible.
 dnl
-AC_DEFUN([LIBBURNIA_CHECK_ICONV],
+AC_DEFUN_ONCE([LIBBURNIA_CHECK_ICONV],
 [
+  AC_REQUIRE([AC_PROG_CC])
 
   dnl Check whether it is allowed to link with -liconv
   AC_MSG_CHECKING([for iconv() in separate -liconv ])
@@ -146,8 +151,9 @@ size_t iconv (iconv_t cd, char * *inbuf, size_t *inbytesleft,
 
 dnl LIBBURNIA_ASSERT_ICONV is by Thomas Schmitt, libburnia project
 dnl 
-AC_DEFUN([LIBBURNIA_ASSERT_ICONV],
+AC_DEFUN_ONCE([LIBBURNIA_ASSERT_ICONV],
 [
+  AC_REQUIRE([AC_PROG_CC])
   if test x$LIBISOFS_ASSUME_ICONV = x
   then
     dnl Check for the essential gestures of libisofs/util.c
@@ -191,8 +197,9 @@ AC_DEFUN([LIBBURNIA_ASSERT_ICONV],
 
 dnl LIBISOFS_ASSERT_VERS_LIBS is by Thomas Schmitt, libburnia project
 dnl It tests whether -Wl,--version-script=... works with the compiler
-AC_DEFUN([LIBISOFS_ASSERT_VERS_LIBS],
+AC_DEFUN_ONCE([LIBISOFS_ASSERT_VERS_LIBS],
 [
+  AC_REQUIRE([AC_PROG_CC])
     libburnia_save_LDFLAGS="$LDFLAGS"
     LDFLAGS="$LDFLAGS -Wl,--version-script=$srcdir/libisofs/libisofs.ver"
     AC_LINK_IFELSE(
@@ -210,8 +217,9 @@ AC_DEFUN([LIBISOFS_ASSERT_VERS_LIBS],
 dnl LIBBURNIA_SET_PKGCONFIG determines the install directory for the *.pc file.
 dnl Important: Must be performed _after_ TARGET_SHIZZLE
 dnl
-AC_DEFUN([LIBBURNIA_SET_PKGCONFIG],
+AC_DEFUN_ONCE([LIBBURNIA_SET_PKGCONFIG],
 [
+  AC_REQUIRE([TARGET_SHIZZLE])
 ### for testing --enable-libdir-pkgconfig on Linux
 ### LIBBURNIA_PKGCONFDIR="$libdir"data/pkgconfig
 
@@ -262,8 +270,9 @@ dnl For debugging only
 dnl LIBBURNIA_TRY_TIMEZONE is by Thomas Schmitt, libburnia project
 dnl It tests whether the global variable exists and is suitable for
 dnl integer arithmetics.
-AC_DEFUN([LIBBURNIA_TRY_TIMEZONE],
+AC_DEFUN_ONCE([LIBBURNIA_TRY_TIMEZONE],
 [
+  AC_REQUIRE([AC_PROG_CC])
     AC_MSG_CHECKING([for timezone variable])
     AC_LINK_IFELSE(
         [AC_LANG_PROGRAM([[#include <time.h>]],
