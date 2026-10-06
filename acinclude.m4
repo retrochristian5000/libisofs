@@ -52,7 +52,7 @@ AC_DEFUN_ONCE([LIBISOFS_PREFER_LLVM_TOOLS],
 ])
 
 
-AC_DEFUN_ONCE([TARGET_SHIZZLE],
+AC_DEFUN_ONCE([LIBISOFS_TARGET_SHIZZLE],
 [
   AC_REQUIRE([AC_CANONICAL_HOST])
   ARCH=""
@@ -210,16 +210,16 @@ AC_DEFUN_ONCE([LIBISOFS_ASSERT_VERS_LIBS],
         LIBLDFLAGS="-Wl,--version-script=$srcdir/libisofs/libisofs.ver"
     fi
     LDFLAGS="$libburnia_save_LDFLAGS"
-    AC_SUBST(LIBLDFLAGS)
+    AC_SUBST([LIBLDFLAGS])
 ])
 
 
 dnl LIBBURNIA_SET_PKGCONFIG determines the install directory for the *.pc file.
-dnl Important: Must be performed _after_ TARGET_SHIZZLE
+dnl Important: Must be performed _after_ LIBISOFS_TARGET_SHIZZLE
 dnl
 AC_DEFUN_ONCE([LIBBURNIA_SET_PKGCONFIG],
 [
-  AC_REQUIRE([TARGET_SHIZZLE])
+  AC_REQUIRE([LIBISOFS_TARGET_SHIZZLE])
 ### for testing --enable-libdir-pkgconfig on Linux
 ### LIBBURNIA_PKGCONFDIR="$libdir"data/pkgconfig
 
@@ -260,7 +260,7 @@ then
 else
   AC_MSG_RESULT([$libburnia_pkgconfig_override])
 fi
-AC_SUBST(LIBBURNIA_PKGCONFDIR)
+AC_SUBST([LIBBURNIA_PKGCONFDIR])
 
 dnl For debugging only
 ### AC_MSG_RESULT([LIBBURNIA_PKGCONFDIR = $LIBBURNIA_PKGCONFDIR])

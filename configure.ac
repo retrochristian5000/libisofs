@@ -44,10 +44,10 @@ LIBISOFS_MINOR_VERSION=5
 LIBISOFS_MICRO_VERSION=9
 LIBISOFS_VERSION=$LIBISOFS_MAJOR_VERSION.$LIBISOFS_MINOR_VERSION.$LIBISOFS_MICRO_VERSION
 
-AC_SUBST(LIBISOFS_MAJOR_VERSION)
-AC_SUBST(LIBISOFS_MINOR_VERSION)
-AC_SUBST(LIBISOFS_MICRO_VERSION)
-AC_SUBST(LIBISOFS_VERSION)
+AC_SUBST([LIBISOFS_MAJOR_VERSION])
+AC_SUBST([LIBISOFS_MINOR_VERSION])
+AC_SUBST([LIBISOFS_MICRO_VERSION])
+AC_SUBST([LIBISOFS_VERSION])
 
 dnl Libtool versioning
 LT_RELEASE=$LIBISOFS_MAJOR_VERSION.$LIBISOFS_MINOR_VERSION
@@ -58,11 +58,11 @@ LT_AGE=94
 LT_REVISION=0
 LT_CURRENT_MINUS_AGE=$((LT_CURRENT - LT_AGE))
 
-AC_SUBST(LT_RELEASE)
-AC_SUBST(LT_CURRENT)
-AC_SUBST(LT_REVISION)
-AC_SUBST(LT_AGE)
-AC_SUBST(LT_CURRENT_MINUS_AGE)
+AC_SUBST([LT_RELEASE])
+AC_SUBST([LT_CURRENT])
+AC_SUBST([LT_REVISION])
+AC_SUBST([LT_AGE])
+AC_SUBST([LT_CURRENT_MINUS_AGE])
 
 AC_PREFIX_DEFAULT([/usr/local])
 test "$prefix" = "NONE" && prefix=$ac_default_prefix
@@ -179,7 +179,7 @@ ICONV_LIBS=
 case " $LIBS " in
     *" -liconv "*) ICONV_LIBS="-liconv" ;;
 esac
-AC_SUBST(ICONV_LIBS)
+AC_SUBST([ICONV_LIBS])
 
 dnl To abort configuration if iconv() still cannot be compiled
 LIBBURNIA_ASSERT_ICONV
@@ -189,7 +189,7 @@ dnl GNU Libtool documents LT_INIT as the supported entry point.
 dnl bootstrap installs the Libtool M4 files before aclocal, so there is no
 dnl need to retain the deprecated AC_PROG_LIBTOOL compatibility alias here.
 LT_INIT
-AC_SUBST(LIBTOOL_DEPS)
+AC_SUBST([LIBTOOL_DEPS])
 # LIBTOOL="$LIBTOOL --silent"
 
 AC_PROG_INSTALL
@@ -200,7 +200,7 @@ AC_CHECK_HEADERS([stdint.h inttypes.h stdlib.h])
 
 dnl Check for tm_gmtoff field in struct tm
 AC_CHECK_MEMBER([struct tm.tm_gmtoff],
-	[AC_DEFINE(HAVE_TM_GMTOFF, 1,
+	[AC_DEFINE([HAVE_TM_GMTOFF], [1],
 		[Define this if tm structure includes a tm_gmtoff entry.])],
 	,
 	[#include <time.h>])
@@ -236,11 +236,11 @@ AC_LINK_IFELSE(
     [AC_MSG_RESULT([no])])
 
 THREAD_LIBS=-lpthread
-AC_SUBST(THREAD_LIBS)
+AC_SUBST([THREAD_LIBS])
 
-TARGET_SHIZZLE
-AC_SUBST(ARCH)
-AC_SUBST(LIBBURN_ARCH_LIBS)
+LIBISOFS_TARGET_SHIZZLE
+AC_SUBST([ARCH])
+AC_SUBST([LIBBURN_ARCH_LIBS])
 
 
 dnl See if the user wants aggressive optimizations of the code.
@@ -345,8 +345,8 @@ then
 else
     echo "disabled local processing of ACL"
 fi
-AC_SUBST(LIBACL_DEF)
-AC_SUBST(LIBACL_LIBS)
+AC_SUBST([LIBACL_DEF])
+AC_SUBST([LIBACL_LIBS])
 
 
 dnl ts A90123 - B80508
@@ -433,7 +433,7 @@ else
 fi
 XATTR_DEF="$XATTR_DEF $XATTR_ADDON_DEF"
 
-AC_SUBST(XATTR_DEF)
+AC_SUBST([XATTR_DEF])
 
 dnl ts C40713
 LFA_DEF=
@@ -450,7 +450,7 @@ if test x"$LFA_DEF" = x; then
 else
     echo "enabled  Linux chattr(1) flags"
 fi
-AC_SUBST(LFA_DEF)
+AC_SUBST([LFA_DEF])
 
 dnl ts C41009
 PROJID_DEF=
@@ -467,7 +467,7 @@ if test x"$PROJID_DEF" = x; then
 else
     echo "enabled  XFS-style project id"
 fi
-AC_SUBST(PROJID_DEF)
+AC_SUBST([PROJID_DEF])
 
 
 dnl ts A90409
@@ -490,8 +490,8 @@ dnl so static consumers can recover it from libisofs-1.pc.
 else
     ZLIB_DEF=
 fi
-AC_SUBST(ZLIB_DEF)
-AC_SUBST(ZLIB_LIBS)
+AC_SUBST([ZLIB_DEF])
+AC_SUBST([ZLIB_LIBS])
 
 dnl ts B00927
 AC_ARG_ENABLE([libjte],
@@ -509,8 +509,8 @@ if test "x$enable_libjte" = xyes; then
 else
     LIBJTE_DEF=
 fi
-AC_SUBST(LIBJTE_DEF)
-AC_SUBST(LIBJTE_LIBS)
+AC_SUBST([LIBJTE_DEF])
+AC_SUBST([LIBJTE_LIBS])
 
 
 dnl ts C50224
@@ -525,7 +525,7 @@ else
     DIR_REC_SIZE_CHECK=
     echo "disabled detailed check of directory size prediction"
 fi
-AC_SUBST(DIR_REC_SIZE_CHECK)
+AC_SUBST([DIR_REC_SIZE_CHECK])
 
 
 # Library versioning normally serves a complex purpose.
@@ -559,7 +559,7 @@ else
     LIBBURNIA_LDCONFIG_CMD="echo 'NOTE: ldconfig is disabled. If needed, configure manually for:'"
     echo "disabled run of ldconfig during installation on GNU/Linux"
 fi  
-AC_SUBST(LIBBURNIA_LDCONFIG_CMD)
+AC_SUBST([LIBBURNIA_LDCONFIG_CMD])
 
 AC_CONFIG_FILES([
 	Makefile
