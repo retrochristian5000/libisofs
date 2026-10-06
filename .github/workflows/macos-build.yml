@@ -64,11 +64,17 @@ jobs:
           export CC="$(xcrun --find clang)"
           export M4="$(brew --prefix m4)/bin/m4"
           export LIBTOOLIZE="$(brew --prefix libtool)/bin/glibtoolize"
+          export ACLOCAL="$(brew --prefix automake)/bin/aclocal"
+          export AUTOMAKE="$(brew --prefix automake)/bin/automake"
+          export AUTOCONF="$(brew --prefix autoconf)/bin/autoconf"
           MAKE="$(command -v gmake)"
 
           test -x "$CC"
           test -x "$M4"
           test -x "$LIBTOOLIZE"
+          test -x "$ACLOCAL"
+          test -x "$AUTOMAKE"
+          test -x "$AUTOCONF"
           test -x "$MAKE"
 
           export CFLAGS="-O2 -std=gnu11 -Werror=strict-prototypes -arch $ARCH -isysroot $SDKROOT -mmacosx-version-min=$DEPLOYMENT"
@@ -77,7 +83,7 @@ jobs:
 
           test/test_build_sed.sh
           ./bootstrap
-          autoconf -W none,obsolete,error
+          "$AUTOCONF" -W none,obsolete,error
 
           build_dir="$RUNNER_TEMP/libisofs-$ARCH-build"
           prefix="$RUNNER_TEMP/libisofs-$ARCH-prefix"

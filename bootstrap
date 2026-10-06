@@ -1,5 +1,47 @@
 #!/bin/sh -x
 
+# Keep the maintainer-source bootstrap on one explicit Autotools toolset.
+# Empty C parameter lists and generated-macro drift are both much harder to
+# diagnose when aclocal/autoconf/automake are silently taken from unrelated
+# installations.  Caller selections win; otherwise use PATH.
+ACLOCAL=${ACLOCAL:-aclocal}
+AUTOCONF=${AUTOCONF:-autoconf}
+AUTOMAKE=${AUTOMAKE:-automake}
+export ACLOCAL AUTOCONF AUTOMAKE
+
+for tool in "$ACLOCAL" "$AUTOCONF" "$AUTOMAKE"
+do
+  if ! command -v "$tool" >/dev/null 2>&1
+  then
+    echo "bootstrap: required Autotools executable not found: $tool" >&2
+    exit 1
+  fi
+done
+
+# aclocal's environment search path is not part of this source tree's
+# dependency contract.  libtoolize copies the required Libtool macros into
+# the local macro directory and acinclude.m4 carries the project macros.
+# Do not let Homebrew or another bootstrap stage inject unrelated macros.
+ACLOCAL_PATH=
+export ACLOCAL_PATH
+
+# Automake and aclocal are one suite and must be kept at the same version.
+automake_version=
+for word in `"$AUTOMAKE" --version 2>/dev/null | sed -n '1p'`
+do
+  automake_version=$word
+done
+aclocal_version=
+for word in `"$ACLOCAL" --version 2>/dev/null | sed -n '1p'`
+do
+  aclocal_version=$word
+done
+if test -z "$automake_version" || test "$automake_version" != "$aclocal_version"
+then
+  echo "bootstrap: AUTOMAKE and ACLOCAL must come from the same GNU Automake version" >&2
+  exit 1
+fi
+
 # Install the Libtool macro files before aclocal builds aclocal.m4. Otherwise
 # the result can depend on whether a matching Libtool installation happens to
 # be visible in aclocal's global search path.
@@ -23,6 +65,6 @@ else
   exit 1
 fi
 
-aclocal -I .
-autoconf
-automake --foreign --add-missing --copy --include-deps
+"$ACLOCAL" -I .
+"$AUTOCONF"
+"$AUTOMAKE" --foreign --add-missing --copy --include-deps
