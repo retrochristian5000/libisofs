@@ -183,6 +183,11 @@ AC_SUBST([ICONV_LIBS])
 dnl To abort configuration if iconv() still cannot be compiled
 LIBBURNIA_ASSERT_ICONV
 
+dnl LIBBURNIA_CHECK_ICONV temporarily adds -liconv to global LIBS when Darwin
+dnl needs the SDK's separate iconv link name. Keep that dependency only in
+dnl ICONV_LIBS after the assertion so Automake does not link it twice.
+LIBS="$libburnia_save_LIBS"
+
 
 dnl GNU Libtool documents LT_INIT as the supported entry point.
 dnl bootstrap installs the Libtool M4 files before aclocal, so there is no

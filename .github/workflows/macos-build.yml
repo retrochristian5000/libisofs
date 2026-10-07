@@ -115,10 +115,15 @@ jobs:
           test "${#archive_arch_list[@]}" -eq 1
           test "${archive_arch_list[0]}" = "$ARCH"
 
+          if grep -Eq '^LIBS = .*([[:space:]]|^)-liconv([[:space:]]|$)' Makefile; then
+            echo "configure leaked iconv into global LIBS" >&2
+            grep '^LIBS = ' Makefile >&2 || true
+            exit 1
+          fi
+
           "$MAKE" \
             install-libLTLIBRARIES \
-            install-libincludeHEADERS \
-            install-pkgconfigDATA
+            install-data
 
           pc_file="$(find "$prefix" -path '*/pkgconfig/libisofs-1.pc' -print -quit)"
           test -n "$pc_file"
